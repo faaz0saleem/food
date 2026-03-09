@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: lahore-table-booking
+    runtime: docker
+    plan: starter
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false

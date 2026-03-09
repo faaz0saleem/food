@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lahore Table Booking</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <main class="container">
+      <h1>Lahore Table Booking</h1>
+      <p class="muted">Reserve top Lahore restaurants with secure deposit protection.</p>
+
+      <section>
+        <h2>Restaurants</h2>
+        <div id="restaurants" class="cards"></div>
+      </section>
+
+      <section>
+        <h2>Book a Table</h2>
+        <form id="booking-form">
+          <label>Restaurant <select id="restaurantId" required></select></label>
+          <label>Date <input type="date" id="date" required /></label>
+          <label>Time <input type="time" id="time" required /></label>
+          <label>Table <select id="tableId" required></select></label>
+          <label>Name <input type="text" id="name" minlength="2" required /></label>
+          <label>Phone <input type="tel" id="phone" minlength="8" required /></label>
+          <label>Guests <input type="number" id="guests" min="1" max="20" required /></label>
+          <button type="submit">Reserve Now</button>
+        </form>
+        <p id="rules" class="muted"></p>
+      </section>
+
+      <section id="confirmation" class="hidden">
+        <h2>Reservation Confirmation</h2>
+        <pre id="confirmation-text"></pre>
+        <div id="qrcode"></div>
+      </section>
+    </main>
+  </body>
+</html>

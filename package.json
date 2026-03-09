@@ -1,0 +1,37 @@
+{
+  "name": "lahore-table-booking",
+  "version": "1.0.0",
+  "description": "Production-ready MVP reservation platform for Lahore",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "seed": "node db/seed.js",
+    "test": "NODE_ENV=test jest --runInBand"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.4.0",
+    "express-validator": "^7.2.0",
+    "helmet": "^7.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.6.1",
+    "morgan": "^1.10.0",
+    "nodemailer": "^6.9.15",
+    "qrcode": "^1.5.4",
+    "twilio": "^5.2.3"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "mongodb-memory-server": "^10.0.1",
+    "nodemon": "^3.1.4",
+    "supertest": "^7.0.0"
+  }
+}
