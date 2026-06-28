@@ -1,6 +1,6 @@
 {
   "scripts": {
-    "start": "node server.js",
+    "start": "concurrently \"node server.js\" \"node backend.js\"",
     "backend": "node backend.js"
   },
   "dependencies": {
@@ -9,5 +9,8 @@
     "dotenv": "^17.4.2",
     "groq-sdk": "^1.3.0",
     "ora": "^9.4.1"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
   }
 }
