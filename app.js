@@ -45,7 +45,7 @@ function hideTyping() {
   if (typing) typing.remove();
 }
 
-const backendUrl = 'http://localhost:4000';
+const backendUrl = 'https://food-backend-production-d684.up.railway.app';
 
 async function apiPost(path, payload) {
   const response = await fetch(`${backendUrl}${path}`, {
