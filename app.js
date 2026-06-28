@@ -45,7 +45,7 @@ function hideTyping() {
   if (typing) typing.remove();
 }
 
-const backendUrl = 'http://localhost:4000';
+const backendUrl = 'https://food-backend.railway.app';
 
 async function apiPost(path, payload) {
   const response = await fetch(`${backendUrl}${path}`, {
@@ -81,6 +81,21 @@ async function registerVisitor() {
   }
 }
 
+async function fetchStats() {
+  try {
+    const response = await fetch(`${backendUrl}/api/stats`);
+    const data = await response.json();
+
+    const el = (id) => document.getElementById(id);
+    if (el('stat-users-today'))   el('stat-users-today').textContent   = data.activeUsersToday   ?? '—';
+    if (el('stat-users-month'))   el('stat-users-month').textContent   = data.activeUsersThisMonth ?? '—';
+    if (el('stat-total-chats'))   el('stat-total-chats').textContent   = data.totalChats          ?? '—';
+    if (el('stat-total-messages')) el('stat-total-messages').textContent = data.totalMessages      ?? '—';
+  } catch (err) {
+    console.warn('Stats fetch failed:', err);
+  }
+}
+
 function bootstrap() {
   addMessage('Hello! I can help answer questions and guide visitors on this chat page.', 'assistant');
 }
@@ -96,4 +111,8 @@ form.addEventListener('submit', async (event) => {
   await sendChat(message);
 });
 
-registerVisitor().then(bootstrap);
+registerVisitor().then(() => {
+  bootstrap();
+  fetchStats();
+  setInterval(fetchStats, 10_000);
+});
