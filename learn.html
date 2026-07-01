@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MindMesh — Learn</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/brand.css">
+    <link rel="stylesheet" href="/nav.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        background: '#130d26',
+                        panel: '#2a1f4c',
+                        panelHover: '#352861',
+                        primary: '#b8ff4a',
+                        text: '#e2dbea',
+                        muted: '#9a8db8',
+                        navBg: '#1e1638',
+                        accentBlue: '#4a90e2',
+                        accentPink: '#e24a8d',
+                        accentOrange: '#f5a623'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #130d26 0%, #1a1133 45%, #221442 100%);
+            color: #e2dbea;
+            min-height: 100vh;
+        }
+        .glass-panel {
+            background: rgba(42, 31, 76, 0.65);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(154, 141, 184, 0.15);
+            border-radius: 28px;
+            transition: transform 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+        }
+        .glass-panel:hover {
+            border-color: rgba(184, 255, 74, 0.35);
+            transform: translateY(-4px);
+            background: rgba(42, 31, 76, 0.8);
+        }
+        .nav-item { color: #9a8db8; transition: color 0.2s ease, background 0.2s ease; }
+        .nav-item:hover { color: #e2dbea; }
+        .nav-item.active { background-color: rgba(42, 31, 76, 0.7); color: #b8ff4a; }
+        .primary-btn { background-color: #b8ff4a; color: #130d26; font-weight: 600; transition: all 0.3s ease; }
+        .primary-btn:hover { background-color: #9ee63a; transform: translateY(-2px); }
+        .progress-track { background-color: rgba(154, 141, 184, 0.14); border-radius: 9999px; overflow: hidden; }
+        .progress-fill { height: 100%; border-radius: 9999px; transition: width 1s ease; }
+    </style>
+</head>
+<body class="font-sans antialiased p-4 md:p-8">
+    <header class="site-nav"></header>
+    <main class="max-w-7xl mx-auto space-y-12">
+        <section class="space-y-6">
+            <p class="text-sm uppercase tracking-[0.35em] text-[#9a8db8]">Learning experience</p>
+            <h2 class="text-5xl font-semibold max-w-4xl leading-tight">Discover your next path with guided learning, review cycles, and AI help.</h2>
+            <p class="text-lg text-[#b8b1d8] max-w-3xl">MindMesh keeps your study journey focused with recommended modules, progress checks, and smart suggestions so you always know what to do next.</p>
+        </section>
+
+        <section class="grid gap-8 xl:grid-cols-[1.3fr_0.7fr]">
+            <div class="space-y-6">
+                <div class="glass-panel p-8 border border-white/10">
+                    <div class="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                        <div>
+                            <p class="text-xs uppercase tracking-[0.35em] text-[#9a8db8]">Current learning</p>
+                            <h3 class="mt-3 text-3xl font-semibold text-white">Continue where you left off</h3>
+                            <p class="mt-3 text-sm text-[#b8b1d8] max-w-2xl">A clean snapshot of your active learning modules and the next practical step for each one.</p>
+                        </div>
+                        <a href="quiz.html" class="primary-btn px-5 py-3 rounded-full text-sm">Start a quiz</a>
+                    </div>
+
+                    <div class="mt-8 space-y-4">
+                        <div class="glass-panel p-6 border border-white/10">
+                            <div class="flex items-start justify-between gap-4">
+                                <div>
+                                    <p class="text-sm text-[#b8b1d8]">Quantum Mechanics 101</p>
+                                    <h4 class="mt-2 text-xl font-semibold text-white">Wave-particle behavior</h4>
+                                </div>
+                                <span class="text-xs uppercase tracking-[0.35em] text-accentBlue/80 bg-accentBlue/10 px-3 py-1 rounded-full">In progress</span>
+                            </div>
+                            <p class="mt-4 text-sm text-[#b8b1d8]">Review the core concepts of photons, electrons, and the experiments that shaped modern physics.</p>
+                            <div class="mt-5 space-y-3">
+                                <div class="progress-track h-2"><div class="progress-fill bg-accentBlue" style="width: 65%"></div></div>
+                                <div class="flex justify-between text-xs text-muted"><span>65% complete</span><span>Next: Schrödinger's Cat</span></div>
+                            </div>
+                        </div>
+                        <div class="glass-panel p-6 border border-white/10">
+                            <div class="flex items-start justify-between gap-4">
+                                <div>
+                                    <p class="text-sm text-[#b8b1d8]">Philosophy of Ethics</p>
+                                    <h4 class="mt-2 text-xl font-semibold text-white">Modern moral frameworks</h4>
+                                </div>
+                                <span class="text-xs uppercase tracking-[0.35em] text-accentPink/80 bg-accentPink/10 px-3 py-1 rounded-full">Resume</span>
+                            </div>
+                            <p class="mt-4 text-sm text-[#b8b1d8]">Explore practical decision-making with stories, dilemmas, and clear definitions.</p>
+                            <div class="mt-5 space-y-3">
+                                <div class="progress-track h-2"><div class="progress-fill bg-accentPink" style="width: 30%"></div></div>
+                                <div class="flex justify-between text-xs text-muted"><span>30% complete</span><span>Next: Utilitarianism</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="space-y-6">
+                <div class="glass-panel p-6 border border-white/10">
+                    <p class="text-xs uppercase tracking-[0.35em] text-[#9a8db8]">Weekly snapshot</p>
+                    <h4 class="mt-3 text-2xl font-semibold text-white">Your study rhythm</h4>
+                    <div class="mt-6 space-y-4 text-sm text-[#b8b1d8]">
+                        <div class="flex justify-between"><span>Active lessons</span><span class="font-semibold text-white">4</span></div>
+                        <div class="flex justify-between"><span>Review sessions</span><span class="font-semibold text-white">2</span></div>
+                        <div class="flex justify-between"><span>Skill boosts</span><span class="font-semibold text-white">3</span></div>
+                    </div>
+                    <a href="chat.html" class="mt-6 inline-flex w-full items-center justify-center rounded-full bg-primary px-4 py-3 text-sm font-semibold text-[#130d26] hover:bg-white transition">Ask AI for help</a>
+                </div>
+                <div class="glass-panel p-6 border border-white/10">
+                    <p class="text-xs uppercase tracking-[0.35em] text-[#9a8db8]">Recommended next</p>
+                    <h4 class="mt-3 text-2xl font-semibold text-white">Space Exploration</h4>
+                    <p class="mt-4 text-sm text-[#b8b1d8]">Build the mental model behind modern rocketry, orbits, and mission planning.</p>
+                    <div class="mt-6 flex flex-wrap gap-2">
+                        <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-[#b8b1d8]">Rocketry</span>
+                        <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-[#b8b1d8]">Physics</span>
+                        <span class="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-[#b8b1d8]">Strategy</span>
+                    </div>
+                </div>
+            </aside>
+        </section>
+
+        <section class="space-y-6">
+            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                    <p class="text-xs uppercase tracking-[0.35em] text-[#9a8db8]">Recommended for you</p>
+                    <h3 class="mt-3 text-3xl font-semibold text-white">Skill paths built to move faster.</h3>
+                </div>
+                <a href="subjects.html" class="text-sm font-medium text-primary hover:underline">Browse all subjects</a>
+            </div>
+            <div class="grid gap-6 xl:grid-cols-2">
+                <div class="glass-panel p-6 border border-white/10 flex gap-5 items-center">
+                    <div class="w-20 h-20 rounded-3xl bg-[#24183c] flex items-center justify-center text-4xl">🚀</div>
+                    <div>
+                        <h4 class="text-xl font-semibold text-white">Space Exploration</h4>
+                        <p class="mt-2 text-sm text-[#b8b1d8]">Understand rockets, satellites, and what it takes to go beyond Earth.</p>
+                        <a href="subjects.html" class="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline">Start module</a>
+                    </div>
+                </div>
+                <div class="glass-panel p-6 border border-white/10 flex gap-5 items-center">
+                    <div class="w-20 h-20 rounded-3xl bg-[#24183c] flex items-center justify-center text-4xl">🎨</div>
+                    <div>
+                        <h4 class="text-xl font-semibold text-white">Art History: Renaissance</h4>
+                        <p class="mt-2 text-sm text-[#b8b1d8]">Trace the stories and techniques of the Italian Renaissance through short lessons.</p>
+                        <a href="subjects.html" class="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline">Start module</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+    <script src="/layout.js" defer></script>
+</body>
+</html>

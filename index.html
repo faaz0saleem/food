@@ -1,57 +1,152 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Glow Chat</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="/styles.css" />
-  </head>
-  <body>
-    <div class="page-shell">
-      <section class="hero-card">
-            <div class="hero-copy">
-          <p class="eyebrow">AI concierge</p>
-          <h1>Meet your polished website chatbot.</h1>
-          <p class="hero-text">
-            A friendly assistant that answers questions, helps visitors, and feels right at home on your site.
-          </p>
-          <div class="chip-row">
-            <span>Fast replies</span>
-            <span>Live visitor stats</span>
-            <span>Website actions</span>
-          </div>
-        </div>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MindMesh — The AI tutor that gets you</title>
+  <meta name="description" content="MindMesh combines four AI engines into one adaptive tutor for any subject. Start free during beta.">
+  <meta property="og:title" content="MindMesh — The AI tutor that gets you">
+  <meta property="og:description" content="Four AI specialists. One tutor built for how you learn.">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/brand.css">
+  <link rel="stylesheet" href="/nav.css">
+  <link rel="stylesheet" href="/landing.css">
+</head>
+<body>
+  <header class="site-nav"></header>
 
-        <div class="chat-card">
-          <div class="chat-header">
-            <div class="avatar">✦</div>
-            <div>
-              <h2>Glow Assistant</h2>
-              <p>Online now</p>
+  <header class="hero">
+    <div class="container hero-grid">
+      <div>
+        <span class="eyebrow">4 AI ENGINES · 1 TUTOR FOR YOU</span>
+        <h1>The tutor that finally <span class="pop">gets you.</span></h1>
+        <p class="lead">MindMesh routes your questions through four specialist AI engines — reasoning, solving, exploring, and storytelling — so every explanation matches how your brain learns. Free during beta. No card required.</p>
+        <div class="hero-ctas">
+          <a href="/onboarding.html" class="btn-primary">Start free →</a>
+          <a href="#how" class="btn-ghost">See how it works</a>
+        </div>
+      </div>
+
+      <div class="demo-wrap">
+        <div class="demo-card">
+          <div class="demo-head">
+            <div class="orb-cluster">
+              <div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div><div class="orb o4"></div>
             </div>
+            <span class="who" style="font-family:var(--font-display);font-weight:600;font-size:0.85rem;color:var(--ink-soft);">MindMesh · Reasoner live</span>
           </div>
-
-          <div id="messages" class="messages" aria-live="polite"></div>
-
-          <form id="chat-form" class="composer">
-            <input
-              id="message-input"
-              type="text"
-              placeholder="Ask me anything..."
-              autocomplete="off"
-            />
-            <button type="submit">Send</button>
-          </form>
+          <div class="bubble user">I don't get photosynthesis 😭</div>
+          <div class="bubble ai">Think of a leaf like a tiny solar panel — sunlight goes in, food comes out. Want the step-by-step version or a real-world example?</div>
         </div>
-      </section>
+        <div class="xp-badge">+12 XP</div>
+      </div>
     </div>
 
-    <script src="/app.js"></script>
-  </body>
+    <div class="path-section">
+      <p class="path-eyebrow">YOUR LEARNING PATH</p>
+      <p class="path-title">Every question moves you forward.</p>
+      <div class="path-row">
+        <div class="path-stop active"><div class="badge">🌱</div><div class="label">Beginner</div></div>
+        <div class="path-line"></div>
+        <div class="path-stop"><div class="badge">🧭</div><div class="label">Explorer</div></div>
+        <div class="path-line"></div>
+        <div class="path-stop"><div class="badge">📚</div><div class="label">Scholar</div></div>
+        <div class="path-line"></div>
+        <div class="path-stop"><div class="badge">🧠</div><div class="label">Genius</div></div>
+        <div class="path-line"></div>
+        <div class="path-stop"><div class="badge">🏆</div><div class="label">Legend</div></div>
+      </div>
+    </div>
+
+    <div class="stats-row container">
+      <div class="sticker"><span>1</span> engine live · 3 coming soon</div>
+      <div class="sticker">Teaches <span>your</span> way, not the textbook's</div>
+      <div class="sticker"><span>Free</span> during beta testing</div>
+    </div>
+  </header>
+
+  <section class="how" id="how">
+    <div class="container">
+      <p class="eyebrow" style="text-align:center;display:block;">THREE STEPS</p>
+      <h2 class="sec-title">Here's exactly how it works</h2>
+      <div class="how-grid">
+        <div class="how-card"><div class="how-num">1</div><h3>Pick what you're learning</h3><p>Any subject, any level — from fractions to organic chemistry.</p></div>
+        <div class="how-card"><div class="how-num">2</div><h3>Tell us how your brain works</h3><p>Visual, story-driven, step-by-step, or example-led. Your call.</p></div>
+        <div class="how-card"><div class="how-num">3</div><h3>Ask your tutor anything</h3><p>MindMesh picks the smartest engine and explanation style for you.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="engines" id="engines">
+    <div class="container">
+      <p class="eyebrow" style="text-align:center;display:block;">MEET YOUR 4 ENGINES</p>
+      <h2 class="sec-title">One tutor, four specialists underneath</h2>
+      <div class="engine-status-grid" data-engine-status></div>
+    </div>
+  </section>
+
+  <section class="pricing" id="pricing">
+    <div class="container">
+      <p class="eyebrow" style="text-align:center;display:block;">PICK YOUR PLAN</p>
+      <h2 class="sec-title">Start free. Upgrade when you're hooked.</h2>
+      <div class="pricing-grid">
+        <div class="price-card">
+          <div class="price-tag">Free</div>
+          <div class="price-amt">$0</div>
+          <ul class="price-feats">
+            <li>20 messages a day</li>
+            <li>3 subjects</li>
+            <li>Progress tracking</li>
+          </ul>
+          <a href="/onboarding.html" class="price-btn">Start free</a>
+        </div>
+        <div class="price-card featured">
+          <span class="popped">MOST PICKED</span>
+          <div class="price-tag">Student</div>
+          <div class="price-amt">$5<sub>/mo</sub></div>
+          <ul class="price-feats">
+            <li>Unlimited messages</li>
+            <li>Every subject</li>
+            <li>All 4 engines when live</li>
+            <li>Full progress analytics</li>
+          </ul>
+          <a href="/checkout.html?plan=student" class="price-btn">Get Student</a>
+        </div>
+        <div class="price-card">
+          <div class="price-tag">Family</div>
+          <div class="price-amt">$12<sub>/mo</sub></div>
+          <ul class="price-feats">
+            <li>Up to 3 learners</li>
+            <li>Parent dashboard</li>
+            <li>Weekly progress reports</li>
+          </ul>
+          <a href="/checkout.html?plan=family" class="price-btn">Get Family</a>
+        </div>
+        <div class="price-card">
+          <div class="price-tag">School</div>
+          <div class="price-amt">$200<sub>/mo</sub></div>
+          <ul class="price-feats">
+            <li>50 students</li>
+            <li>Teacher dashboard</li>
+            <li>Custom curriculum</li>
+          </ul>
+          <a href="/checkout.html?plan=school" class="price-btn">Talk to us</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="final-cta">
+    <div class="container">
+      <div class="final-card">
+        <h2>Ready to level up?</h2>
+        <p>Join the beta today. No credit card, no catch — just a smarter way to learn.</p>
+        <a href="/onboarding.html" class="btn-primary">Start free →</a>
+      </div>
+    </div>
+  </section>
+
+  <footer class="site-footer"></footer>
+  <script src="/layout.js" defer></script>
+</body>
 </html>
