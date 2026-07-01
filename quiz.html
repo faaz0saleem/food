@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MindMesh — Quiz</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/brand.css">
+  <link rel="stylesheet" href="/nav.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; margin: 0; min-height: 100vh; background: radial-gradient(circle at top, rgba(184,255,74,0.15), transparent 35%), linear-gradient(135deg, #130d26 0%, #221442 100%); color: #e2dbea; }
+    .glass { background: rgba(24, 16, 44, 0.78); backdrop-filter: blur(14px); border: 1px solid rgba(184,255,74,0.14); border-radius: 28px; }
+    .btn-primary { background: #b8ff4a; color: #130d26; }
+    .btn-primary:hover { background: #a5e23a; }
+    .btn-soft { background: rgba(154,141,184,0.18); color: #e2dbea; }
+    .btn-soft:hover { background: rgba(154,141,184,0.28); }
+    .answer-card { background: rgba(154,141,184,0.06); border: 1px solid rgba(154,141,184,0.2); }
+    .answer-card:hover { background: rgba(154,141,184,0.12); }
+    .selected { border-color: rgba(184,255,74,0.9); background: rgba(184,255,74,0.14); }
+    .correct { border-color: #4ee87d; background: rgba(78,232,125,0.16); }
+    .wrong { border-color: #ff6b6b; background: rgba(255,107,107,0.14); }
+    .badge { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.55rem 0.9rem; border-radius: 999px; border: 1px solid rgba(184,255,74,0.18); background: rgba(184,255,74,0.08); color: #b8ff4a; }
+    .hidden { display: none; }
+    input[type=number]::-webkit-outer-spin-button, input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type=number] { -moz-appearance: textfield; }
+  </style>
+</head>
+<body class="p-5 sm:p-8 lg:p-12">
+  <header class="site-nav"></header>
+  <div class="max-w-6xl mx-auto space-y-8">
+    <header class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+      <div class="space-y-4">
+        <p class="text-sm uppercase tracking-[0.35em] text-[#9a8db8]">MindMesh Quiz</p>
+        <h1 class="text-4xl sm:text-5xl font-semibold tracking-tight text-white">AI-powered quizzes with adaptive history tracking.</h1>
+        <p class="max-w-2xl text-[#b8b1d8]">Select a subject, choose 5 / 10 / 15 / custom length, and let MindMesh generate non-repeating quiz questions tailored to your session.</p>
+      </div>
+      <div class="grid gap-3 sm:grid-cols-2">
+        <a href="/progress.html" class="inline-flex items-center justify-center rounded-full px-5 py-3 btn-soft text-sm font-medium">View Progress</a>
+        <a href="/chat.html" class="inline-flex items-center justify-center rounded-full px-5 py-3 btn-primary text-sm font-medium">Ask AI</a>
+      </div>
+    </header>
+
+    <section class="glass p-6 sm:p-8 shadow-[0_30px_80px_rgba(0,0,0,0.25)]">
+      <div class="grid gap-8 xl:grid-cols-[1.3fr_1fr]">
+        <div class="space-y-8">
+          <div>
+            <p class="text-xs uppercase tracking-[0.35em] text-[#9a8db8] mb-3">Subject</p>
+            <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <button type="button" data-subject="Math" class="subject-btn btn-soft rounded-3xl px-4 py-3 text-sm">Math</button>
+              <button type="button" data-subject="Science" class="subject-btn btn-soft rounded-3xl px-4 py-3 text-sm active">Science</button>
+              <button type="button" data-subject="English" class="subject-btn btn-soft rounded-3xl px-4 py-3 text-sm">English</button>
+              <button type="button" data-subject="History" class="subject-btn btn-soft rounded-3xl px-4 py-3 text-sm">History</button>
+              <button type="button" data-subject="Coding" class="subject-btn btn-soft rounded-3xl px-4 py-3 text-sm">Coding</button>
+              <button type="button" data-subject="Philosophy" class="subject-btn btn-soft rounded-3xl px-4 py-3 text-sm">Philosophy</button>
+            </div>
+          </div>
+
+          <div>
+            <p class="text-xs uppercase tracking-[0.35em] text-[#9a8db8] mb-3">Quiz length</p>
+            <div class="flex flex-wrap gap-3 items-center">
+              <button type="button" data-count="5" class="length-btn btn-soft rounded-3xl px-4 py-3 text-sm active">5</button>
+              <button type="button" data-count="10" class="length-btn btn-soft rounded-3xl px-4 py-3 text-sm">10</button>
+              <button type="button" data-count="15" class="length-btn btn-soft rounded-3xl px-4 py-3 text-sm">15</button>
+              <button type="button" id="customLengthBtn" class="length-btn btn-soft rounded-3xl px-4 py-3 text-sm">Custom</button>
+              <input id="customCount" type="number" min="1" max="50" value="10" class="hidden rounded-3xl border border-white/10 bg-[#1a1136] px-4 py-3 text-sm text-white w-28 outline-none" placeholder="Custom" />
+            </div>
+            <p class="mt-3 text-sm text-[#9a8db8]">AI avoids repeating past questions by tracking your answered quiz history in localStorage.</p>
+          </div>
+
+          <div class="rounded-[28px] border border-white/10 bg-[#191239] p-5">
+            <div class="flex items-center justify-between gap-4 mb-4">
+              <div>
+                <p class="text-xs uppercase tracking-[0.35em] text-[#9a8db8]">AI insight</p>
+                <h2 class="text-xl font-semibold text-white">Adaptive study tip</h2>
+              </div>
+              <span class="badge">AI Powered</span>
+            </div>
+            <p id="grokTip" class="text-[#d1caea] leading-7">AI is ready to generate a study hint based on your selected quiz.</p>
+            <button id="refreshTip" type="button" class="mt-5 inline-flex items-center justify-center rounded-full bg-white/10 px-5 py-3 text-sm text-white hover:bg-white/15">Refresh tip</button>
+          </div>
+        </div>
+
+        <div class="rounded-[28px] border border-white/10 bg-[#191239] p-6 flex flex-col justify-between">
+          <div class="space-y-4">
+            <div class="flex items-center justify-between gap-4">
+              <div>
+                <p class="text-xs uppercase tracking-[0.35em] text-[#9a8db8]">Quiz summary</p>
+                <h2 id="previewHeadline" class="text-2xl font-semibold text-white">Science · 5 questions</h2>
+              </div>
+              <div class="text-right">
+                <p class="text-xs uppercase tracking-[0.35em] text-[#9a8db8]">Est. time</p>
+                <p id="previewTime" class="text-xl font-semibold text-white">4 min</p>
+              </div>
+            </div>
+            <p class="text-sm text-[#b8ff4a]">No repeated questions from your session history. AI and MindMesh keep each quiz fresh.</p>
+          </div>
+          <button id="generateQuiz" type="button" class="mt-4 rounded-full btn-primary px-6 py-4 text-base font-semibold">Generate Quiz</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="quizArea" class="hidden glass p-6 sm:p-8 rounded-[28px] shadow-[0_30px_80px_rgba(0,0,0,0.22)]">
+      <div class="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between mb-6">
+        <div>
+          <p class="text-sm text-[#9a8db8]" id="progressLabel">Question 1 of 5</p>
+          <h2 id="questionText" class="text-3xl font-semibold text-white">Loading question…</h2>
+        </div>
+        <div class="text-right">
+          <p class="text-xs uppercase tracking-[0.35em] text-[#9a8db8]">Current score</p>
+          <p id="scoreBadge" class="mt-1 text-3xl font-semibold text-[#b8ff4a]">0</p>
+        </div>
+      </div>
+      <div id="answerOptions" class="grid gap-4"></div>
+      <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
+        <button id="quitQuiz" type="button" class="rounded-full btn-soft px-5 py-3 text-sm">Quit</button>
+        <button id="nextQuestion" type="button" class="rounded-full btn-primary px-6 py-3 text-sm disabled:opacity-60" disabled>Next question</button>
+      </div>
+    </section>
+
+    <section id="resultArea" class="hidden glass p-6 sm:p-8 rounded-[28px]">
+      <div class="space-y-6 text-center">
+        <p class="text-xs uppercase tracking-[0.35em] text-[#9a8db8]">Quiz completed</p>
+        <h2 id="resultScore" class="text-5xl font-semibold text-white">0%</h2>
+        <p id="resultMessage" class="text-[#d1caea]">Great work! Ask AI to review your answers and discover your next focus area.</p>
+        <div class="flex flex-col gap-3 sm:flex-row sm:justify-center">
+          <button id="retryQuiz" type="button" class="rounded-full btn-soft px-6 py-3 text-sm">Retry</button>
+          <button id="askGrok" type="button" class="rounded-full btn-primary px-6 py-3 text-sm">Ask AI</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    function lsGet(key, fallback) {
+      try { return JSON.parse(localStorage.getItem(key) || 'null') ?? fallback; } catch { return fallback; }
+    }
+    function lsSet(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
+    function getSessionId() {
+      let id = lsGet('mm_sessionId', null);
+      if (!id) { id = `session-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`; lsSet('mm_sessionId', id); }
+      return id;
+    }
+    function getAskedQuestions() { return lsGet('mm_asked_questions', []); }
+    function addAskedQuestions(questions) {
+      const current = getAskedQuestions();
+      const normalized = questions.filter((q) => typeof q === 'string' && q.trim().length).map((q) => q.trim());
+      lsSet('mm_asked_questions', Array.from(new Set([...current, ...normalized])).slice(-200));
+    }
+    function apiPost(path, payload) {
+      return fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).then((res) => res.json());
+    }
+
+    const questionPool = {
+      Math: [
+        { question: 'What is 7 × 8?', options: ['54', '56', '58', '64'], answer: '56' },
+        { question: 'Solve 3x + 5 = 20. What is x?', options: ['4', '5', '6', '15'], answer: '5' },
+        { question: 'What is the area of a square with side 6?', options: ['12', '18', '24', '36'], answer: '36' },
+        { question: 'What is 15% of 200?', options: ['20', '25', '30', '35'], answer: '30' },
+        { question: 'What is the next number in the series 2, 4, 8, 16?', options: ['18', '20', '24', '32'], answer: '32' },
+      ],
+      Science: [
+        { question: 'What gas do plants take in for photosynthesis?', options: ['Oxygen', 'Nitrogen', 'Carbon dioxide', 'Hydrogen'], answer: 'Carbon dioxide' },
+        { question: 'What is the basic unit of life?', options: ['Atom', 'Cell', 'Molecule', 'Tissue'], answer: 'Cell' },
+        { question: 'What force keeps us grounded on Earth?', options: ['Magnetism', 'Gravity', 'Friction', 'Electricity'], answer: 'Gravity' },
+        { question: 'What planet is known as the Red Planet?', options: ['Venus', 'Mars', 'Jupiter', 'Saturn'], answer: 'Mars' },
+        { question: 'What is H2O commonly called?', options: ['Salt', 'Water', 'Sugar', 'Air'], answer: 'Water' },
+      ],
+      English: [
+        { question: 'Which word is a noun?', options: ['Run', 'Beautiful', 'Happiness', 'Quick'], answer: 'Happiness' },
+        { question: 'Choose the correct past tense of "go".', options: ['goed', 'went', 'gone', 'going'], answer: 'went' },
+        { question: 'Which sentence is correct?', options: ['She dont like ice cream.', 'She doesn’t like ice cream.', 'She not likes ice cream.', 'She no like ice cream.'], answer: 'She doesn’t like ice cream.' },
+        { question: 'What is the plural of "child"?', options: ['Childs', 'Childes', 'Children', 'Child'], answer: 'Children' },
+        { question: 'Which word is the opposite of "happy"?', options: ['Sad', 'Bright', 'Brave', 'Kind'], answer: 'Sad' },
+      ],
+      History: [
+        { question: 'Who was the first President of the United States?', options: ['Abraham Lincoln', 'George Washington', 'Thomas Jefferson', 'John Adams'], answer: 'George Washington' },
+        { question: 'Which ancient civilization built the pyramids?', options: ['Romans', 'Greeks', 'Egyptians', 'Mayans'], answer: 'Egyptians' },
+        { question: 'What year did the first moon landing occur?', options: ['1965', '1969', '1972', '1976'], answer: '1969' },
+        { question: 'The Renaissance began in which country?', options: ['France', 'Spain', 'Italy', 'Germany'], answer: 'Italy' },
+        { question: 'Who wrote the Declaration of Independence?', options: ['Benjamin Franklin', 'John Adams', 'Thomas Jefferson', 'James Madison'], answer: 'Thomas Jefferson' },
+      ],
+      Coding: [
+        { question: 'What does HTML stand for?', options: ['Hypertext Markup Language', 'Hyperlink Machine Language', 'Hypertext Markdown Language', 'Hyperlink Markup Level'], answer: 'Hypertext Markup Language' },
+        { question: 'Which language is used primarily for styling web pages?', options: ['Python', 'JavaScript', 'CSS', 'Ruby'], answer: 'CSS' },
+        { question: 'What is the correct syntax to create a function in JavaScript?', options: ['function myFunc() {}', 'def myFunc() {}', 'fun myFunc() {}', 'create function myFunc() {}'], answer: 'function myFunc() {}' },
+        { question: 'Which symbol starts a JavaScript single-line comment?', options: ['//', '<!--', '/*', '#'], answer: '//' },
+        { question: 'What is a loop used for in programming?', options: ['Storing data', 'Repeating instructions', 'Displaying text', 'Sorting values'], answer: 'Repeating instructions' },
+      ],
+      Philosophy: [
+        { question: 'Which term refers to the study of knowledge?', options: ['Ethics', 'Logic', 'Epistemology', 'Metaphysics'], answer: 'Epistemology' },
+        { question: '"I think, therefore I am" is attributed to which philosopher?', options: ['Kant', 'Descartes', 'Nietzsche', 'Hume'], answer: 'Descartes' },
+        { question: 'Which concept explores right and wrong actions?', options: ['Ontology', 'Ethics', 'Aesthetics', 'Epistemology'], answer: 'Ethics' },
+        { question: 'What is the Greek word for love often used by philosophers?', options: ['Agape', 'Eros', 'Philia', 'All of the above'], answer: 'All of the above' },
+        { question: 'Who asked "What is the meaning of life?" as part of existential inquiry?', options: ['Socrates', 'Descartes', 'Albert Camus', 'Plato'], answer: 'Albert Camus' },
+      ],
+    };
+
+    const subjectButtons = Array.from(document.querySelectorAll('.subject-btn'));
+    const lengthButtons = Array.from(document.querySelectorAll('.length-btn'));
+    const customLengthBtn = document.getElementById('customLengthBtn');
+    const customCountInput = document.getElementById('customCount');
+    const generateBtn = document.getElementById('generateQuiz');
+    const refreshTipBtn = document.getElementById('refreshTip');
+    const previewHeadline = document.getElementById('previewHeadline');
+    const previewTime = document.getElementById('previewTime');
+    const grokTip = document.getElementById('grokTip');
+    const quizArea = document.getElementById('quizArea');
+    const resultArea = document.getElementById('resultArea');
+    const progressLabel = document.getElementById('progressLabel');
+    const questionText = document.getElementById('questionText');
+    const scoreBadge = document.getElementById('scoreBadge');
+    const answerOptions = document.getElementById('answerOptions');
+    const nextQuestionBtn = document.getElementById('nextQuestion');
+    const quitQuizBtn = document.getElementById('quitQuiz');
+    const retryQuizBtn = document.getElementById('retryQuiz');
+    const askGrokBtn = document.getElementById('askGrok');
+    const resultScore = document.getElementById('resultScore');
+    const resultMessage = document.getElementById('resultMessage');
+
+    let selectedSubject = 'Science';
+    let selectedCount = 5;
+    let customMode = false;
+    let quizQuestions = [];
+    let currentIndex = 0;
+    let score = 0;
+    let currentSelection = null;
+
+    function setActiveSubject() {
+      subjectButtons.forEach((btn) => btn.classList.toggle('active', btn.dataset.subject === selectedSubject));
+    }
+
+    function setActiveLength() {
+      lengthButtons.forEach((btn) => btn.classList.toggle('active', Number(btn.dataset.count) === selectedCount && !customMode));
+      customLengthBtn.classList.toggle('active', customMode);
+      customCountInput.classList.toggle('hidden', !customMode);
+      const minutes = Math.max(2, Math.round(selectedCount * 0.7));
+      previewHeadline.textContent = `${selectedSubject} · ${selectedCount} questions`;
+      previewTime.textContent = `${minutes} min`;
+    }
+
+    function lsGet2(key, fallback) {
+      try { return JSON.parse(localStorage.getItem(key) || 'null') ?? fallback; } catch { return fallback; }
+    }
+    function lsSet2(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
+    function getAskedQuestions() { return lsGet2('mm_asked_questions', []); }
+    function saveAskedQuestions(questions) {
+      const current = getAskedQuestions();
+      const normalized = questions.filter((q) => typeof q === 'string' && q.trim().length).map((q) => q.trim());
+      const merged = Array.from(new Set([...current, ...normalized]));
+      lsSet2('mm_asked_questions', merged.slice(-200));
+    }
+
+    function updateGrokTip(text) {
+      grokTip.textContent = text;
+    }
+
+    async function refreshGrokTip() {
+      updateGrokTip('AI is generating a study tip...');
+      try {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ visitorId: getSessionId(), subject: selectedSubject, userLevel: lsGet2('mm_level', 'Newbie'), message: `Share one quick study tip for a ${selectedCount}-question ${selectedSubject} quiz and explain how I can avoid repeating questions.` }),
+        });
+        const payload = await response.json();
+        updateGrokTip(payload.reply || 'AI could not generate a tip right now.');
+      } catch (error) {
+        updateGrokTip('AI is unavailable. Please try again later.');
+      }
+    }
+
+    function getSessionId() {
+      let id = lsGet2('mm_sessionId', null);
+      if (!id) { id = `session-${Date.now()}-${Math.random().toString(36).slice(2,8)}`; lsSet2('mm_sessionId', id); }
+      return id;
+    }
+
+    function getFallbackQuestions(subject, count) {
+      const pool = questionPool[subject] || questionPool['Science'];
+      const asked = getAskedQuestions().map((q) => q.trim().toLowerCase());
+      const filtered = pool.filter((item) => !asked.some((askedText) => {
+        const text = item.question.trim().toLowerCase();
+        return text.includes(askedText) || askedText.includes(text);
+      }));
+      const result = filtered.slice(0, count);
+      while (result.length < count) {
+        const item = pool[result.length % pool.length];
+        result.push({ ...item, question: `${item.question} (Review)` });
+      }
+      return result;
+    }
+
+    function normalizeQuestion(raw) {
+      if (!raw || !raw.question) return null;
+      const options = (raw.options || []).map((opt) => String(opt).replace(/^[A-D]\)\s*/i, '').trim() || String(opt));
+      let answer = raw.answer;
+      if (!answer && raw.correct) {
+        const letter = String(raw.correct).replace(/[^A-D]/gi, '').toUpperCase();
+        const index = letter.charCodeAt(0) - 65;
+        if (options[index]) {
+          answer = options[index];
+        } else {
+          const match = (raw.options || []).find((opt) => String(opt).trim().toUpperCase().startsWith(`${letter})`));
+          answer = match ? String(match).replace(/^[A-D]\)\s*/i, '').trim() : raw.correct;
+        }
+      }
+      if (!answer || !options.length) return null;
+      return {
+        question: raw.question,
+        options,
+        answer: String(answer).replace(/^[A-D]\)\s*/i, '').trim(),
+        explanation: raw.explanation || '',
+      };
+    }
+
+    function isCorrectAnswer(item, selected) {
+      if (!item || !selected) return false;
+      const pick = String(selected).replace(/^[A-D]\)\s*/i, '').trim();
+      return pick === String(item.answer).replace(/^[A-D]\)\s*/i, '').trim();
+    }
+
+    function showSection(section) {
+      quizArea.classList.toggle('hidden', section !== 'quiz');
+      resultArea.classList.toggle('hidden', section !== 'result');
+    }
+
+    function renderQuestion() {
+      const item = quizQuestions[currentIndex];
+      questionText.textContent = item.question;
+      progressLabel.textContent = `Question ${currentIndex + 1} of ${quizQuestions.length}`;
+      scoreBadge.textContent = score;
+      answerOptions.innerHTML = item.options.map((option, index) => `
+        <button type="button" class="answer-card rounded-3xl p-5 text-left transition" data-answer="${option.replace(/"/g, '&quot;')}">
+          <span class="text-sm font-semibold text-white">${String.fromCharCode(65 + index)}.</span>
+          <p class="mt-2 text-base text-[#d1caea]">${option}</p>
+        </button>
+      `).join('');
+      currentSelection = null;
+      nextQuestionBtn.disabled = true;
+      nextQuestionBtn.textContent = currentIndex + 1 === quizQuestions.length ? 'See results' : 'Next question';
+      document.querySelectorAll('.answer-card').forEach((button) => {
+        button.addEventListener('click', () => {
+          if (currentSelection) return;
+          document.querySelectorAll('.answer-card').forEach((btn) => btn.classList.remove('selected', 'correct', 'wrong'));
+          button.classList.add('selected');
+          currentSelection = button.dataset.answer;
+          const correct = isCorrectAnswer(item, currentSelection);
+          document.querySelectorAll('.answer-card').forEach((btn) => {
+            const val = btn.dataset.answer;
+            if (isCorrectAnswer(item, val)) btn.classList.add('correct');
+            else if (val === currentSelection) btn.classList.add('wrong');
+            btn.disabled = true;
+          });
+          if (correct) score += 1;
+          scoreBadge.textContent = score;
+          nextQuestionBtn.disabled = false;
+          if (item.explanation) {
+            const note = document.createElement('p');
+            note.className = 'mt-4 text-sm text-[#b8b1d8] leading-7';
+            note.textContent = item.explanation;
+            answerOptions.appendChild(note);
+          }
+        });
+      });
+    }
+
+    function showResults() {
+      const percent = Math.round((score / quizQuestions.length) * 100);
+      resultScore.textContent = `${percent}%`;
+      resultMessage.textContent = percent >= 85 ? 'Excellent! AI recommends building on this momentum.' : percent >= 65 ? 'Nice work! Review the weaker questions to improve.' : 'Good attempt — ask AI for a targeted review next.';
+      showSection('result');
+      saveAskedQuestions(quizQuestions.map((q) => q.question));
+      const quizHistory = lsGet2('mm_quiz_scores', {});
+      quizHistory[selectedSubject] = [...(quizHistory[selectedSubject] || []), percent];
+      lsSet2('mm_quiz_scores', quizHistory);
+      const milestones = lsGet2('mm_milestones', []);
+      milestones.push({ event: `Completed ${selectedCount}-question quiz in ${selectedSubject}`, date: new Date().toLocaleDateString() });
+      lsSet2('mm_milestones', milestones);
+    }
+
+    async function startQuiz() {
+      const count = customMode ? Math.max(1, Math.min(50, Number(customCountInput.value) || 5)) : selectedCount;
+      selectedCount = count;
+      setActiveLength();
+      let response;
+      try {
+        const res = await fetch('/api/quiz', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subject: selectedSubject, count: selectedCount, askedQuestions: getAskedQuestions() }),
+        });
+        response = await res.json();
+      } catch (err) {
+        response = null;
+      }
+      quizQuestions = (Array.isArray(response) && response.length ? response : getFallbackQuestions(selectedSubject, selectedCount))
+        .map(normalizeQuestion)
+        .filter(Boolean);
+      if (!quizQuestions.length) {
+        alert('Could not load quiz questions. Please try again.');
+        return;
+      }
+      currentIndex = 0;
+      score = 0;
+      showSection('quiz');
+      renderQuestion();
+    }
+
+    subjectButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        selectedSubject = button.dataset.subject;
+        setActiveSubject();
+        setActiveLength();
+        refreshGrokTip();
+      });
+    });
+
+    lengthButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        customMode = false;
+        selectedCount = Number(button.dataset.count) || 5;
+        setActiveLength();
+        refreshGrokTip();
+      });
+    });
+
+    customLengthBtn.addEventListener('click', () => {
+      customMode = true;
+      customCountInput.classList.remove('hidden');
+      customCountInput.focus();
+      setActiveLength();
+    });
+
+    customCountInput.addEventListener('input', () => {
+      const value = Number(customCountInput.value);
+      if (value > 0 && value <= 50) {
+        selectedCount = value;
+        setActiveLength();
+      }
+    });
+
+    refreshTipBtn.addEventListener('click', refreshGrokTip);
+    generateBtn.addEventListener('click', startQuiz);
+    nextQuestionBtn.addEventListener('click', () => {
+      if (!currentSelection) return;
+      if (currentIndex + 1 < quizQuestions.length) {
+        currentIndex += 1;
+        renderQuestion();
+      } else {
+        showResults();
+      }
+    });
+    quitQuizBtn.addEventListener('click', () => { showSection('result'); resultScore.textContent = '0%'; resultMessage.textContent = 'You left early. Try again when ready.'; });
+    retryQuizBtn.addEventListener('click', startQuiz);
+    askGrokBtn.addEventListener('click', async () => {
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ visitorId: getSessionId(), subject: selectedSubject, userLevel: lsGet2('mm_level', 'Newbie'), message: `I completed a ${selectedCount}-question ${selectedSubject} quiz and scored ${Math.round((score / selectedCount) * 100)}%. What should I review next?` }),
+        });
+        const payload = await res.json();
+        resultMessage.textContent = payload.reply || 'AI could not generate feedback right now.';
+      } catch (err) {
+        resultMessage.textContent = 'Unable to reach AI. Please try again later.';
+      }
+    });
+
+    setActiveSubject();
+    setActiveLength();
+    refreshGrokTip();
+  </script>
+  <script src="/layout.js" defer></script>
+</body>
+</html>
