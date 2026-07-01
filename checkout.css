@@ -1,0 +1,32 @@
+@import url('/brand.css');
+
+.checkout-wrapper { padding: 48px 0 72px; }
+.checkout-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 40px; align-items: start; }
+.order-summary { background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius); padding: 28px; position: sticky; top: 100px; }
+.order-summary h2 { font-family: var(--font-display); font-weight: 600; font-size: 1.3rem; margin-bottom: 20px; }
+.plan-preview { background: var(--surface-soft); border: 1px solid var(--border-soft); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 24px; }
+.plan-name { font-family: var(--font-display); font-weight: 600; font-size: 1.1rem; margin-bottom: 8px; }
+.plan-price { font-family: var(--font-display); font-weight: 600; font-size: 1.8rem; color: var(--lime); margin-bottom: 14px; }
+.plan-price sub { font-size: 0.75rem; color: var(--ink-soft); }
+.plan-features { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.plan-features li { font-size: 0.85rem; color: var(--ink-soft); padding-left: 16px; position: relative; }
+.plan-features li::before { content: '✓'; position: absolute; left: 0; color: var(--lime); font-weight: 700; }
+.price-breakdown { border-top: 1px solid var(--border); padding-top: 16px; margin-bottom: 16px; }
+.breakdown-row { display: flex; justify-content: space-between; font-size: 0.92rem; margin-bottom: 10px; color: var(--ink-soft); }
+.breakdown-row.total { color: var(--ink); font-family: var(--font-display); font-weight: 600; font-size: 1.1rem; border-top: 1px solid var(--border-soft); padding-top: 10px; }
+.form-section { background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius); padding: 28px; margin-bottom: 20px; }
+.form-section h3 { font-family: var(--font-display); font-weight: 600; font-size: 1.15rem; margin-bottom: 18px; }
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-family: var(--font-display); font-weight: 600; font-size: 0.9rem; margin-bottom: 8px; }
+.form-group input, .form-group select { width: 100%; padding: 12px 14px; background: var(--surface-soft); border: 2px solid var(--border-soft); border-radius: var(--radius-sm); color: var(--ink); font-family: var(--font-body); font-size: 0.95rem; }
+.form-group input:focus, .form-group select:focus { outline: none; border-color: var(--lime); }
+.checkbox-group { display: flex; align-items: flex-start; gap: 12px; }
+.checkbox-group input[type='checkbox'] { margin-top: 4px; width: 18px; height: 18px; accent-color: var(--lime); }
+.submit-btn { width: 100%; font-family: var(--font-display); font-weight: 600; font-size: 1rem; background: var(--lime); color: var(--bg-deep); padding: 16px 30px; border-radius: 999px; border: none; box-shadow: var(--shadow-sm); cursor: pointer; transition: transform 0.15s ease; }
+.submit-btn:hover { transform: translate(-2px, -2px); box-shadow: var(--shadow); }
+.security-badge { display: flex; align-items: center; gap: 8px; justify-content: center; margin-top: 16px; font-size: 0.85rem; color: var(--ink-soft); }
+.security-badge svg { width: 16px; height: 16px; }
+.checkout-head { margin-bottom: 28px; }
+.checkout-head h1 { font-family: var(--font-display); font-size: 2rem; margin-bottom: 8px; }
+.checkout-head p { color: var(--ink-soft); }
+@media (max-width: 980px) { .checkout-grid { grid-template-columns: 1fr; } .order-summary { position: static; } }

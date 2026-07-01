@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Checkout — MindMesh</title>
+<meta name="description" content="Upgrade your MindMesh plan. Stripe billing connects during launch.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/brand.css">
+<link rel="stylesheet" href="/nav.css">
+<link rel="stylesheet" href="/checkout.css">
+</head>
+<body>
+  <header class="site-nav"></header>
+
+  <section class="checkout-wrapper">
+    <div class="container">
+      <div class="checkout-head">
+        <h1>Upgrade your plan</h1>
+        <p>You're in the testing phase — no real charges yet. Stripe checkout connects before public launch.</p>
+      </div>
+    <div class="checkout-grid">
+      <!-- Main Form -->
+      <div class="checkout-form">
+        <div class="test-mode-note" style="margin-bottom:20px;">
+          <strong>Testing phase:</strong> Card fields are disabled until Stripe is connected. Use the button below to simulate an upgrade and unlock plan features in your dashboard.
+        </div>
+
+        <!-- Plan Selector -->
+        <div class="form-section">
+          <h3>Choose Your Plan</h3>
+          <div class="form-group">
+            <label>Select a subscription tier</label>
+            <select id="planSelect" onchange="updateOrderSummary()">
+              <option value="student">Student - $5/month</option>
+              <option value="family">Family - $12/month</option>
+              <option value="school">School - $200/month</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <h3>Account email</h3>
+          <div class="form-group">
+            <label for="checkout-email">Email for your receipt</label>
+            <input id="checkout-email" type="email" placeholder="you@school.edu">
+          </div>
+        </div>
+
+        <!-- Terms & Conditions -->
+        <div class="form-section">
+          <div class="checkbox-group">
+            <input type="checkbox" id="terms" required>
+            <label for="terms">I agree to the <a href="#" style="color: var(--lime); text-decoration:underline;">Terms of Service</a> and <a href="#" style="color: var(--lime); text-decoration:underline;">Privacy Policy</a></label>
+          </div>
+          <div class="checkbox-group" style="margin-top:12px;">
+            <input type="checkbox" id="emails">
+            <label for="emails">Send me updates about new features and learning tips</label>
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <button class="submit-btn" type="button" onclick="completeCheckout()">Activate plan (test mode)</button>
+        
+        <div class="security-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          Stripe secure checkout connects before launch
+        </div>
+      </div>
+
+      <!-- Order Summary -->
+      <div class="order-summary">
+        <h2>Order Summary</h2>
+        
+        <div class="plan-preview">
+          <div class="plan-name" id="summaryPlanName">Student Plan</div>
+          <div class="plan-price"><span id="summaryPrice">$5</span><sub>/month</sub></div>
+          <ul class="plan-features" id="summaryFeatures">
+            <li>Unlimited messages</li>
+            <li>Every subject</li>
+            <li>Progress tracking</li>
+            <li>All 4 engines</li>
+          </ul>
+        </div>
+
+        <div class="price-breakdown">
+          <div class="breakdown-row">
+            <span>Plan cost (first month)</span>
+            <span id="planCost">$5.00</span>
+          </div>
+          <div class="breakdown-row">
+            <span>Taxes (estimated)</span>
+            <span id="taxCost">$0.41</span>
+          </div>
+          <div class="breakdown-row total">
+            <span>Total due today</span>
+            <span id="totalCost">$5.41</span>
+          </div>
+        </div>
+
+        <div style="background: rgba(200,255,77,0.08); border-radius: var(--radius-sm); padding:12px; text-align:center; font-size:0.85rem; color: var(--ink-soft);">
+          📅 Next billing: <strong id="nextBilling">August 1, 2026</strong>
+        </div>
+      </div>
+    </div>
+    </div>
+  </section>
+
+  <footer class="site-footer"></footer>
+
+  <script src="/layout.js" defer></script>
+  <script>
+    const plans = {
+      student: { name: 'Student', price: 5, features: ['Unlimited messages', 'Every subject', 'Progress tracking', 'All 4 engines'] },
+      family: { name: 'Family', price: 12, features: ['Up to 3 kids', 'Parent dashboard', 'Progress reports', 'All 4 engines'] },
+      school: { name: 'School', price: 200, features: ['50 students', 'Teacher dashboard', 'Custom curriculum', 'Dedicated support'] }
+    };
+
+    function updateOrderSummary() {
+      const selected = document.getElementById('planSelect').value;
+      const plan = plans[selected];
+      
+      document.getElementById('summaryPlanName').textContent = plan.name + ' Plan';
+      document.getElementById('summaryPrice').textContent = '$' + plan.price;
+      
+      const featuresHtml = plan.features.map(f => `<li>${f}</li>`).join('');
+      document.getElementById('summaryFeatures').innerHTML = featuresHtml;
+      
+      const tax = (plan.price * 0.082).toFixed(2);
+      const total = (plan.price + parseFloat(tax)).toFixed(2);
+      
+      document.getElementById('planCost').textContent = '$' + plan.price.toFixed(2);
+      document.getElementById('taxCost').textContent = '$' + tax;
+      document.getElementById('totalCost').textContent = '$' + total;
+      
+      const nextMonth = new Date();
+      nextMonth.setMonth(nextMonth.getMonth() + 1);
+      const options = { year: 'numeric', month: 'long', day: 'numeric' };
+      document.getElementById('nextBilling').textContent = nextMonth.toLocaleDateString('en-US', options);
+    }
+
+    function completeCheckout() {
+      const planSelect = document.getElementById('planSelect').value;
+      const terms = document.getElementById('terms').checked;
+      
+      if (!terms) {
+        alert('Please agree to the Terms of Service');
+        return;
+      }
+
+      // Test-mode upgrade — Stripe connects before launch
+      const email = document.getElementById('checkout-email')?.value?.trim();
+      if (email) localStorage.setItem('mm_email', JSON.stringify(email));
+
+      const toast = document.createElement('div');
+      toast.className = 'test-mode-note';
+      toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:200;max-width:420px;';
+      toast.textContent = `Test upgrade activated: ${plans[planSelect].name} plan. Redirecting…`;
+      document.body.appendChild(toast);
+      
+      // Save membership status locally for the dashboard
+      localStorage.setItem('mm_plan', plans[planSelect].name);
+      localStorage.setItem('mm_plan_price', plans[planSelect].price);
+      localStorage.setItem('mm_plan_started', new Date().toISOString());
+      localStorage.setItem('mm_plan_status', 'active');
+
+      // Redirect to dashboard after a short delay
+      setTimeout(() => {
+        window.location.href = '/dashboard.html';
+      }, 1000);
+    }
+
+    function getQueryParam(name) {
+      const params = new URLSearchParams(window.location.search);
+      return params.get(name);
+    }
+
+    function getInitialPlan() {
+      const selected = getQueryParam('plan');
+      return ['student', 'family', 'school'].includes(selected) ? selected : 'student';
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const select = document.getElementById('planSelect');
+      if (select) {
+        select.value = getInitialPlan();
+      }
+      updateOrderSummary();
+    });
+  </script>
+</body>
+</html>
