@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign Up | MindMesh</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body data-page="signup">
+    <div class="page-shell fade-in">
+      <header class="site-nav"></header>
+      <main class="page-card signup-card">
+        <div class="auth-grid">
+          <div class="auth-form-section">
+            <div class="auth-header">
+              <p class="eyebrow">Get started</p>
+              <h1>Create your account</h1>
+              <p class="auth-subtitle">Join thousands of learners mastering any subject with AI.</p>
+            </div>
+
+            <form id="signup-form" class="auth-form">
+              <div class="form-group">
+                <label for="signup-name">Your name</label>
+                <input
+                  id="signup-name"
+                  type="text"
+                  placeholder="Enter your first name"
+                  required
+                />
+                <span class="error-message" id="name-error"></span>
+              </div>
+
+              <div class="form-group">
+                <label for="signup-email">Email address</label>
+                <input
+                  id="signup-email"
+                  type="email"
+                  placeholder="your@example.com"
+                  required
+                />
+                <span class="error-message" id="email-error"></span>
+              </div>
+
+              <div class="form-group">
+                <label for="signup-password">Password</label>
+                <input
+                  id="signup-password"
+                  type="password"
+                  placeholder="At least 8 characters"
+                  required
+                  minlength="8"
+                />
+                <span class="error-message" id="password-error"></span>
+                <small class="hint-text">Use at least 8 characters with letters and numbers.</small>
+              </div>
+
+              <div class="form-group">
+                <label for="signup-confirm">Confirm password</label>
+                <input
+                  id="signup-confirm"
+                  type="password"
+                  placeholder="Re-enter your password"
+                  required
+                />
+                <span class="error-message" id="confirm-error"></span>
+              </div>
+
+              <div class="checkbox-group">
+                <input id="terms-checkbox" type="checkbox" required />
+                <label for="terms-checkbox">
+                  I agree to the <a href="#" class="link">Terms of Service</a> and 
+                  <a href="#" class="link">Privacy Policy</a>
+                </label>
+              </div>
+
+              <button type="submit" class="button button-primary button-block">
+                Create account
+              </button>
+            </form>
+
+            <div class="auth-divider">
+              <span>or continue with</span>
+            </div>
+
+            <button class="button button-secondary button-block" id="google-signup">
+              Continue with Google
+            </button>
+
+            <div class="auth-footer">
+              <p>Already have an account? 
+                <a href="dashboard.html" class="link">Sign in</a>
+              </p>
+            </div>
+          </div>
+
+          <div class="auth-benefits-section">
+            <h3>Why MindMesh?</h3>
+            <ul class="benefits-list">
+              <li><span class="benefit-icon">✨</span>AI-powered tutoring</li>
+              <li><span class="benefit-icon">📊</span>Progress tracking</li>
+              <li><span class="benefit-icon">🎯</span>Personalized paths</li>
+              <li><span class="benefit-icon">🔥</span>Learning streaks</li>
+              <li><span class="benefit-icon">🏆</span>Badges & levels</li>
+              <li><span class="benefit-icon">🤝</span>Learner community</li>
+            </ul>
+          </div>
+        </div>
+      </main>
+    </div>
+    <script src="/layout.js" defer></script>
+    <script src="/script.js" defer></script>
+  </body>
+</html>

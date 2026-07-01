@@ -9,7 +9,14 @@ const rootDir = __dirname;
 const statsFile = path.join(rootDir, 'stats.json');
 const SESSION_TIMEOUT_MS = 2 * 60 * 1000;
 const DAILY_WINDOW_MS = 24 * 60 * 60 * 1000;
-const conversationHistory = [];
+const conversationHistoryByVisitor = new Map();
+
+const AI_ENGINES = [
+  { id: 'reasoner', name: 'The Reasoner', provider: 'Groq', status: 'live' },
+  { id: 'solver', name: 'The Solver', provider: 'Gemini', status: 'coming_soon' },
+  { id: 'explorer', name: 'The Explorer', provider: 'OpenAI', status: 'coming_soon' },
+  { id: 'storyteller', name: 'The Storyteller', provider: 'Claude', status: 'coming_soon' },
+];
 
 let groqClient = null;
 if (process.env.GROQ_API_KEY) {
@@ -21,10 +28,15 @@ function sendJson(res, statusCode, payload) {
   res.end(JSON.stringify(payload));
 }
 
+function sendHtml(res, statusCode, html) {
+  res.writeHead(statusCode, { 'Content-Type': 'text/html; charset=utf-8' });
+  res.end(html);
+}
+
 function sendFile(res, filePath) {
   fs.readFile(filePath, (error, data) => {
     if (error) {
-      res.writeHead(404, { 'Content-Type': 'text/plain' });
+      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
       res.end('Not found');
       return;
     }
@@ -45,7 +57,7 @@ function loadStats() {
   try {
     const contents = fs.readFileSync(statsFile, 'utf8');
     return JSON.parse(contents);
-  } catch (error) {
+  } catch {
     return {
       totalVisitors: 0,
       dailyVisitors: [],
@@ -81,10 +93,17 @@ function cleanupStats() {
 
 function getStatusSummary() {
   cleanupStats();
+  const now = Date.now();
+  const dailyChats = visitorStats.actions.filter(
+    (action) => action.actionType === 'chat' && now - action.timestamp <= DAILY_WINDOW_MS
+  ).length;
+
   return {
     activeUsers: activeSessions.size,
     dailyVisitors: visitorStats.dailyVisitors.length,
     totalVisitors: visitorStats.totalVisitors,
+    totalChats: visitorStats.actions.filter((action) => action.actionType === 'chat').length,
+    dailyChats,
     recentActions: visitorStats.actions.slice(-10).reverse(),
   };
 }
@@ -127,38 +146,143 @@ function addActionRecord(visitorId, actionType, details = {}) {
   return record;
 }
 
-function getActionReply(actionType) {
-  switch (actionType) {
-    case 'show-help':
-      return 'I can help you explore the site, answer questions, and guide you to the right section.';
-    case 'contact-support':
-      return 'Support is ready. You can email support@website.com or ask me to connect you with a help article.';
-    case 'clear-chat':
-      return 'Chat cleared. Your conversation has been reset and I am ready for your next question.';
-    default:
-      return `Action received: ${actionType}. Tell me what you would like to do next.`;
+function parseJsonSafe(text) {
+  try {
+    return JSON.parse(text);
+  } catch {
+    const match = text.match(/(\[.*\])/s);
+    if (match) {
+      try {
+        return JSON.parse(match[1]);
+      } catch {
+        return null;
+      }
+    }
+    return null;
   }
 }
 
-async function chatWithGroq(userMessage) {
+function getDemoQuiz(subject, count = 5) {
+  const guaranteed = [
+    {
+      question: `What is the most important idea in ${subject}?`,
+      options: ['A) It helps people solve problems', 'B) It is only interesting for experts', 'C) It cannot be used in real life', 'D) It is always boring'],
+      correct: 'A',
+      explanation: `The best answer is A because ${subject} is useful for real-world thinking and problem solving.`,
+    },
+  ];
+  const result = [];
+  for (let i = 0; i < count; i += 1) {
+    const item = guaranteed[0];
+    result.push({
+      question: item.question,
+      options: item.options,
+      correct: item.correct,
+      explanation: item.explanation,
+    });
+  }
+  return result;
+}
+
+async function generateQuiz(subject, count = 5, askedQuestions = []) {
   if (!groqClient) {
-    return 'I am running in demo mode because no GROQ_API_KEY is configured. Add your API key to enable live AI replies.';
+    return getDemoQuiz(subject, count);
   }
 
-  conversationHistory.push({ role: 'user', content: userMessage });
+  const filteredAsked = Array.isArray(askedQuestions)
+    ? askedQuestions.filter((item) => typeof item === 'string' && item.trim().length > 5)
+    : [];
+
+  try {
+    const prompt = `Generate ${count} multiple choice questions for a student learning ${subject}. Avoid repeating any questions the student has already answered. Previously asked questions: ${filteredAsked.slice(-20).join(' | ')}. Return ONLY valid JSON in this exact format: [{"question": "...","options": ["A)...","B)...","C)...","D)..."],"correct":"A","explanation":"..."}]`;
+    const response = await groqClient.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      messages: [
+        { role: 'system', content: 'You are a quiz generator. Only output valid JSON.' },
+        { role: 'user', content: prompt },
+      ],
+      max_tokens: 1024,
+    });
+    const content = response.choices?.[0]?.message?.content || '';
+    const parsed = parseJsonSafe(content);
+    const data = Array.isArray(parsed) ? parsed : [];
+    const unique = data.filter((item) => {
+      if (!item || typeof item.question !== 'string') return false;
+      const questionText = item.question.trim().toLowerCase();
+      return !filteredAsked.some((asked) => {
+        const askedText = asked.trim().toLowerCase();
+        return questionText.includes(askedText) || askedText.includes(questionText);
+      });
+    });
+    if (unique.length >= count) {
+      return unique.slice(0, count);
+    }
+    const fallback = getDemoQuiz(subject, count);
+    return unique.concat(fallback).slice(0, count);
+  } catch (error) {
+    console.error('Quiz generation failed:', error.message);
+    return getDemoQuiz(subject, count);
+  }
+}
+
+async function generateQuizQuestion(subject) {
+  const questions = await generateQuiz(subject, 1);
+  if (!questions.length) {
+    return {
+      question: `Which prompt best describes ${subject}?`,
+      options: ['A) A fun topic', 'B) A topic with no meaning', 'C) A subject to avoid', 'D) A field only for experts'],
+      correct: 'A',
+      explanation: `Answer A because ${subject} is meant to help learners grow.`,
+    };
+  }
+  return questions[0];
+}
+
+function getConversationHistory(visitorId) {
+  const key = visitorId || 'anonymous';
+  if (!conversationHistoryByVisitor.has(key)) {
+    conversationHistoryByVisitor.set(key, []);
+  }
+  return conversationHistoryByVisitor.get(key);
+}
+
+async function chatWithGroq(message, subject, userLevel, visitorId) {
+  if (!groqClient) {
+    return `Demo mode answer for ${subject || 'your topic'}: Keep practicing and review one concept at a time to master it!`;
+  }
+
+  const conversationHistory = getConversationHistory(visitorId);
+  const learningStyle = subject ? `Focus on ${subject}.` : '';
+  const systemPrompt = `You are MindMesh, a professional AI tutor powered by multiple specialist engines. Right now you are running on the Reasoner engine (Groq). Help a ${userLevel} student learn effectively.
+${learningStyle}
+- Adapt explanations to the student's level
+- Be encouraging, clear, and concise (2-4 sentences unless they ask for more)
+- Use examples when helpful
+- Never mention you are in demo mode`;
+
+  const messages = [
+    { role: 'system', content: systemPrompt },
+    ...conversationHistory.slice(-4),
+    { role: 'user', content: message },
+  ];
 
   try {
     const response = await groqClient.chat.completions.create({
       model: 'llama-3.3-70b-versatile',
-      messages: conversationHistory,
+      messages,
       max_tokens: 512,
+      temperature: 0.7,
     });
 
-    const reply = response.choices?.[0]?.message?.content || 'I did not receive a reply.';
+    const reply = response.choices?.[0]?.message?.content?.trim() || 'I could not generate a response. Please try again.';
+    conversationHistory.push({ role: 'user', content: message });
     conversationHistory.push({ role: 'assistant', content: reply });
+    trimConversationHistory(conversationHistory);
+
     return reply;
   } catch (error) {
-    return `The AI request failed: ${error.message}`;
+    console.error('Groq API Error:', error.message);
+    return 'I am having trouble responding right now. Please try again in a moment.';
   }
 }
 
@@ -192,31 +316,120 @@ setInterval(() => {
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
+  const pathname = url.pathname;
 
-  if (req.method === 'GET' && url.pathname === '/') {
-    sendFile(res, path.join(rootDir, 'index.html'));
+  if (req.method === 'GET') {
+    if (pathname === '/' || pathname === '/index.html') {
+      sendFile(res, path.join(rootDir, 'index.html'));
+      return;
+    }
+
+    const cleanedPath = path.normalize(pathname).replace(/^\.{2,}(?:[\/\\]|$)/, '');
+    const requestedPath = cleanedPath.slice(1);
+    const filePath = path.join(rootDir, requestedPath);
+    const requestedExt = path.extname(filePath).toLowerCase();
+    const allowedStaticExtensions = ['.css', '.js', '.png', '.svg', '.ico', '.json'];
+
+    if (requestedPath && allowedStaticExtensions.includes(requestedExt)) {
+      sendFile(res, filePath);
+      return;
+    }
+
+    if (pathname.endsWith('.html')) {
+      sendFile(res, filePath);
+      return;
+    }
+
+    if (pathname === '/health') {
+      sendJson(res, 200, { status: 'ok' });
+      return;
+    }
+
+    if (pathname === '/api/status') {
+      sendJson(res, 200, { status: 'ok', stats: getStatusSummary(), engines: AI_ENGINES });
+      return;
+    }
+
+    if (pathname === '/api/engines') {
+      sendJson(res, 200, { engines: AI_ENGINES, activeEngine: 'reasoner' });
+      return;
+    }
+  }
+
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204, {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    });
+    res.end();
     return;
   }
 
-  if (req.method === 'GET' && url.pathname === '/styles.css') {
-    sendFile(res, path.join(rootDir, 'styles.css'));
+  if (req.method === 'POST' && pathname === '/api/visit') {
+    try {
+      const payload = await parseRequestBody(req);
+      const visitorId = payload.visitorId;
+      const userAgent = req.headers['user-agent'] || 'unknown';
+      const summary = registerVisitor(visitorId, userAgent);
+      sendJson(res, 200, { status: 'ok', stats: summary });
+    } catch (error) {
+      sendJson(res, 400, { error: error.message });
+    }
     return;
   }
 
-  if (req.method === 'GET' && url.pathname === '/app.js') {
-    sendFile(res, path.join(rootDir, 'app.js'));
+  if (req.method === 'POST' && pathname === '/api/chat') {
+    try {
+      const payload = await parseRequestBody(req);
+      const visitorId = payload.visitorId;
+      const message = (payload.message || '').trim();
+      const subject = payload.subject || 'General';
+      const userLevel = payload.userLevel || 'Newbie';
+      if (!message) {
+        sendJson(res, 400, { error: 'A message is required.' });
+        return;
+      }
+      registerVisitor(visitorId, req.headers['user-agent'] || 'unknown');
+      addActionRecord(visitorId, 'chat', { message, subject, userLevel });
+      const reply = await chatWithGroq(message, subject, userLevel, visitorId);
+      sendJson(res, 200, { status: 'ok', reply, engine: 'reasoner', stats: getStatusSummary() });
+    } catch (error) {
+      sendJson(res, 400, { error: error.message });
+    }
     return;
   }
 
-  if (req.method === 'GET' && url.pathname === '/health') {
-    sendJson(res, 200, { status: 'ok' });
+  if (req.method === 'POST' && pathname === '/api/quiz-question') {
+    try {
+      const payload = await parseRequestBody(req);
+      const subject = payload.subject || 'Math';
+      const question = await generateQuizQuestion(subject);
+      sendJson(res, 200, question);
+    } catch (error) {
+      sendJson(res, 400, { error: error.message });
+    }
     return;
   }
 
-  res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-  res.end('Not found');
+  if (req.method === 'POST' && pathname === '/api/quiz') {
+    try {
+      const payload = await parseRequestBody(req);
+      const subject = payload.subject || 'Math';
+      const count = Number(payload.count) || 5;
+      const askedQuestions = Array.isArray(payload.askedQuestions) ? payload.askedQuestions : [];
+      const questions = await generateQuiz(subject, count, askedQuestions);
+      sendJson(res, 200, questions);
+    } catch (error) {
+      sendJson(res, 400, { error: error.message });
+    }
+    return;
+  }
+
+  res.writeHead(404, { 'Content-Type': 'application/json' });
+  res.end(JSON.stringify({ error: 'Not found' }));
 });
 
 server.listen(port, () => {
-  console.log(`Frontend server running at http://localhost:${port}`);
+  console.log(`Website running at http://localhost:${port}`);
 });
