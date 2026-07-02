@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MindMesh | Neural Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/nav.css" />
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        background: '#130d26',
+                        panel: '#1e1638',
+                        primary: '#b8ff4a',
+                        text: '#e2dbea',
+                        muted: '#9a8db8',
+                        accentBlue: '#4a90e2',
+                        panelSoft: '#24183c',
+                        panelHover: '#2e234e'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #130d26; color: #e2dbea; }
+        .glass-input { background: rgba(30, 22, 56, 0.88); backdrop-filter: blur(16px); border: 1px solid rgba(184, 255, 74, 0.12); }
+        .chat-area::-webkit-scrollbar { width: 10px; }
+        .chat-area::-webkit-scrollbar-thumb { background: rgba(184, 255, 74, 0.22); border-radius: 999px; }
+        .msg-ai { background: rgba(184, 255, 74, 0.08); }
+        .msg-user { background: rgba(255, 255, 255, 0.04); }
+        .prompt-card { border: 1px solid rgba(255, 255, 255, 0.08); background: rgba(22, 15, 46, 0.9); }
+        .prompt-card:hover { border-color: rgba(184, 255, 74, 0.25); transform: translateY(-2px); }
+        .typing { display: inline-flex; gap: 0.35rem; }
+        .typing span { width: 0.55rem; height: 0.55rem; background: rgba(184, 255, 74, 0.8); border-radius: 999px; animation: blink 1.2s infinite; }
+        .typing span:nth-child(2) { animation-delay: 0.2s; }
+        .typing span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes blink { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+    </style>
+</head>
+<body class="h-full flex flex-col antialiased overflow-hidden">
+    <header class="site-nav">
+        <div class="nav-brand"><a href="/dashboard.html">🧠 MindMesh</a></div>
+        <nav>
+            <a href="/dashboard.html" class="nav-link">Dashboard</a>
+            <a href="/learn.html" class="nav-link">Learn</a>
+            <a href="/subjects.html" class="nav-link">Subjects</a>
+            <a href="/quiz.html" class="nav-link">Quiz</a>
+            <a href="/progress.html" class="nav-link">Progress</a>
+            <a href="/chat.html" class="nav-link active">Chat</a>
+        </nav>
+        <div class="nav-right">
+            <a href="/chat.html" class="chat-btn">Ask AI →</a>
+            <div class="avatar">MM</div>
+        </div>
+    </header>
+
+    <main id="chatFeed" class="flex-1 overflow-y-auto chat-area px-4 md:px-6 py-6">
+        <div id="welcomeScreen" class="max-w-3xl mx-auto h-full flex flex-col items-center justify-center space-y-8 rounded-[32px] border border-white/5 bg-[#1e1638]/80 p-8 shadow-[0_32px_80px_rgba(0,0,0,0.35)]">
+            <div class="text-center space-y-4">
+                <h1 class="text-3xl md:text-4xl font-semibold tracking-tight text-white">What shall we explore today?</h1>
+                <p class="text-sm text-muted max-w-xl">Ask AI anything from study tips to concept walkthroughs. Use a quick prompt or type your own question below.</p>
+            </div>
+            <div class="grid gap-4 w-full md:grid-cols-2">
+                <button type="button" onclick="quickPrompt('Explain the physics of light.')" class="prompt-card p-5 rounded-3xl transition-all duration-200 text-left">
+                    <p class="text-sm font-semibold text-white mb-2">Physics</p>
+                    <p class="text-xs text-muted">Explain the physics of light.</p>
+                </button>
+                <button type="button" onclick="quickPrompt('Write a poem about neural networks.')" class="prompt-card p-5 rounded-3xl transition-all duration-200 text-left">
+                    <p class="text-sm font-semibold text-white mb-2">Creative</p>
+                    <p class="text-xs text-muted">Write a poem about neural networks.</p>
+                </button>
+            </div>
+            <div class="grid gap-4 w-full md:grid-cols-2">
+                <button type="button" onclick="quickPrompt('Summarize this lesson in simple steps.')" class="prompt-card p-5 rounded-3xl transition-all duration-200 text-left">
+                    <p class="text-sm font-semibold text-white mb-2">Summary</p>
+                    <p class="text-xs text-muted">Summarize this lesson in simple steps.</p>
+                </button>
+                <button type="button" onclick="quickPrompt('Give me three example problems and solutions.')" class="prompt-card p-5 rounded-3xl transition-all duration-200 text-left">
+                    <p class="text-sm font-semibold text-white mb-2">Practice</p>
+                    <p class="text-xs text-muted">Give me three example problems and solutions.</p>
+                </button>
+            </div>
+        </div>
+
+        <div id="messages" class="max-w-3xl mx-auto py-8 space-y-6 hidden"></div>
+    </main>
+
+    <div class="p-4 border-t border-white/5 bg-[#130d26]">
+        <div class="max-w-3xl mx-auto mb-3 flex items-center justify-between gap-3">
+            <div id="modelBadge" class="inline-flex items-center rounded-full border border-primary/15 bg-[#1e1638]/80 px-3 py-1 text-[11px] uppercase tracking-[0.2em] text-primary">Model: loading…</div>
+        </div>
+        <div class="max-w-3xl mx-auto relative">
+            <input id="chatInput" type="text" placeholder="Analyze, create, or learn..." class="w-full glass-input rounded-3xl px-6 py-4 pr-16 text-white placeholder:text-muted focus:outline-none focus:ring-1 focus:ring-primary/40 transition" />
+            <button id="sendButton" class="absolute right-3 top-3 inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-[#130d26] hover:bg-white transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7"></path></svg>
+            </button>
+        </div>
+        <p class="text-[11px] text-center text-muted mt-3">MindMesh can make mistakes. Verify important information and use prompts responsibly.</p>
+    </div>
+
+    <script>
+        const chatInput = document.getElementById('chatInput');
+        const messages = document.getElementById('messages');
+        const welcomeScreen = document.getElementById('welcomeScreen');
+        const sendButton = document.getElementById('sendButton');
+        const modelBadge = document.getElementById('modelBadge');
+        let typingIndicator = null;
+        const fallbackModel = 'llama-3.3-70b-versatile';
+
+        function formatMessage(text, sender) {
+            const wrapper = document.createElement('div');
+            wrapper.className = sender === 'ai'
+                ? 'p-5 rounded-3xl msg-ai border border-primary/15'
+                : 'p-5 rounded-3xl msg-user border border-white/10 bg-white/5';
+            wrapper.innerHTML = `
+                <div class="flex gap-4 max-w-3xl mx-auto">
+                    <div class="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${sender === 'ai' ? 'bg-primary/10 text-primary' : 'bg-accentBlue/10 text-accentBlue'} text-lg">${sender === 'ai' ? '🧠' : '👤'}</div>
+                    <div class="max-w-[calc(100%-4rem)]">
+                        <p class="text-sm leading-7 text-text">${text}</p>
+                    </div>
+                </div>
+            `;
+            return wrapper;
+        }
+
+        function appendMessage(text, sender) {
+            if (!messages) return;
+            if (welcomeScreen && !welcomeScreen.classList.contains('hidden')) {
+                welcomeScreen.classList.add('hidden');
+            }
+            if (messages.classList.contains('hidden')) {
+                messages.classList.remove('hidden');
+            }
+            if (typingIndicator) {
+                typingIndicator.remove();
+                typingIndicator = null;
+            }
+            messages.appendChild(formatMessage(text, sender));
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function showTyping() {
+            if (!messages || typingIndicator) return;
+            typingIndicator = document.createElement('div');
+            typingIndicator.className = 'p-5 rounded-3xl msg-ai border border-primary/15';
+            typingIndicator.innerHTML = `
+                <div class="flex gap-4 max-w-3xl mx-auto">
+                    <div class="w-10 h-10 rounded-2xl flex items-center justify-center bg-primary/10 text-primary text-lg">🧠</div>
+                    <div class="typing"></div>
+                </div>
+            `;
+            messages.appendChild(typingIndicator);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        async function loadModelInfo() {
+            if (!modelBadge) return;
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                const modelName = data?.model || data?.stats?.model || fallbackModel;
+                modelBadge.textContent = `Model: ${modelName}`;
+            } catch (error) {
+                modelBadge.textContent = `Model: ${fallbackModel}`;
+            }
+        }
+
+        async function fetchAIResponse(prompt) {
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ visitorId: localStorage.getItem('mm_sessionId') || '', subject: 'General', userLevel: 'Learner', message: prompt })
+                });
+                const data = await response.json();
+                return data.reply || "Sorry, I couldn't generate a response right now.";
+            } catch (error) {
+                return 'Unable to connect to AI. Please try again later.';
+            }
+        }
+
+        async function sendMessage() {
+            const text = chatInput.value.trim();
+            if (!text) return;
+            appendMessage(text, 'user');
+            chatInput.value = '';
+            showTyping();
+            const reply = await fetchAIResponse(text);
+            if (typingIndicator) {
+                typingIndicator.remove();
+                typingIndicator = null;
+            }
+            appendMessage(reply, 'ai');
+        }
+
+        function quickPrompt(text) {
+            chatInput.value = text;
+            sendMessage();
+        }
+
+        chatInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                sendMessage();
+            }
+        });
+
+        sendButton.addEventListener('click', sendMessage);
+        loadModelInfo();
+    </script>
+</body>
+</html>

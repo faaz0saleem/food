@@ -10,8 +10,6 @@ const statsFile = path.join(rootDir, 'stats.json');
 const SESSION_TIMEOUT_MS = 2 * 60 * 1000;
 const DAILY_WINDOW_MS = 24 * 60 * 60 * 1000;
 const conversationHistory = [];
-const DEFAULT_MODEL = process.env.GROQ_MODEL || process.env.GROQ_MODEL_NAME || 'llama-3.3-70b-versatile';
-const MODEL_LABEL = process.env.GROQ_MODEL_LABEL || DEFAULT_MODEL;
 
 let groqClient = null;
 if (process.env.GROQ_API_KEY) {
@@ -100,7 +98,6 @@ function getStatusSummary() {
     totalChats: visitorStats.actions.filter((action) => action.actionType === 'chat').length,
     dailyChats,
     recentActions: visitorStats.actions.slice(-10).reverse(),
-    model: MODEL_LABEL,
   };
 }
 
@@ -192,7 +189,7 @@ async function generateQuiz(subject, count = 5, askedQuestions = []) {
   try {
     const prompt = `Generate ${count} multiple choice questions for a student learning ${subject}. Avoid repeating any questions the student has already answered. Previously asked questions: ${filteredAsked.slice(-20).join(' | ')}. Return ONLY valid JSON in this exact format: [{"question": "...","options": ["A)...","B)...","C)...","D)..."],"correct":"A","explanation":"..."}]`;
     const response = await groqClient.chat.completions.create({
-      model: DEFAULT_MODEL,
+      model: 'llama-3.3-70b-versatile',
       messages: [
         { role: 'system', content: 'You are a quiz generator. Only output valid JSON.' },
         { role: 'user', content: prompt },
@@ -254,7 +251,7 @@ Be encouraging, clear, and keep responses concise (2-4 sentences). Use simple la
 
   try {
     const response = await groqClient.chat.completions.create({
-      model: DEFAULT_MODEL,
+      model: 'llama-3.3-70b-versatile',
       messages,
       max_tokens: 256,
       temperature: 0.7,
@@ -336,7 +333,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname === '/api/status') {
-      sendJson(res, 200, { status: 'ok', model: MODEL_LABEL, stats: getStatusSummary() });
+      sendJson(res, 200, { status: 'ok', stats: getStatusSummary() });
       return;
     }
   }
@@ -378,7 +375,7 @@ const server = http.createServer(async (req, res) => {
       registerVisitor(visitorId, req.headers['user-agent'] || 'unknown');
       addActionRecord(visitorId, 'chat', { message, subject, userLevel });
       const reply = await chatWithGroq(message, subject, userLevel);
-      sendJson(res, 200, { status: 'ok', reply, model: MODEL_LABEL, stats: getStatusSummary() });
+      sendJson(res, 200, { status: 'ok', reply, stats: getStatusSummary() });
     } catch (error) {
       sendJson(res, 400, { error: error.message });
     }

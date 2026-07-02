@@ -9,7 +9,6 @@ const statsFile = path.join(__dirname, 'stats.json');
 const SESSION_TIMEOUT_MS = 2 * 60 * 1000;
 const DAILY_WINDOW_MS = 24 * 60 * 60 * 1000;
 const conversationHistory = [];
-const DEFAULT_MODEL = process.env.GROQ_MODEL || process.env.GROQ_MODEL_NAME || 'llama-3.3-70b-versatile';
 
 let groqClient = null;
 if (process.env.GROQ_API_KEY) {
@@ -160,7 +159,7 @@ async function chatWithGroq(userMessage) {
 
   try {
     const response = await groqClient.chat.completions.create({
-      model: DEFAULT_MODEL,
+      model: 'llama-3.3-70b-versatile',
       messages: conversationHistory,
       max_tokens: 512,
     });
