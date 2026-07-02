@@ -1,18 +1,15 @@
-@import url("/nav.css");
+@import url('/brand.css');
+@import url('/nav.css');
 
 :root {
-  color-scheme: dark;
-  --bg: #0a0f1e;
-  --bg-soft: #0f1729;
-  --panel: rgba(12, 28, 50, 0.95);
-  --panel-strong: rgba(10, 20, 40, 0.96);
-  --accent: #00d9ff;
-  --accent-2: #6b5fff;
-  --accent-3: #ff6b9d;
-  --accent-soft: #5ffff9;
-  --text: #f0f7ff;
-  --muted: #b0c4de;
-  --border: rgba(255, 255, 255, 0.12);
+  --panel: rgba(42, 27, 77, 0.95);
+  --panel-strong: rgba(26, 16, 51, 0.96);
+  --accent: var(--blue);
+  --accent-2: var(--pink);
+  --accent-3: var(--coral);
+  --accent-soft: var(--lime);
+  --text: var(--ink);
+  --muted: var(--ink-soft);
   --shadow: 0 32px 80px rgba(0, 0, 0, 0.45);
   --success: #00d084;
   --warning: #ffa500;
@@ -30,12 +27,8 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-body);
   color: var(--text);
-  background:
-    radial-gradient(circle at top left, rgba(108, 231, 255, 0.16), transparent 24%),
-    radial-gradient(circle at 80% 20%, rgba(139, 108, 255, 0.14), transparent 18%),
-    linear-gradient(180deg, #071321 0%, #050a16 45%, #051323 100%);
 }
 
 button,

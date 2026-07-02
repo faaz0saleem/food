@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MindMesh - Your Progress</title>
+    <title>MindMesh — Progress</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/brand.css">
+    <link rel="stylesheet" href="/nav.css">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/nav.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         tailwind.config = {
@@ -109,28 +110,7 @@
     </style>
 </head>
 <body class="font-sans antialiased p-4 md:p-8">
-    <header class="site-nav">
-        <div class="nav-brand"><a href="/dashboard.html">🧠 MindMesh</a></div>
-        <nav>
-            <a href="/dashboard.html" class="nav-link">Dashboard</a>
-            <a href="/learn.html" class="nav-link">Learn</a>
-            <a href="/subjects.html" class="nav-link">Subjects</a>
-            <a href="/quiz.html" class="nav-link">Quiz</a>
-            <a href="/progress.html" class="nav-link active">Progress</a>
-            <a href="/chat.html" class="nav-link">Chat</a>
-        </nav>
-        <div class="nav-right">
-            <a href="/chat.html" class="chat-btn">Ask AI →</a>
-            <div class="avatar"></div>
-        </div>
-    </header>
-                <div class="w-10 h-10 rounded-full bg-panel flex items-center justify-center text-sm font-bold border border-primary/30 group-hover:border-primary transition-colors overflow-hidden">
-                    <img src="https://ui-avatars.com/api/?name=Alex+M&background=2a1f4c&color=b8ff4a" alt="User Avatar" class="w-full h-full object-cover">
-                </div>
-                <div class="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-[#130d26]"></div>
-            </div>
-        </div>
-    </nav>
+    <header class="site-nav"></header>
     <main class="max-w-7xl mx-auto">
         <div class="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
@@ -349,5 +329,6 @@
         document.getElementById('open-chat').addEventListener('click', () => window.location.href = 'chat.html');
         loadGrokInsight();
     </script>
+    <script src="/layout.js" defer></script>
 </body>
 </html>

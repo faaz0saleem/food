@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MindMesh - Subjects</title>
+    <title>MindMesh — Subjects</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/brand.css">
+    <link rel="stylesheet" href="/nav.css">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/nav.css" />
     <script>
         tailwind.config = {
             theme: {
@@ -42,7 +43,7 @@
     <main class="max-w-7xl mx-auto">
         <section class="mb-12">
             <h1 class="text-4xl font-extrabold text-white mb-4">Explore Subjects</h1>
-            <p class="hero-note">Select a field to master. <span class="developer-note">Once a subject is clicked, it will be saved for your dashboard experience.</span></p>
+            <p class="hero-note">Select a field to master. Your picks sync with your dashboard and AI tutor.</p>
         </section>
 
         <div class="subject-grid" id="subjectsGrid">
@@ -134,5 +135,6 @@
             });
         });
     </script>
+    <script src="/layout.js" defer></script>
 </body>
 </html>

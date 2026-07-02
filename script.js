@@ -201,8 +201,13 @@ function setTheme(theme) {
 }
 
 function buildNav() {
+  if (window.MindMeshUI) {
+    window.MindMeshUI.buildNav();
+    return;
+  }
   const navContainer = document.querySelector('.site-nav');
   if (!navContainer) return;
+  const initials = formatName(lsGet('mm_name', '')).slice(0, 2).toUpperCase() || 'MM';
   const links = navLinks
     .map((link) => {
       const active = pageId && window.location.pathname.endsWith(link.href);
@@ -210,11 +215,11 @@ function buildNav() {
     })
     .join('');
   navContainer.innerHTML = `
-    <div class="nav-brand"><a href="/dashboard.html">🧠 MindMesh</a></div>
-    <nav>${links}</nav>
+    <div class="nav-brand"><a href="/">🧠 MindMesh</a></div>
+    <nav class="nav-links">${links}</nav>
     <div class="nav-right">
       <a href="/chat.html" class="chat-btn">Ask AI →</a>
-      <div class="avatar">MM</div>
+      <a href="/profile.html" class="avatar">${initials}</a>
     </div>
   `;
 }
@@ -292,7 +297,7 @@ function initOnboarding() {
     steps.forEach((element, index) => element.classList.toggle('active', index === step - 1));
     if (progress) progress.value = step;
     backButton.style.display = step === 1 ? 'none' : 'inline-flex';
-    nextButton.textContent = step === 3 ? 'Finish' : 'Next';
+    nextButton.textContent = step === steps.length ? 'Finish →' : 'Next →';
   }
 
   styleCards.forEach((card) => {
@@ -320,19 +325,23 @@ function initOnboarding() {
       }
       lsSet('mm_name', name);
     }
-    if (step === 3) {
+    if (step === steps.length) {
       lsSet('mm_style', selectedStyle);
       lsSet('mm_subject', selectedSubject);
       lsSet('mm_level', 'Newbie');
-      lsSet('mm_count', 0);
-      lsSet('mm_subjects', { [selectedSubject]: 0 });
-      lsSet('mm_streak', []);
-      lsSet('mm_milestones', [{ event: 'Started onboarding', date: new Date().toLocaleDateString() }]);
-      lsSet('mm_quiz_scores', {});
-      lsSet('mm_sessions', []);
+      if (!lsGet('mm_count', 0)) lsSet('mm_count', 0);
+      const subjectsData = lsGet('mm_subjects', {});
+      if (!subjectsData[selectedSubject]) subjectsData[selectedSubject] = 0;
+      lsSet('mm_subjects', subjectsData);
+      if (!lsGet('mm_milestones', []).length) {
+        lsSet('mm_milestones', [{ event: 'Completed onboarding', date: new Date().toLocaleDateString() }]);
+      }
       getSessionId();
       window.location.href = 'dashboard.html';
       return;
+    }
+    if (step === 4) {
+      lsSet('mm_style', selectedStyle);
     }
     step += 1;
     refresh();
@@ -906,18 +915,15 @@ function initProfile() {
 }
 
 function initPage() {
-  // Check if user is logged in (has signed up)
-  const isSignedUp = lsGet('mm_email', null) !== null;
-  const isSignupOrIndex = pageId === 'signup' || pageId === 'index';
-  
-  // Redirect unauthenticated users to signup
-  if (!isSignedUp && !isSignupOrIndex) {
-    window.location.href = 'signup.html';
+  const publicPages = ['index', 'signup', 'onboarding', 'checkout'];
+  const hasProfile = Boolean((lsGet('mm_name', '') || '').trim());
+
+  if (!hasProfile && pageId && !publicPages.includes(pageId)) {
+    window.location.href = 'onboarding.html';
     return;
   }
 
-  // Redirect authenticated users away from signup
-  if (isSignedUp && pageId === 'signup') {
+  if (hasProfile && pageId === 'signup') {
     window.location.href = 'dashboard.html';
     return;
   }

@@ -1,64 +1,65 @@
-:root {
-  --nav-bg: rgba(9, 18, 34, 0.92);
-  --nav-border: rgba(255, 255, 255, 0.1);
-  --nav-text: #e2dbea;
-  --nav-muted: #9a8db8;
-  --nav-accent: #b8ff4a;
-  --nav-hover: rgba(108, 231, 255, 0.12);
-  --nav-button-bg: #b8ff4a;
-  --nav-button-hover: #d4ff7a;
-}
+@import url('/brand.css');
 
 .site-nav {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  width: min(1180px, 100%);
-  margin: 0 auto 24px;
-  padding: 18px 24px;
-  border-radius: 28px;
-  background: var(--nav-bg);
-  border: 1px solid var(--nav-border);
-  backdrop-filter: blur(18px);
+  justify-content: space-between;
+  gap: 16px;
+  width: min(var(--container), calc(100% - 32px));
+  margin: 20px auto 24px;
+  padding: 12px 14px 12px 22px;
+  border-radius: 999px;
+  background: rgba(42, 27, 77, 0.82);
+  border: 2px solid var(--border-soft);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  position: sticky;
+  top: 12px;
+  z-index: 100;
 }
 
 .nav-brand a {
-  font-size: 1rem;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-  color: var(--nav-text);
-  text-decoration: none;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--ink);
 }
 
-.site-nav nav {
+.nav-panel {
   display: flex;
   align-items: center;
-  gap: 16px;
+  justify-content: space-between;
+  gap: 20px;
+  flex: 1;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
 .nav-link {
   padding: 10px 14px;
   border-radius: 999px;
-  color: var(--nav-muted);
-  font-size: 0.92rem;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
   font-weight: 600;
-  text-decoration: none;
-  transition: background 180ms ease, color 180ms ease, transform 180ms ease;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
 
 .nav-link:hover,
 .nav-link.active {
-  background: var(--nav-hover);
-  color: var(--nav-text);
+  background: rgba(200, 255, 77, 0.1);
+  color: var(--lime);
   transform: translateY(-1px);
 }
 
-.site-nav .nav-right {
+.nav-right {
   display: flex;
   align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
+  gap: 12px;
 }
 
 .chat-btn {
@@ -67,45 +68,94 @@
   justify-content: center;
   padding: 10px 18px;
   border-radius: 999px;
-  background: var(--nav-button-bg);
-  color: #130d26;
-  font-weight: 700;
-  font-size: 0.92rem;
-  text-decoration: none;
-  transition: transform 150ms ease, background 150ms ease;
+  background: var(--lime);
+  color: var(--bg-deep);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.9rem;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .chat-btn:hover {
-  transform: translateY(-1px);
-  background: var(--nav-button-hover);
+  transform: translate(-2px, -2px);
+  box-shadow: var(--shadow);
 }
 
 .avatar {
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  background: rgba(9, 18, 34, 0.95);
-  border: 2px solid rgba(255, 255, 255, 0.12);
+  border: 2px solid var(--border);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Space Mono', monospace;
-  font-size: 0.82rem;
-  color: var(--nav-accent);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--ink);
 }
 
-@media (max-width: 900px) {
+.nav-toggle {
+  display: none;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0;
+  cursor: pointer;
+}
+
+.nav-toggle span {
+  display: block;
+  width: 18px;
+  height: 2px;
+  margin: 4px auto;
+  background: var(--ink);
+  border-radius: 999px;
+}
+
+@media (max-width: 980px) {
   .site-nav {
-    padding: 16px 18px;
+    flex-wrap: wrap;
+    border-radius: 24px;
+    padding: 14px 16px;
   }
 
-  .site-nav nav,
-  .site-nav .nav-right {
-    gap: 10px;
+  .nav-toggle {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;
   }
 
-  .nav-link,
-  .chat-btn {
-    font-size: 0.88rem;
+  .nav-panel {
+    display: none;
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    padding-top: 8px;
+  }
+
+  .site-nav.open .nav-panel {
+    display: flex;
+  }
+
+  .nav-links {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .nav-link {
+    width: 100%;
+    text-align: center;
+  }
+
+  .nav-right {
+    justify-content: center;
+    flex-wrap: wrap;
   }
 }
