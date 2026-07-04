@@ -9,7 +9,33 @@ function emptyStats() {
     subjects: {},
     totalChats: 0,
     rateLimits: {},
+    purchases: {
+      bySessionId: {},
+      total: 0,
+      byStatus: {},
+      lastUpdatedAt: null,
+    },
   };
+}
+
+function ensurePurchaseState(stats) {
+  if (!stats.purchases || typeof stats.purchases !== 'object') {
+    stats.purchases = {
+      bySessionId: {},
+      total: 0,
+      byStatus: {},
+      lastUpdatedAt: null,
+    };
+  }
+  if (!stats.purchases.bySessionId || typeof stats.purchases.bySessionId !== 'object') {
+    stats.purchases.bySessionId = {};
+  }
+  if (!stats.purchases.byStatus || typeof stats.purchases.byStatus !== 'object') {
+    stats.purchases.byStatus = {};
+  }
+  if (typeof stats.purchases.total !== 'number') {
+    stats.purchases.total = Object.keys(stats.purchases.bySessionId).length;
+  }
 }
 
 // Sliding-window cap on chat requests per visitor, to protect against a runaway
@@ -62,6 +88,58 @@ function recordChat(stats, visitorId, subject) {
   }
 }
 
+function upsertPurchase(stats, sessionId, patch = {}) {
+  ensurePurchaseState(stats);
+  if (!sessionId) return;
+
+  const key = String(sessionId).trim();
+  if (!key) return;
+
+  const existing = stats.purchases.bySessionId[key] || { sessionId: key, createdAt: Date.now() };
+  const next = { ...existing, ...patch, sessionId: key, updatedAt: Date.now() };
+  stats.purchases.bySessionId[key] = next;
+  stats.purchases.total = Object.keys(stats.purchases.bySessionId).length;
+  stats.purchases.lastUpdatedAt = next.updatedAt;
+
+  if (next.status) {
+    const normalizedStatus = String(next.status).toUpperCase();
+    next.status = normalizedStatus;
+
+    const all = Object.values(stats.purchases.bySessionId);
+    const byStatus = {};
+    for (const item of all) {
+      const s = String(item.status || 'UNKNOWN').toUpperCase();
+      byStatus[s] = (byStatus[s] || 0) + 1;
+    }
+    stats.purchases.byStatus = byStatus;
+  }
+}
+
+function recordPurchaseIntent(stats, data) {
+  upsertPurchase(stats, data.sessionId, {
+    basketId: data.basketId,
+    planId: data.planId,
+    customerEmail: data.customerEmail,
+    customerMobile: data.customerMobile,
+    amount: data.amount,
+    currency: data.currency,
+    status: data.status || 'CREATED',
+    provider: data.provider || 'RapidPay',
+  });
+}
+
+function recordPurchaseStatus(stats, sessionId, status, rawSession) {
+  upsertPurchase(stats, sessionId, {
+    status: status || rawSession?.status || 'UNKNOWN',
+    rawStatus: rawSession?.status || null,
+    basketId: rawSession?.basketId,
+    amount: rawSession?.amount,
+    currency: rawSession?.currency,
+    provider: 'RapidPay',
+    raw: rawSession || null,
+  });
+}
+
 function summarize(stats) {
   const now = Date.now();
   const today = todayKey();
@@ -83,6 +161,13 @@ function summarize(stats) {
     .slice(0, 8)
     .map(([subject, count]) => ({ subject, count }));
 
+  ensurePurchaseState(stats);
+  const byStatus = stats.purchases.byStatus || {};
+  const succeeded = byStatus.SUCCEEDED || 0;
+  const processing = (byStatus.PROCESSING || 0) + (byStatus.PENDING || 0) + (byStatus.CREATED || 0);
+  const failed = (byStatus.FAILED || 0) + (byStatus.CANCELLED || 0);
+  const expired = byStatus.EXPIRED || 0;
+
   return {
     totalVisitors: visitors.length,
     activeNow,
@@ -92,6 +177,19 @@ function summarize(stats) {
     chatsToday,
     chatsThisMonth,
     topSubjects,
+    purchases: {
+      count: stats.purchases.total || 0,
+      succeeded,
+      processing,
+      failed,
+      expired,
+      byStatus,
+      status: 'RapidPay session tracking active',
+      lastUpdatedAt: stats.purchases.lastUpdatedAt,
+      recent: Object.values(stats.purchases.bySessionId)
+        .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))
+        .slice(0, 10),
+    },
   };
 }
 
@@ -101,6 +199,8 @@ module.exports = {
   monthKey,
   recordVisit,
   recordChat,
+  recordPurchaseIntent,
+  recordPurchaseStatus,
   summarize,
   checkAndRecordRateLimit,
 };

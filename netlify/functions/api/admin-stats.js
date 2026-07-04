@@ -18,10 +18,7 @@ exports.handler = async function (event) {
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        ...summary,
-        purchases: { count: 0, status: 'Stripe not connected yet' },
-      }),
+      body: JSON.stringify(summary),
     };
   } catch (error) {
     return {

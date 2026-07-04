@@ -4,7 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MindMesh - Quiz</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/brand.css" />
+  <link rel="stylesheet" href="/tailwind-compat.css" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/nav.css" />
   <style>
@@ -26,21 +27,7 @@
   </style>
 </head>
 <body class="p-5 sm:p-8 lg:p-12">
-  <header class="site-nav">
-    <div class="nav-brand"><a href="/dashboard.html">🧠 MindMesh</a></div>
-    <nav>
-      <a href="/dashboard.html" class="nav-link">Dashboard</a>
-      <a href="/learn.html" class="nav-link">Learn</a>
-      <a href="/subjects.html" class="nav-link">Subjects</a>
-      <a href="/quiz.html" class="nav-link active">Quiz</a>
-      <a href="/progress.html" class="nav-link">Progress</a>
-      <a href="/chat.html" class="nav-link">Chat</a>
-    </nav>
-    <div class="nav-right">
-      <a href="/chat.html" class="chat-btn">Ask AI →</a>
-      <div class="avatar" id="avatarEl">?</div>
-    </div>
-  </header>
+  <header class="site-nav"></header>
   <div class="max-w-6xl mx-auto space-y-8">
     <header class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
       <div class="space-y-4">
@@ -483,5 +470,6 @@
       });
     });
   </script>
+  <script src="/layout.js" defer></script>
 </body>
 </html>

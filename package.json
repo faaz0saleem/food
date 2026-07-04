@@ -1,7 +1,19 @@
 {
+  "name": "mindmesh",
+  "version": "0.1.0",
+  "description": "MindMesh is a multi-engine AI tutor web app for personalized learning.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/faaz0saleem/food.git"
+  },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "start": "node server.js",
-    "backend": "node backend.js"
+    "backend": "node backend.js",
+    "test": "node --test"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.110.0",

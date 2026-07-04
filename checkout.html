@@ -4,8 +4,19 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Checkout — MindMesh</title>
-<meta name="description" content="Upgrade your MindMesh plan. Stripe billing connects during launch.">
+<meta name="description" content="Upgrade your MindMesh plan with secure RapidPay checkout.">
+<link rel="canonical" href="https://mindmesh.app/checkout.html">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Checkout — MindMesh">
+<meta property="og:description" content="Upgrade your MindMesh plan with secure RapidPay checkout.">
+<meta property="og:image" content="/favicon.svg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Checkout — MindMesh">
+<meta name="twitter:description" content="Upgrade your MindMesh plan with secure RapidPay checkout.">
+<meta name="twitter:image" content="/favicon.svg">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/favicon.svg">
+<link rel="manifest" href="/manifest.json">
 <link rel="stylesheet" href="/brand.css">
 <link rel="stylesheet" href="/nav.css">
 <link rel="stylesheet" href="/checkout.css">
@@ -23,7 +34,7 @@
       <!-- Main Form -->
       <div class="checkout-form">
         <div class="test-mode-note" style="margin-bottom:20px;">
-          <strong>Testing phase:</strong> Card fields are disabled until Stripe is connected. Use the button below to simulate an upgrade and unlock plan features in your dashboard.
+          <strong>Secure checkout:</strong> payment amount is locked server-side for your selected plan.
         </div>
 
         <!-- Plan Selector -->
@@ -45,6 +56,10 @@
             <label for="checkout-email">Email for your receipt</label>
             <input id="checkout-email" type="email" placeholder="you@school.edu">
           </div>
+          <div class="form-group" style="margin-top:12px;">
+            <label for="checkout-mobile">Mobile number</label>
+            <input id="checkout-mobile" type="tel" placeholder="03001234567">
+          </div>
         </div>
 
         <!-- Terms & Conditions -->
@@ -60,14 +75,17 @@
         </div>
 
         <!-- Submit Button -->
-        <button class="submit-btn" type="button" onclick="completeCheckout()">Activate plan (test mode)</button>
+        <button class="submit-btn" type="button" onclick="completeCheckout()">Continue to secure payment</button>
         
         <div class="security-badge">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
           </svg>
-          Stripe secure checkout connects before launch
+          RapidPay secure iframe checkout
         </div>
+
+        <div id="checkoutStatus" class="test-mode-note" style="display:none; margin-top:16px;"></div>
+        <div id="rp-checkout" style="margin-top:16px;"></div>
       </div>
 
       <!-- Order Summary -->
@@ -111,12 +129,15 @@
   <footer class="site-footer"></footer>
 
   <script src="/layout.js" defer></script>
+  <script src="https://secure.rapid-gateway.com/sdk/v1/rapidpay.js"></script>
   <script>
     const plans = {
-      student: { name: 'Student', price: 5, features: ['Unlimited messages', 'Every subject', 'Progress tracking', 'All 4 engines'] },
-      family: { name: 'Family', price: 12, features: ['Up to 3 kids', 'Parent dashboard', 'Progress reports', 'All 4 engines'] },
-      school: { name: 'School', price: 200, features: ['50 students', 'Teacher dashboard', 'Custom curriculum', 'Dedicated support'] }
+      student: { id: 'student', name: 'Student', price: 5, features: ['Unlimited messages', 'Every subject', 'Progress tracking', 'All 4 engines'] },
+      family: { id: 'family', name: 'Family', price: 12, features: ['Up to 3 kids', 'Parent dashboard', 'Progress reports', 'All 4 engines'] },
+      school: { id: 'school', name: 'School', price: 200, features: ['50 students', 'Teacher dashboard', 'Custom curriculum', 'Dedicated support'] }
     };
+
+    let activeSessionId = '';
 
     function updateOrderSummary() {
       const selected = document.getElementById('planSelect').value;
@@ -141,35 +162,140 @@
       document.getElementById('nextBilling').textContent = nextMonth.toLocaleDateString('en-US', options);
     }
 
-    function completeCheckout() {
+    function setCheckoutStatus(message, isError = false) {
+      const status = document.getElementById('checkoutStatus');
+      status.style.display = 'block';
+      status.textContent = message;
+      status.style.borderColor = isError ? 'var(--coral)' : 'var(--border)';
+      status.style.color = isError ? 'var(--coral)' : 'var(--ink-soft)';
+    }
+
+    function savePlanLocally(plan) {
+      localStorage.setItem('mm_plan', plan.name);
+      localStorage.setItem('mm_plan_price', String(plan.price));
+      localStorage.setItem('mm_plan_started', new Date().toISOString());
+      localStorage.setItem('mm_plan_status', 'active');
+    }
+
+    async function createCheckoutSession(plan, email, mobile) {
+      const response = await fetch('/api/payments/checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plan: plan.id,
+          customerEmail: email,
+          customerMobile: mobile,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Unable to create checkout session.');
+      }
+
+      return data;
+    }
+
+    async function verifySession(sessionId) {
+      const response = await fetch('/api/payments/checkout-session?sessionId=' + encodeURIComponent(sessionId));
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Unable to verify payment status.');
+      }
+      return data.session;
+    }
+
+    async function pollForTerminalStatus(sessionId) {
+      const maxAttempts = 10;
+      for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+        const session = await verifySession(sessionId);
+        const status = String(session.status || '').toUpperCase();
+        if (status === 'SUCCEEDED') return session;
+        if (status === 'FAILED' || status === 'EXPIRED') {
+          throw new Error('Payment failed or expired. Please try again.');
+        }
+        await new Promise((resolve) => setTimeout(resolve, 2500));
+      }
+      throw new Error('Payment is still processing. Please check again in a moment.');
+    }
+
+    function mountRapidPay(data, selectedPlan) {
+      if (typeof RapidPay !== 'function') {
+        throw new Error('RapidPay SDK did not load. Please refresh and try again.');
+      }
+
+      const rp = RapidPay(data.publishableKey);
+      rp.mountCheckout('#rp-checkout', {
+        clientSecret: data.clientSecret,
+        amount: data.amount,
+        currency: data.currency,
+        merchantName: data.merchantName || 'MindMesh',
+        onSuccess: async ({ sessionId }) => {
+          try {
+            setCheckoutStatus('Payment submitted. Verifying final status...');
+            const verified = await pollForTerminalStatus(sessionId || activeSessionId);
+            if (String(verified.status || '').toUpperCase() === 'SUCCEEDED') {
+              savePlanLocally(selectedPlan);
+              setCheckoutStatus('Payment successful. Redirecting to dashboard...');
+              setTimeout(() => { window.location.href = '/dashboard.html'; }, 1000);
+            }
+          } catch (error) {
+            setCheckoutStatus(error.message, true);
+          }
+        },
+        onPending: async ({ sessionId }) => {
+          try {
+            setCheckoutStatus('Payment is pending approval. Checking status...');
+            const verified = await pollForTerminalStatus(sessionId || activeSessionId);
+            if (String(verified.status || '').toUpperCase() === 'SUCCEEDED') {
+              savePlanLocally(selectedPlan);
+              setCheckoutStatus('Payment successful. Redirecting to dashboard...');
+              setTimeout(() => { window.location.href = '/dashboard.html'; }, 1000);
+            }
+          } catch (error) {
+            setCheckoutStatus(error.message, true);
+          }
+        },
+        onError: (error) => {
+          const message = error && error.message ? error.message : 'Checkout failed. Please try again.';
+          setCheckoutStatus(message, true);
+        },
+      });
+    }
+
+    async function completeCheckout() {
       const planSelect = document.getElementById('planSelect').value;
       const terms = document.getElementById('terms').checked;
+      const selectedPlan = plans[planSelect];
+      const email = document.getElementById('checkout-email')?.value?.trim();
+      const mobile = document.getElementById('checkout-mobile')?.value?.trim();
       
       if (!terms) {
         alert('Please agree to the Terms of Service');
         return;
       }
 
-      // Test-mode upgrade — Stripe connects before launch
-      const email = document.getElementById('checkout-email')?.value?.trim();
-      if (email) localStorage.setItem('mm_email', JSON.stringify(email));
+      if (!email) {
+        setCheckoutStatus('Please enter your email address.', true);
+        return;
+      }
 
-      const toast = document.createElement('div');
-      toast.className = 'test-mode-note';
-      toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:200;max-width:420px;';
-      toast.textContent = `Test upgrade activated: ${plans[planSelect].name} plan. Redirecting…`;
-      document.body.appendChild(toast);
-      
-      // Save membership status locally for the dashboard
-      localStorage.setItem('mm_plan', plans[planSelect].name);
-      localStorage.setItem('mm_plan_price', plans[planSelect].price);
-      localStorage.setItem('mm_plan_started', new Date().toISOString());
-      localStorage.setItem('mm_plan_status', 'active');
+      if (!mobile) {
+        setCheckoutStatus('Please enter your mobile number.', true);
+        return;
+      }
 
-      // Redirect to dashboard after a short delay
-      setTimeout(() => {
-        window.location.href = '/dashboard.html';
-      }, 1000);
+      localStorage.setItem('mm_email', JSON.stringify(email));
+      setCheckoutStatus('Creating secure checkout session...');
+
+      try {
+        const session = await createCheckoutSession(selectedPlan, email, mobile);
+        activeSessionId = session.sessionId;
+        setCheckoutStatus('Session created. Complete payment below.');
+        mountRapidPay(session, selectedPlan);
+      } catch (error) {
+        setCheckoutStatus(error.message, true);
+      }
     }
 
     function getQueryParam(name) {

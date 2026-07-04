@@ -1,3 +1,7 @@
 node_modules/
 .env
 stats.json
+server.log
+*.bundle
+*.zip
+yes/

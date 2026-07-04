@@ -7,25 +7,7 @@
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/brand.css">
     <link rel="stylesheet" href="/nav.css">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['Inter', 'sans-serif'] },
-                    colors: {
-                        background: '#130d26',
-                        panel: '#2a1f4c',
-                        panelHover: '#352861',
-                        primary: '#b8ff4a',
-                        text: '#e2dbea',
-                        muted: '#9a8db8',
-                        navBg: '#1e1638'
-                    }
-                }
-            }
-        }
-    </script>
+    <link rel="stylesheet" href="/tailwind-compat.css">
     <style>
         body { background: linear-gradient(135deg, #130d26 0%, #1a1133 50%, #221442 100%); color: #e2dbea; min-height: 100vh; }
         .glass-panel { background: rgba(42, 31, 76, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(154, 141, 184, 0.15); border-radius: 20px; transition: all 0.3s ease; }

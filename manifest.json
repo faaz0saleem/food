@@ -1,0 +1,16 @@
+{
+  "name": "MindMesh",
+  "short_name": "MindMesh",
+  "description": "The AI tutor that gets you.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1A1033",
+  "theme_color": "#C8FF4D",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

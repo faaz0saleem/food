@@ -2,9 +2,11 @@ require('dotenv').config();
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const Groq = require('groq-sdk');
 const statsCore = require('./stats-core');
 const { routeChat, getEngineAvailability } = require('./engines');
+const { createRapidPayCheckoutSession, getRapidPayCheckoutSessionStatus } = require('./rapidpay');
 
 const port = process.env.PORT || 3000;
 const rootDir = __dirname;
@@ -17,6 +19,13 @@ const MODEL_LABEL = process.env.GROQ_MODEL_LABEL || DEFAULT_MODEL;
 const RATE_WINDOW_MS = Number(process.env.RATE_WINDOW_MS || 60 * 1000);
 const RATE_MAX = Number(process.env.RATE_MAX || 20);
 const rateMap = new Map(); // ip -> {count, windowStart}
+const ADMIN_AUTH_WINDOW_MS = Number(process.env.ADMIN_AUTH_WINDOW_MS || 10 * 60 * 1000);
+const ADMIN_AUTH_MAX_FAILURES = Number(process.env.ADMIN_AUTH_MAX_FAILURES || 8);
+const adminAuthMap = new Map(); // ip -> {count, blockedUntil, windowStart}
+const ALLOWED_ORIGINS = String(process.env.ALLOWED_ORIGINS || '')
+  .split(',')
+  .map((value) => value.trim())
+  .filter(Boolean);
 
 function getClientIp(req) {
   const xf = req.headers['x-forwarded-for'];
@@ -109,6 +118,16 @@ function recordChatEvent(visitorId, subject) {
   saveStats();
 }
 
+function recordPurchaseCreated(data) {
+  statsCore.recordPurchaseIntent(visitorStats, data || {});
+  saveStats();
+}
+
+function recordPurchaseStatusChanged(sessionId, status, rawSession) {
+  statsCore.recordPurchaseStatus(visitorStats, sessionId, status, rawSession);
+  saveStats();
+}
+
 function parseJsonSafe(text) {
   try {
     return JSON.parse(text);
@@ -123,6 +142,53 @@ function parseJsonSafe(text) {
     }
     return null;
   }
+}
+
+function getCorsOrigin(req) {
+  const origin = String(req.headers.origin || '').trim();
+  if (!origin) return '';
+  if (!ALLOWED_ORIGINS.length) return origin;
+  return ALLOWED_ORIGINS.includes(origin) ? origin : '';
+}
+
+function timingSafeEqualString(left, right) {
+  const a = Buffer.from(String(left || ''), 'utf8');
+  const b = Buffer.from(String(right || ''), 'utf8');
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
+}
+
+function isAdminAuthBlocked(ip) {
+  const now = Date.now();
+  const entry = adminAuthMap.get(ip);
+  if (!entry) return false;
+  if (entry.blockedUntil && entry.blockedUntil > now) return true;
+  if (now - entry.windowStart > ADMIN_AUTH_WINDOW_MS) {
+    adminAuthMap.set(ip, { count: 0, blockedUntil: 0, windowStart: now });
+    return false;
+  }
+  return false;
+}
+
+function recordAdminAuthFailure(ip) {
+  const now = Date.now();
+  const entry = adminAuthMap.get(ip) || { count: 0, blockedUntil: 0, windowStart: now };
+  if (now - entry.windowStart > ADMIN_AUTH_WINDOW_MS) {
+    entry.count = 0;
+    entry.windowStart = now;
+    entry.blockedUntil = 0;
+  }
+
+  entry.count += 1;
+  if (entry.count >= ADMIN_AUTH_MAX_FAILURES) {
+    const multiplier = Math.max(1, entry.count - ADMIN_AUTH_MAX_FAILURES + 1);
+    entry.blockedUntil = now + multiplier * 60 * 1000;
+  }
+  adminAuthMap.set(ip, entry);
+}
+
+function clearAdminAuthFailures(ip) {
+  adminAuthMap.delete(ip);
 }
 
 function getDemoQuiz(subject, count = 5) {
@@ -227,6 +293,12 @@ const visitorStats = loadStats();
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
   const pathname = url.pathname;
+  const corsOrigin = getCorsOrigin(req);
+
+  if (corsOrigin) {
+    res.setHeader('Access-Control-Allow-Origin', corsOrigin);
+    res.setHeader('Vary', 'Origin');
+  }
 
   if (req.method === 'GET') {
     if (pathname === '/' || pathname === '/index.html') {
@@ -261,24 +333,48 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname === '/api/admin-stats') {
+      const clientIp = getClientIp(req);
+      if (isAdminAuthBlocked(clientIp)) {
+        sendJson(res, 429, { error: 'Too many failed admin authentication attempts. Try again later.' });
+        return;
+      }
+
       const providedKey = req.headers['x-admin-key'] || url.searchParams.get('key') || '';
-      if (!ADMIN_KEY || providedKey !== ADMIN_KEY) {
+      if (!ADMIN_KEY || !timingSafeEqualString(providedKey, ADMIN_KEY)) {
+        recordAdminAuthFailure(clientIp);
         sendJson(res, 401, { error: 'Unauthorized' });
         return;
       }
+      clearAdminAuthFailures(clientIp);
       sendJson(res, 200, {
         ...statsCore.summarize(visitorStats),
-        purchases: { count: 0, status: 'Stripe not connected yet' },
       });
+      return;
+    }
+
+    if (pathname === '/api/payments/checkout-session') {
+      try {
+        const sessionId = url.searchParams.get('sessionId') || '';
+        const session = await getRapidPayCheckoutSessionStatus(sessionId);
+        recordPurchaseStatusChanged(sessionId, session?.status, session);
+        sendJson(res, 200, { status: 'ok', session });
+      } catch (error) {
+        sendJson(res, 400, { error: error.message || 'Payment status lookup failed' });
+      }
       return;
     }
   }
 
   if (req.method === 'OPTIONS') {
+    if (String(req.headers.origin || '').trim() && !corsOrigin) {
+      sendJson(res, 403, { error: 'Origin not allowed' });
+      return;
+    }
+
     res.writeHead(204, {
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': corsOrigin || 'null',
       'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Headers': 'Content-Type,X-Admin-Key',
     });
     res.end();
     return;
@@ -370,8 +466,70 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  res.writeHead(404, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify({ error: 'Not found' }));
+  if (req.method === 'POST' && pathname === '/api/payments/checkout-session') {
+    try {
+      const payload = await parseRequestBody(req);
+      const result = await createRapidPayCheckoutSession({
+        planId: payload.plan,
+        customerEmail: payload.customerEmail,
+        customerMobile: payload.customerMobile,
+      });
+      recordPurchaseCreated({
+        sessionId: result.sessionId,
+        basketId: result.basketId,
+        planId: result.plan?.id,
+        customerEmail: payload.customerEmail,
+        customerMobile: payload.customerMobile,
+        amount: result.amount,
+        currency: result.currency,
+        status: 'CREATED',
+        provider: 'RapidPay',
+      });
+      sendJson(res, 200, { status: 'ok', ...result });
+    } catch (error) {
+      sendJson(res, 400, { error: error.message || 'Payment session creation failed' });
+    }
+    return;
+  }
+
+  if (req.method === 'POST' && pathname === '/api/payments/webhook') {
+    try {
+      const webhookToken = process.env.RAPIDPAY_WEBHOOK_TOKEN || '';
+      if (!webhookToken) {
+        sendJson(res, 501, { error: 'Webhook not configured. Set RAPIDPAY_WEBHOOK_TOKEN.' });
+        return;
+      }
+
+      const providedToken = req.headers['x-webhook-token'] || '';
+      if (providedToken !== webhookToken) {
+        sendJson(res, 401, { error: 'Unauthorized webhook request' });
+        return;
+      }
+
+      const payload = await parseRequestBody(req);
+      const sessionId = payload.sessionId || payload.data?.sessionId || payload.id;
+      const status = payload.status || payload.data?.status;
+
+      if (!sessionId) {
+        sendJson(res, 400, { error: 'sessionId is required in webhook payload' });
+        return;
+      }
+
+      recordPurchaseStatusChanged(sessionId, status, payload);
+      sendJson(res, 200, { status: 'ok' });
+    } catch (error) {
+      sendJson(res, 400, { error: error.message || 'Webhook handling failed' });
+    }
+    return;
+  }
+
+  if (pathname.startsWith('/api/')) {
+    res.writeHead(404, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Not found' }));
+    return;
+  }
+
+  sendFile(res, path.join(rootDir, '404.html'));
 });
 
 server.listen(port, () => {

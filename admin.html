@@ -83,8 +83,9 @@
     </div>
 
     <div class="admin-section">
-      <h2>Purchases <span class="status-pill">NOT CONNECTED</span></h2>
+      <h2>Purchases <span class="status-pill" id="purchasePill">TRACKING</span></h2>
       <p class="purchase-note" id="purchaseNote"></p>
+      <div id="purchaseBreakdown"></div>
     </div>
   </div>
 
@@ -104,6 +105,8 @@
   const kpiGrid = document.getElementById('kpiGrid');
   const subjectsList = document.getElementById('subjectsList');
   const purchaseNote = document.getElementById('purchaseNote');
+  const purchasePill = document.getElementById('purchasePill');
+  const purchaseBreakdown = document.getElementById('purchaseBreakdown');
   const lastUpdated = document.getElementById('lastUpdated');
 
   let pollTimer = null;
@@ -127,8 +130,20 @@
       ? subjects.map((s) => `<div class="subject-row"><span>${s.subject}</span><span>${s.count}</span></div>`).join('')
       : '<p class="empty-note">No chat activity recorded yet.</p>';
 
-    const purchases = data.purchases || { count: 0, status: 'Stripe not connected yet' };
-    purchaseNote.textContent = `${purchases.count} purchases recorded — ${purchases.status}. Wire up Stripe checkout to start tracking real revenue here.`;
+    const purchases = data.purchases || { count: 0, status: 'RapidPay tracking pending first checkout' };
+    purchasePill.textContent = purchases.count > 0 ? 'LIVE' : 'READY';
+    purchaseNote.textContent = `${purchases.count} sessions recorded — ${purchases.status}.`;
+
+    const breakdownRows = [
+      { label: 'Succeeded', value: purchases.succeeded ?? 0 },
+      { label: 'Processing', value: purchases.processing ?? 0 },
+      { label: 'Failed', value: purchases.failed ?? 0 },
+      { label: 'Expired', value: purchases.expired ?? 0 },
+    ];
+
+    purchaseBreakdown.innerHTML = breakdownRows
+      .map((row) => `<div class="subject-row"><span>${row.label}</span><span>${row.value}</span></div>`)
+      .join('');
 
     lastUpdated.textContent = `Last updated ${new Date().toLocaleTimeString()}`;
   }

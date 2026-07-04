@@ -176,12 +176,11 @@ Planned routing logic (not implemented yet — server always uses Groq):
 ## Known bugs, in priority order
 
 1. `chat.html` uses Tailwind CDN instead of `brand.css` — needs a full rewrite to match the rest of the site.
-2. `dashboard.html`: `#insightsContainer` is hardcoded `display:none` in the markup — insights never show even when there's data.
-3. `dashboard.html` level thresholds (`LEVELS` array: Beginner/Explorer/Scholar/Genius/Legend at 0/10/25/50/100) don't match the level names/logic assumed server-side (Newbie/Learner/Explorer/Scholar/Master).
-4. `chat.html` doesn't update localStorage (`mm_count`, etc.) after messages, so the dashboard always shows stale/zero stats.
-5. `layout.js` never populates the engine status grid on the landing page.
-6. `server.js` has no multi-engine routing — always calls Groq regardless of subject or learning style.
-7. `checkout.html` has no real Stripe integration.
+2. `quiz.html`, `progress.html`, `learn.html`, and `subjects.html` still load Tailwind CDN and should be migrated to `brand.css` + local styles.
+3. `dashboard.html` level thresholds must stay aligned with `script.js` (`Newbie/Learner/Explorer/Scholar/Master`).
+4. `chat.html` must keep writing localStorage stats (`mm_count`, etc.) after messages so dashboards stay accurate.
+5. `layout.js` must keep populating the landing page engine status grid from `/api/status`.
+6. `checkout.html` currently uses RapidPay checkout session flow; production billing hardening and webhook monitoring are still needed before launch.
 
 ## Business model
 
