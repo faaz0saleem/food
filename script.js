@@ -293,36 +293,72 @@ function initOnboarding() {
 
   const steps = [...document.querySelectorAll('.onboarding-step')];
   const progress = document.querySelector('#onboarding-progress');
+  const status = document.querySelector('#onboarding-status');
+  const error = document.querySelector('#onboarding-error');
   const nameInput = document.querySelector('#onboarding-name');
+  const ageCards = [...document.querySelectorAll('.age-choice')];
+  const gradeCards = [...document.querySelectorAll('.grade-choice')];
   const styleCards = [...document.querySelectorAll('.learning-style-card')];
   const subjectButtons = [...document.querySelectorAll('.subject-choice')];
   const nextButton = document.querySelector('#onboarding-next');
   const backButton = document.querySelector('#onboarding-back');
   let step = 1;
+  let selectedAge = lsGet('mm_age_range', '');
+  let selectedGrade = lsGet('mm_grade', '');
   let selectedStyle = lsGet('mm_style', 'Visual');
   let selectedSubject = lsGet('mm_subject', 'Math');
+
+  function setError(message) {
+    if (error) error.textContent = message || '';
+  }
+
+  function setSelected(cards, selectedValue) {
+    cards.forEach((card) => {
+      const isSelected = card.dataset.value === selectedValue;
+      card.classList.toggle('selected', isSelected);
+      card.setAttribute('aria-pressed', isSelected ? 'true' : 'false');
+    });
+  }
 
   function refresh() {
     steps.forEach((element, index) => element.classList.toggle('active', index === step - 1));
     if (progress) progress.value = step;
+    if (status) status.textContent = `Step ${step} of ${steps.length}`;
     backButton.style.display = step === 1 ? 'none' : 'inline-flex';
     nextButton.textContent = step === steps.length ? 'Finish →' : 'Next →';
+    setError('');
   }
+
+  ageCards.forEach((card) => {
+    card.addEventListener('click', () => {
+      selectedAge = card.dataset.value || '';
+      setSelected(ageCards, selectedAge);
+      setError('');
+    });
+  });
+
+  gradeCards.forEach((card) => {
+    card.addEventListener('click', () => {
+      selectedGrade = card.dataset.value || '';
+      setSelected(gradeCards, selectedGrade);
+      setError('');
+    });
+  });
 
   styleCards.forEach((card) => {
     card.addEventListener('click', () => {
       selectedStyle = card.dataset.value || 'Visual';
-      styleCards.forEach((item) => item.classList.toggle('selected', item === card));
+      setSelected(styleCards, selectedStyle);
+      setError('');
     });
-    if (card.dataset.value === selectedStyle) card.classList.add('selected');
   });
 
   subjectButtons.forEach((card) => {
     card.addEventListener('click', () => {
       selectedSubject = card.dataset.value || 'Math';
-      subjectButtons.forEach((item) => item.classList.toggle('selected', item === card));
+      setSelected(subjectButtons, selectedSubject);
+      setError('');
     });
-    if (card.dataset.value === selectedSubject) card.classList.add('selected');
   });
 
   nextButton.addEventListener('click', () => {
@@ -330,11 +366,35 @@ function initOnboarding() {
       const name = nameInput.value.trim();
       if (!name) {
         nameInput.focus();
+        setError('Please enter your name to continue.');
         return;
       }
       lsSet('mm_name', name);
     }
+
+    if (step === 2 && !selectedAge) {
+      setError('Please select your age range to continue.');
+      return;
+    }
+
+    if (step === 3 && !selectedGrade) {
+      setError('Please select your class level to continue.');
+      return;
+    }
+
+    if (step === 4 && !selectedStyle) {
+      setError('Please choose your learning style to continue.');
+      return;
+    }
+
+    if (step === 5 && !selectedSubject) {
+      setError('Please choose a subject to continue.');
+      return;
+    }
+
     if (step === steps.length) {
+      lsSet('mm_age_range', selectedAge);
+      lsSet('mm_grade', selectedGrade);
       lsSet('mm_style', selectedStyle);
       lsSet('mm_subject', selectedSubject);
       lsSet('mm_level', 'Newbie');
@@ -349,6 +409,12 @@ function initOnboarding() {
       window.location.href = 'dashboard.html';
       return;
     }
+    if (step === 2) {
+      lsSet('mm_age_range', selectedAge);
+    }
+    if (step === 3) {
+      lsSet('mm_grade', selectedGrade);
+    }
     if (step === 4) {
       lsSet('mm_style', selectedStyle);
     }
@@ -362,6 +428,11 @@ function initOnboarding() {
       refresh();
     }
   });
+
+  setSelected(ageCards, selectedAge);
+  setSelected(gradeCards, selectedGrade);
+  setSelected(styleCards, selectedStyle);
+  setSelected(subjectButtons, selectedSubject);
 
   refresh();
 }

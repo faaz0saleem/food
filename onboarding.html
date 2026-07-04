@@ -16,7 +16,9 @@
           <h1>Let's set up your learning profile.</h1>
           <p>Answer a few quick questions so we can personalize your experience.</p>
         </div>
+        <p id="onboarding-status" class="onboarding-status" aria-live="polite">Step 1 of 5</p>
         <progress id="onboarding-progress" value="1" max="5" class="progress-bar"></progress>
+        <p id="onboarding-error" class="onboarding-error" role="alert" aria-live="assertive"></p>
         
         <!-- Step 1: Name -->
         <section class="onboarding-step active">
@@ -30,11 +32,11 @@
           <h2>Step 2 of 5: Your Age</h2>
           <p>This helps us adjust difficulty levels</p>
           <div class="grid-3">
-            <button class="card age-choice" data-value="8-10">8-10 years</button>
-            <button class="card age-choice" data-value="11-13">11-13 years</button>
-            <button class="card age-choice" data-value="14-16">14-16 years</button>
-            <button class="card age-choice" data-value="17-19">17-19 years</button>
-            <button class="card age-choice" data-value="20+">20+ years</button>
+            <button type="button" class="card age-choice" data-value="8-10" aria-pressed="false">8-10 years</button>
+            <button type="button" class="card age-choice" data-value="11-13" aria-pressed="false">11-13 years</button>
+            <button type="button" class="card age-choice" data-value="14-16" aria-pressed="false">14-16 years</button>
+            <button type="button" class="card age-choice" data-value="17-19" aria-pressed="false">17-19 years</button>
+            <button type="button" class="card age-choice" data-value="20+" aria-pressed="false">20+ years</button>
           </div>
         </section>
 
@@ -43,11 +45,11 @@
           <h2>Step 3 of 5: Your Class</h2>
           <p>What grade or level are you in?</p>
           <div class="grid-3">
-            <button class="card grade-choice" data-value="Elementary">Elementary</button>
-            <button class="card grade-choice" data-value="Middle School">Middle School</button>
-            <button class="card grade-choice" data-value="High School">High School</button>
-            <button class="card grade-choice" data-value="College">College</button>
-            <button class="card grade-choice" data-value="Self-Learning">Self-Learning</button>
+            <button type="button" class="card grade-choice" data-value="Elementary" aria-pressed="false">Elementary</button>
+            <button type="button" class="card grade-choice" data-value="Middle School" aria-pressed="false">Middle School</button>
+            <button type="button" class="card grade-choice" data-value="High School" aria-pressed="false">High School</button>
+            <button type="button" class="card grade-choice" data-value="College" aria-pressed="false">College</button>
+            <button type="button" class="card grade-choice" data-value="Self-Learning" aria-pressed="false">Self-Learning</button>
           </div>
         </section>
 
@@ -56,10 +58,10 @@
           <h2>Step 4 of 5: Learning Style</h2>
           <p>How do you learn best?</p>
           <div class="grid-4">
-            <button class="card learning-style-card" data-value="Visual">Visual 👁</button>
-            <button class="card learning-style-card" data-value="Examples">Examples 💡</button>
-            <button class="card learning-style-card" data-value="Step-by-step">Step-by-step 📝</button>
-            <button class="card learning-style-card" data-value="Stories">Stories 📖</button>
+            <button type="button" class="card learning-style-card" data-value="Visual" aria-pressed="false">Visual 👁</button>
+            <button type="button" class="card learning-style-card" data-value="Examples" aria-pressed="false">Examples 💡</button>
+            <button type="button" class="card learning-style-card" data-value="Step-by-step" aria-pressed="false">Step-by-step 📝</button>
+            <button type="button" class="card learning-style-card" data-value="Stories" aria-pressed="false">Stories 📖</button>
           </div>
         </section>
 
@@ -68,12 +70,12 @@
           <h2>Step 5 of 5: Your First Subject</h2>
           <p>Pick a subject to start learning</p>
           <div class="grid-3 subject-choice-grid">
-            <button class="card subject-choice" data-value="Math">Math 🔢</button>
-            <button class="card subject-choice" data-value="Science">Science 🔬</button>
-            <button class="card subject-choice" data-value="English">English 📚</button>
-            <button class="card subject-choice" data-value="History">History 🌍</button>
-            <button class="card subject-choice" data-value="Coding">Coding 💻</button>
-            <button class="card subject-choice" data-value="Biology">Biology 🧬</button>
+            <button type="button" class="card subject-choice" data-value="Math" aria-pressed="false">Math 🔢</button>
+            <button type="button" class="card subject-choice" data-value="Science" aria-pressed="false">Science 🔬</button>
+            <button type="button" class="card subject-choice" data-value="English" aria-pressed="false">English 📚</button>
+            <button type="button" class="card subject-choice" data-value="History" aria-pressed="false">History 🌍</button>
+            <button type="button" class="card subject-choice" data-value="Coding" aria-pressed="false">Coding 💻</button>
+            <button type="button" class="card subject-choice" data-value="Biology" aria-pressed="false">Biology 🧬</button>
           </div>
         </section>
 

@@ -85,6 +85,18 @@
   let typingIndicator = null;
   const fallbackModel = 'llama-3.3-70b-versatile';
 
+  function apiUrl(path) {
+    const rawBase = localStorage.getItem('mm_api_base') || '';
+    const base = rawBase.trim().replace(/\/$/, '');
+    return `${base}${path}`;
+  }
+
+  function getDemoTutorReply(prompt, subject) {
+    const text = (prompt || '').trim();
+    if (!text) return 'Tell me what you are learning, and I will help you with a simple explanation.';
+    return `Demo mode: Let's break down ${subject || 'this topic'} step by step. ${text.slice(0, 120)}. Start by identifying the main idea, then try one worked example, and finally explain it back in your own words.`;
+  }
+
   function refreshTopBar() {
     const progress = getLevelProgress(lsGet('mm_count', 0));
     if (topBar) topBar.style.width = `${progress.pct}%`;
@@ -141,7 +153,7 @@
 
   async function loadModelInfo() {
     try {
-      const response = await fetch('/api/status');
+      const response = await fetch(apiUrl('/api/status'));
       const data = await response.json();
       const engines = data?.engines || {};
       const liveCount = Object.values(engines).filter(Boolean).length;
@@ -149,13 +161,13 @@
         ? `${liveCount} of 4 engines live — routed automatically per question`
         : `Model: ${data?.model || fallbackModel}`;
     } catch (error) {
-      modelBadge.textContent = `Model: ${fallbackModel}`;
+      modelBadge.textContent = 'Backend offline — running local demo mode';
     }
   }
 
   async function fetchAIResponse(prompt, subject) {
     try {
-      const response = await fetch('/api/chat', {
+      const response = await fetch(apiUrl('/api/chat'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -170,12 +182,20 @@
       if (response.status === 429) {
         return { reply: data.error || "You're sending messages too quickly. Please wait a moment.", engine: null };
       }
+
+      if (!response.ok) {
+        return {
+          reply: data.error || getDemoTutorReply(prompt, subject),
+          engine: data.error ? null : 'Demo',
+        };
+      }
+
       return {
         reply: data.reply || "Sorry, I couldn't generate a response right now.",
         engine: data.engine || null,
       };
     } catch (error) {
-      return { reply: 'Unable to connect to AI. Please try again later.', engine: null };
+      return { reply: getDemoTutorReply(prompt, subject), engine: 'Demo' };
     }
   }
 
