@@ -5,3 +5,4 @@ server.log
 *.bundle
 *.zip
 yes/
+public_html/
