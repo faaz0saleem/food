@@ -31,3 +31,5 @@
   to = "/.netlify/functions/api/:splat"
   status = 200
   force = true
+
+# API endpoints are routed through the /api namespace to Netlify Functions.
