@@ -1,10 +1,8 @@
 const { config } = require('dotenv');
 config();
 
-const Groq = require('groq-sdk');
-
-const DEFAULT_MODEL = process.env.GROQ_MODEL || process.env.GROQ_MODEL_NAME || 'llama-3.3-70b-versatile';
-const client = process.env.GROQ_API_KEY ? new Groq({ apiKey: process.env.GROQ_API_KEY }) : null;
+const { trackChat, checkRateLimit } = require('./_store');
+const { routeChat } = require('../../../engines');
 
 exports.handler = async function (event) {
   if (event.httpMethod !== 'POST') {
@@ -20,6 +18,8 @@ exports.handler = async function (event) {
     const message = (payload.message || '').trim();
     const subject = payload.subject || 'General';
     const userLevel = payload.userLevel || 'Newbie';
+    const learningStyle = payload.learningStyle;
+    const visitorId = payload.visitorId || '';
 
     if (!message) {
       return {
@@ -29,36 +29,26 @@ exports.handler = async function (event) {
       };
     }
 
-    if (!client) {
+    const rateLimit = await checkRateLimit(visitorId);
+    if (!rateLimit.allowed) {
       return {
-        statusCode: 200,
+        statusCode: 429,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          status: 'ok',
-          reply: `Demo mode answer for ${subject}: Keep practicing and review one concept at a time to master it!`,
-          model: DEFAULT_MODEL,
+          error: "You're sending messages too quickly. Please wait a moment and try again.",
+          retryAfterMs: rateLimit.retryAfterMs,
         }),
       };
     }
 
-    const systemPrompt = `You are an expert learning assistant helping a student who is at the "${userLevel}" level study ${subject || 'general topics'}. Keep responses concise and encouraging.`;
+    trackChat(visitorId, subject).catch((error) => console.error('Chat tracking failed:', error.message));
 
-    const response = await client.chat.completions.create({
-      model: DEFAULT_MODEL,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: message },
-      ],
-      max_tokens: 256,
-      temperature: 0.7,
-    });
-
-    const reply = response.choices?.[0]?.message?.content?.trim() || 'I could not generate a response.';
+    const { reply, engine, model } = await routeChat({ message, subject, learningStyle, userLevel });
 
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 'ok', reply, model: DEFAULT_MODEL }),
+      body: JSON.stringify({ status: 'ok', reply, engine, model }),
     };
   } catch (error) {
     return {

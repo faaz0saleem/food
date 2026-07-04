@@ -13,6 +13,29 @@ const ADMIN_KEY = process.env.ADMIN_KEY || '';
 const DEFAULT_MODEL = process.env.GROQ_MODEL || process.env.GROQ_MODEL_NAME || 'llama-3.3-70b-versatile';
 const MODEL_LABEL = process.env.GROQ_MODEL_LABEL || DEFAULT_MODEL;
 
+// Simple in-memory rate limiter (per-IP)
+const RATE_WINDOW_MS = Number(process.env.RATE_WINDOW_MS || 60 * 1000);
+const RATE_MAX = Number(process.env.RATE_MAX || 20);
+const rateMap = new Map(); // ip -> {count, windowStart}
+
+function getClientIp(req) {
+  const xf = req.headers['x-forwarded-for'];
+  if (xf) return xf.split(',')[0].trim();
+  return req.socket && req.socket.remoteAddress ? req.socket.remoteAddress : 'unknown';
+}
+
+function isRateLimited(ip) {
+  const now = Date.now();
+  const entry = rateMap.get(ip);
+  if (!entry || now - entry.windowStart > RATE_WINDOW_MS) {
+    rateMap.set(ip, { count: 1, windowStart: now });
+    return false;
+  }
+  entry.count += 1;
+  if (entry.count > RATE_MAX) return true;
+  return false;
+}
+
 let groqClient = null;
 if (process.env.GROQ_API_KEY) {
   groqClient = new Groq({ apiKey: process.env.GROQ_API_KEY });
@@ -263,6 +286,11 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method === 'POST' && pathname === '/api/visit') {
     try {
+      const clientIp = getClientIp(req);
+      if (isRateLimited(clientIp)) {
+        sendJson(res, 429, { error: 'Rate limit exceeded' });
+        return;
+      }
       const payload = await parseRequestBody(req);
       const summary = registerVisitor(payload.visitorId);
       sendJson(res, 200, { status: 'ok', stats: summary });
@@ -274,6 +302,11 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method === 'POST' && pathname === '/api/chat') {
     try {
+      const clientIp = getClientIp(req);
+      if (isRateLimited(clientIp)) {
+        sendJson(res, 429, { error: 'Rate limit exceeded' });
+        return;
+      }
       const payload = await parseRequestBody(req);
       const visitorId = payload.visitorId;
       const message = (payload.message || '').trim();
@@ -303,6 +336,11 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method === 'POST' && pathname === '/api/quiz-question') {
     try {
+      const clientIp = getClientIp(req);
+      if (isRateLimited(clientIp)) {
+        sendJson(res, 429, { error: 'Rate limit exceeded' });
+        return;
+      }
       const payload = await parseRequestBody(req);
       const subject = payload.subject || 'Math';
       const question = await generateQuizQuestion(subject);
@@ -315,6 +353,11 @@ const server = http.createServer(async (req, res) => {
 
   if (req.method === 'POST' && pathname === '/api/quiz') {
     try {
+      const clientIp = getClientIp(req);
+      if (isRateLimited(clientIp)) {
+        sendJson(res, 429, { error: 'Rate limit exceeded' });
+        return;
+      }
       const payload = await parseRequestBody(req);
       const subject = payload.subject || 'Math';
       const count = Number(payload.count) || 5;
