@@ -139,6 +139,7 @@
 </div>
 </main>
 <footer class="site-footer"></footer>
+<script src="/script.js"></script>
 <script src="/layout.js" defer></script>
 <script>
 // ---- helpers ----
@@ -149,40 +150,28 @@ const el = (id) => document.getElementById(id);
 // ---- load data ----
 const name = get('mm_name') || 'Explorer';
 const count = get('mm_count') || 0;
-const subjects = get('mm_subjects') || {};
+const subjectCounts = get('mm_subjects') || {};
 const milestones = get('mm_milestones') || [];
 const streak = get('mm_streak') || [];
 const quizScores = get('mm_quiz_scores') || {};
 const todayCount = get('mm_today_count') || 0;
 const plan = get('mm_plan') || 'Free';
 
-// ---- level system ----
-const LEVELS = [
-  {name:'Beginner',icon:'🌱',min:0,max:10},
-  {name:'Explorer',icon:'🧭',min:10,max:25},
-  {name:'Scholar',icon:'📚',min:25,max:50},
-  {name:'Genius',icon:'🧠',min:50,max:100},
-  {name:'Legend',icon:'🏆',min:100,max:Infinity},
-];
-function getLevel(c){return LEVELS.find(l=>c>=l.min&&c<l.max)||LEVELS[4];}
-function getProgress(c){const l=getLevel(c);if(l.max===Infinity)return 100;return Math.round(((c-l.min)/(l.max-l.min))*100);} 
-
-// ---- populate ----
+// ---- level system (shared with server.js's prompt logic — see LEVEL_THRESHOLDS in script.js) ----
 el('nameEl').textContent = name;
 el('planName').textContent = plan;
 
-const lv = getLevel(count);
-const pct = getProgress(count);
-const nextLv = LEVELS[LEVELS.indexOf(lv)+1];
+const progress = getLevelProgress(count);
+const currentLevelDef = LEVEL_THRESHOLDS.find((level) => level.name === progress.level);
 
-el('levelName').textContent = `You're a ${lv.name} ${lv.icon}`;
-el('levelDesc').textContent = nextLv ? `${nextLv.min - count} more messages to become a ${nextLv.name}!` : 'You\'ve reached the top! You\'re a Legend 🏆';
-el('levelIcon').textContent = lv.icon;
-el('levelBadge').textContent = lv.name;
-el('levelNextHint').textContent = nextLv ? `${nextLv.min - count} msgs to ${nextLv.name}` : 'Max level reached!';
-el('xpLabel').textContent = `${count} / ${lv.max === Infinity ? '\u221E' : lv.max} msgs`;
-el('topBar').style.width = pct + '%';
-setTimeout(()=>{ el('xpFill').style.width = pct + '%'; }, 300);
+el('levelName').textContent = `You're a ${progress.level} ${progress.icon}`;
+el('levelDesc').textContent = progress.nextLevel ? `${progress.remaining} more messages to become a ${progress.nextLevel}!` : 'You\'ve reached the top! You\'re a Master 🏆';
+el('levelIcon').textContent = progress.icon;
+el('levelBadge').textContent = progress.level;
+el('levelNextHint').textContent = progress.nextLevel ? `${progress.remaining} msgs to ${progress.nextLevel}` : 'Max level reached!';
+el('xpLabel').textContent = `${count} / ${currentLevelDef.max === Infinity ? '∞' : currentLevelDef.max} msgs`;
+el('topBar').style.width = progress.pct + '%';
+setTimeout(()=>{ el('xpFill').style.width = progress.pct + '%'; }, 300);
 
 el('totalMsgs').textContent = count;
 el('todayDelta').textContent = `today: ${todayCount}`;
@@ -201,16 +190,16 @@ for(let i=last7.length-1;i>=0;i--){if(streak.includes(last7[i]))currentStreak++;
 el('streakVal').textContent=currentStreak;
 el('streakBig').textContent=currentStreak+' days';
 
-const subjKeys = Object.keys(subjects);
+const subjKeys = Object.keys(subjectCounts);
 el('subjCount').textContent = subjKeys.length;
 const subjBars = el('subjBars');
 if(subjKeys.length){
   subjBars.innerHTML='';
-  const max=Math.max(...Object.values(subjects));
+  const max=Math.max(...Object.values(subjectCounts));
   const colors=['var(--lime)','var(--coral)','var(--blue)','var(--pink)','var(--gold)'];
-  subjKeys.sort((a,b)=>subjects[b]-subjects[a]).forEach((s,i)=>{
-    const pct=Math.round((subjects[s]/max)*100);
-    subjBars.innerHTML+=`<div class="subj-row"><div class="subj-top"><span class="subj-name">${s}</span><span class="subj-count">${subjects[s]} msgs</span></div><div class="subj-bar"><div class="subj-fill" style="width:0%;background:${colors[i%colors.length]}" data-w="${pct}"></div></div></div>`;
+  subjKeys.sort((a,b)=>subjectCounts[b]-subjectCounts[a]).forEach((s,i)=>{
+    const pct=Math.round((subjectCounts[s]/max)*100);
+    subjBars.innerHTML+=`<div class="subj-row"><div class="subj-top"><span class="subj-name">${s}</span><span class="subj-count">${subjectCounts[s]} msgs</span></div><div class="subj-bar"><div class="subj-fill" style="width:0%;background:${colors[i%colors.length]}" data-w="${pct}"></div></div></div>`;
   });
   setTimeout(()=>{document.querySelectorAll('.subj-fill').forEach(f=>{f.style.width=f.dataset.w+'%';});},400);
 }
@@ -223,7 +212,7 @@ let hasInsights = false;
 if (count > 0) {
   hasInsights = true;
   if(count>20){el('strengthTitle').textContent='Power learner';el('strengthDesc').textContent=`You've sent ${count} messages — you're clearly serious. Most people quit at 5.`;}
-  if(subjKeys.length>0){el('focusTitle').textContent='Your top subject';el('focusDesc').textContent=`You spend most time on ${subjKeys.sort((a,b)=>subjects[b]-subjects[a])[0]}. Go deeper this week.`;}
+  if(subjKeys.length>0){el('focusTitle').textContent='Your top subject';el('focusDesc').textContent=`You spend most time on ${subjKeys.sort((a,b)=>subjectCounts[b]-subjectCounts[a])[0]}. Go deeper this week.`;}
 }
 if (insightsContainer) {
   insightsContainer.style.display = hasInsights ? 'block' : 'none';
@@ -231,11 +220,11 @@ if (insightsContainer) {
 
 const MS_DEFS=[
   {event:'First message sent',needed:count>=1,icon:'💬'},
-  {event:'Reached Explorer level',needed:count>=10,icon:'🧭'},
+  {event:'Reached Learner level',needed:count>=25,icon:'📖'},
   {event:'Explored 3 subjects',needed:subjKeys.length>=3,icon:'📚'},
-  {event:'Reached Scholar level',needed:count>=25,icon:'📖'},
-  {event:'50 messages sent',needed:count>=50,icon:'🔥'},
-  {event:'Reached Legend level',needed:count>=100,icon:'🏆'},
+  {event:'Reached Explorer level',needed:count>=60,icon:'🧭'},
+  {event:'Reached Scholar level',needed:count>=100,icon:'📚'},
+  {event:'Reached Master level',needed:count>=150,icon:'🏆'},
 ];
 const msEl=el('milestones');
 MS_DEFS.forEach(m=>{
@@ -244,7 +233,7 @@ MS_DEFS.forEach(m=>{
 
 const lastSubj = get('mm_subject');
 el('continueArea').innerHTML = lastSubj
-  ? `<div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:16px 20px;"><div><div style="font-family:var(--font-display);font-size:1rem;font-weight:600;">${lastSubj}</div><div style="font-size:0.85rem;color:var(--ink-faint);">${subjects[lastSubj]||0} messages in this subject</div></div><a href="/chat.html" style="font-family:var(--font-display);font-weight:600;font-size:0.9rem;background:var(--lime);color:var(--bg-deep);padding:11px 22px;border-radius:999px;box-shadow:var(--shadow-sm);">Resume →</a></div>`
+  ? `<div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:16px 20px;"><div><div style="font-family:var(--font-display);font-size:1rem;font-weight:600;">${lastSubj}</div><div style="font-size:0.85rem;color:var(--ink-faint);">${subjectCounts[lastSubj]||0} messages in this subject</div></div><a href="/chat.html" style="font-family:var(--font-display);font-weight:600;font-size:0.9rem;background:var(--lime);color:var(--bg-deep);padding:11px 22px;border-radius:999px;box-shadow:var(--shadow-sm);">Resume →</a></div>`
   : `<a href="/chat.html" style="display:inline-block;font-family:var(--font-display);font-weight:600;background:var(--lime);color:var(--bg-deep);padding:13px 26px;border-radius:999px;box-shadow:var(--shadow-sm);">Start your first session →</a>`;
 </script>
 </body>

@@ -78,6 +78,18 @@ img {
   padding: 0 24px;
 }
 
+.top-bar {
+  height: 4px;
+  background: var(--surface-2);
+}
+
+.top-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--lime), var(--blue));
+  border-radius: 999px;
+  transition: width 1s ease;
+}
+
 .page-wrap {
   padding: 24px 24px 64px;
 }

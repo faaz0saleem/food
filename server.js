@@ -3,13 +3,13 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const Groq = require('groq-sdk');
+const statsCore = require('./stats-core');
+const { routeChat, getEngineAvailability } = require('./engines');
 
 const port = process.env.PORT || 3000;
 const rootDir = __dirname;
 const statsFile = path.join(rootDir, 'stats.json');
-const SESSION_TIMEOUT_MS = 2 * 60 * 1000;
-const DAILY_WINDOW_MS = 24 * 60 * 60 * 1000;
-const conversationHistory = [];
+const ADMIN_KEY = process.env.ADMIN_KEY || '';
 const DEFAULT_MODEL = process.env.GROQ_MODEL || process.env.GROQ_MODEL_NAME || 'llama-3.3-70b-versatile';
 const MODEL_LABEL = process.env.GROQ_MODEL_LABEL || DEFAULT_MODEL;
 
@@ -51,13 +51,13 @@ function sendFile(res, filePath) {
 function loadStats() {
   try {
     const contents = fs.readFileSync(statsFile, 'utf8');
-    return JSON.parse(contents);
+    const parsed = JSON.parse(contents);
+    if (!parsed || typeof parsed.visitors !== 'object') {
+      return statsCore.emptyStats();
+    }
+    return parsed;
   } catch {
-    return {
-      totalVisitors: 0,
-      dailyVisitors: [],
-      actions: [],
-    };
+    return statsCore.emptyStats();
   }
 }
 
@@ -69,77 +69,21 @@ function saveStats() {
   });
 }
 
-function cleanupStats() {
-  const now = Date.now();
-  visitorStats.dailyVisitors = visitorStats.dailyVisitors.filter(
-    (visitor) => now - visitor.lastSeen <= DAILY_WINDOW_MS
-  );
-
-  if (visitorStats.actions.length > 200) {
-    visitorStats.actions = visitorStats.actions.slice(-200);
-  }
-
-  for (const [id, session] of activeSessions.entries()) {
-    if (now - session.lastSeen > SESSION_TIMEOUT_MS) {
-      activeSessions.delete(id);
-    }
-  }
-}
-
 function getStatusSummary() {
-  cleanupStats();
-  const now = Date.now();
-  const dailyChats = visitorStats.actions.filter(
-    (action) => action.actionType === 'chat' && now - action.timestamp <= DAILY_WINDOW_MS
-  ).length;
-
-  return {
-    activeUsers: activeSessions.size,
-    dailyVisitors: visitorStats.dailyVisitors.length,
-    totalVisitors: visitorStats.totalVisitors,
-    totalChats: visitorStats.actions.filter((action) => action.actionType === 'chat').length,
-    dailyChats,
-    recentActions: visitorStats.actions.slice(-10).reverse(),
-    model: MODEL_LABEL,
-  };
+  return { ...statsCore.summarize(visitorStats), model: MODEL_LABEL };
 }
 
-function registerVisitor(visitorId, userAgent) {
-  const now = Date.now();
-  if (!visitorId) {
-    return getStatusSummary();
+function registerVisitor(visitorId) {
+  if (visitorId) {
+    statsCore.recordVisit(visitorStats, visitorId);
+    saveStats();
   }
-
-  const existing = visitorStats.dailyVisitors.find((visitor) => visitor.visitorId === visitorId);
-  if (!existing) {
-    visitorStats.totalVisitors += 1;
-    visitorStats.dailyVisitors.push({
-      visitorId,
-      firstSeen: now,
-      lastSeen: now,
-      userAgent,
-      hits: 1,
-    });
-  } else {
-    existing.lastSeen = now;
-    existing.hits += 1;
-  }
-
-  activeSessions.set(visitorId, { lastSeen: now, userAgent });
-  saveStats();
   return getStatusSummary();
 }
 
-function addActionRecord(visitorId, actionType, details = {}) {
-  const record = {
-    timestamp: Date.now(),
-    visitorId: visitorId || 'anonymous',
-    actionType,
-    details,
-  };
-  visitorStats.actions.push(record);
+function recordChatEvent(visitorId, subject) {
+  statsCore.recordChat(visitorStats, visitorId, subject);
   saveStats();
-  return record;
 }
 
 function parseJsonSafe(text) {
@@ -234,48 +178,6 @@ async function generateQuizQuestion(subject) {
   return questions[0];
 }
 
-async function chatWithGroq(message, subject, userLevel) {
-  if (!groqClient) {
-    return `Demo mode answer for ${subject || 'your topic'}: Keep practicing and review one concept at a time to master it!`;
-  }
-
-  const systemPrompt = `You are an expert learning assistant helping a student who is at the "${userLevel}" level study ${subject || 'general topics'}. 
-- For Newbie/Learner levels: Explain concepts simply with basic examples
-- For Explorer/Scholar levels: Provide more detailed explanations with worked examples
-- For Master level: Offer advanced insights and complex problem-solving
-
-Be encouraging, clear, and keep responses concise (2-4 sentences). Use simple language.`;
-
-  const messages = [
-    { role: 'system', content: systemPrompt },
-    ...conversationHistory.slice(-4), // Keep only last 4 messages for context
-    { role: 'user', content: message },
-  ];
-
-  try {
-    const response = await groqClient.chat.completions.create({
-      model: DEFAULT_MODEL,
-      messages,
-      max_tokens: 256,
-      temperature: 0.7,
-    });
-
-    const reply = response.choices?.[0]?.message?.content?.trim() || 'I could not generate a response. Please try again.';
-    conversationHistory.push({ role: 'user', content: message });
-    conversationHistory.push({ role: 'assistant', content: reply });
-    
-    // Limit conversation history
-    if (conversationHistory.length > 20) {
-      conversationHistory.splice(0, 2);
-    }
-    
-    return reply;
-  } catch (error) {
-    console.error('Groq API Error:', error.message);
-    return `I'm having trouble responding right now. Error: ${error.message || 'API timeout'}. Please try again in a moment.`;
-  }
-}
-
 function parseRequestBody(req) {
   return new Promise((resolve, reject) => {
     let body = '';
@@ -298,11 +200,6 @@ function parseRequestBody(req) {
 }
 
 const visitorStats = loadStats();
-const activeSessions = new Map();
-setInterval(() => {
-  cleanupStats();
-  saveStats();
-}, 20 * 1000);
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
@@ -336,7 +233,20 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname === '/api/status') {
-      sendJson(res, 200, { status: 'ok', model: MODEL_LABEL, stats: getStatusSummary() });
+      sendJson(res, 200, { status: 'ok', model: MODEL_LABEL, engines: getEngineAvailability(), stats: getStatusSummary() });
+      return;
+    }
+
+    if (pathname === '/api/admin-stats') {
+      const providedKey = req.headers['x-admin-key'] || url.searchParams.get('key') || '';
+      if (!ADMIN_KEY || providedKey !== ADMIN_KEY) {
+        sendJson(res, 401, { error: 'Unauthorized' });
+        return;
+      }
+      sendJson(res, 200, {
+        ...statsCore.summarize(visitorStats),
+        purchases: { count: 0, status: 'Stripe not connected yet' },
+      });
       return;
     }
   }
@@ -354,9 +264,7 @@ const server = http.createServer(async (req, res) => {
   if (req.method === 'POST' && pathname === '/api/visit') {
     try {
       const payload = await parseRequestBody(req);
-      const visitorId = payload.visitorId;
-      const userAgent = req.headers['user-agent'] || 'unknown';
-      const summary = registerVisitor(visitorId, userAgent);
+      const summary = registerVisitor(payload.visitorId);
       sendJson(res, 200, { status: 'ok', stats: summary });
     } catch (error) {
       sendJson(res, 400, { error: error.message });
@@ -375,10 +283,18 @@ const server = http.createServer(async (req, res) => {
         sendJson(res, 400, { error: 'A message is required.' });
         return;
       }
-      registerVisitor(visitorId, req.headers['user-agent'] || 'unknown');
-      addActionRecord(visitorId, 'chat', { message, subject, userLevel });
-      const reply = await chatWithGroq(message, subject, userLevel);
-      sendJson(res, 200, { status: 'ok', reply, model: MODEL_LABEL, stats: getStatusSummary() });
+      const rateLimit = statsCore.checkAndRecordRateLimit(visitorStats, visitorId);
+      if (!rateLimit.allowed) {
+        sendJson(res, 429, {
+          error: "You're sending messages too quickly. Please wait a moment and try again.",
+          retryAfterMs: rateLimit.retryAfterMs,
+        });
+        return;
+      }
+      recordChatEvent(visitorId, subject);
+      const learningStyle = payload.learningStyle;
+      const { reply, engine, model } = await routeChat({ message, subject, learningStyle, userLevel });
+      sendJson(res, 200, { status: 'ok', reply, engine, model: model || MODEL_LABEL, stats: getStatusSummary() });
     } catch (error) {
       sendJson(res, 400, { error: error.message });
     }

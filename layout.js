@@ -44,7 +44,7 @@
     if (document.querySelector('.beta-banner')) return;
     const banner = document.createElement('div');
     banner.className = 'beta-banner';
-    banner.innerHTML = '<strong>Beta testing</strong> — MindMesh is in early access. Payments and extra AI engines roll out soon. One engine live today.';
+    banner.innerHTML = '<strong>Beta testing</strong> — MindMesh is in early access. Payments are still in testing; check the engine status below for which AI engines are live today.';
     document.body.prepend(banner);
   }
 
@@ -110,10 +110,10 @@
             <a href="/onboarding.html">Get started</a>
             <a href="/checkout.html?plan=student">Upgrade</a>
           </div>
-          <div class="footer-col">
+          <div class="footer-col" data-footer-status>
             <h4>Status</h4>
-            <p>Groq engine: live</p>
-            <p>Gemini, OpenAI, Claude: coming soon</p>
+            <p>Reasoner (Groq): live</p>
+            <p>Solver, Explorer, Storyteller: checking…</p>
             <p>Stripe billing: testing phase</p>
           </div>
         </div>
@@ -126,19 +126,48 @@
     target.dataset.built = 'true';
   }
 
-  function renderEngineStatus(container) {
-    if (!container) return;
-    container.innerHTML = ENGINES.map((engine) => `
-      <article class="engine-status ${engine.status}">
+  function renderEngineCards(container, statuses) {
+    container.innerHTML = ENGINES.map((engine) => {
+      const status = statuses[engine.id] ? 'live' : 'soon';
+      return `
+      <article class="engine-status ${status}">
         <div class="engine-status-top">
-          <span class="engine-dot ${engine.status}" style="background:${engine.color}"></span>
-          <span class="engine-badge ${engine.status}">${engine.status === 'live' ? 'LIVE' : 'COMING SOON'}</span>
+          <span class="engine-dot ${status}" style="background:${engine.color}"></span>
+          <span class="engine-badge ${status}">${status === 'live' ? 'LIVE' : 'COMING SOON'}</span>
         </div>
         <h3>${engine.name}</h3>
         <p>${engine.desc}</p>
         <p style="font-family:var(--font-mono);font-size:0.72rem;color:var(--ink-faint);">${engine.provider}</p>
       </article>
-    `).join('');
+    `;
+    }).join('');
+  }
+
+  function renderFooterStatus(statuses) {
+    const target = document.querySelector('[data-footer-status]');
+    if (!target) return;
+    const liveEngines = ENGINES.filter((engine) => statuses[engine.id]).map((engine) => engine.name.replace('The ', ''));
+    const comingSoon = ENGINES.filter((engine) => !statuses[engine.id]).map((engine) => engine.name.replace('The ', ''));
+    const lines = [`<h4>Status</h4>`, `<p>${liveEngines.length ? liveEngines.join(', ') : 'No engines'}: live</p>`];
+    if (comingSoon.length) lines.push(`<p>${comingSoon.join(', ')}: coming soon</p>`);
+    lines.push('<p>Stripe billing: testing phase</p>');
+    target.innerHTML = lines.join('');
+  }
+
+  async function renderEngineStatus(container) {
+    const fallbackStatuses = { reasoner: true, solver: false, explorer: false, storyteller: false };
+    if (container) renderEngineCards(container, fallbackStatuses);
+    try {
+      const response = await fetch('/api/status');
+      const data = await response.json();
+      if (data.engines) {
+        if (container) renderEngineCards(container, data.engines);
+        renderFooterStatus(data.engines);
+      }
+    } catch {
+      // keep the fallback render (Groq only) if /api/status is unreachable
+      renderFooterStatus(fallbackStatuses);
+    }
   }
 
   window.MindMeshUI = {

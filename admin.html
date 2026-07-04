@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MindMesh — Admin</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/brand.css">
+<link rel="stylesheet" href="/nav.css">
+<style>
+  .admin-wrap { max-width: 880px; margin: 0 auto; }
+  .admin-head { margin-bottom: 32px; }
+  .admin-head h1 { font-family: var(--font-display); font-size: 2rem; margin: 0 0 8px; }
+  .admin-head p { color: var(--ink-soft); margin: 0; }
+
+  .key-gate { max-width: 420px; margin: 60px auto; text-align: center; }
+  .key-gate input {
+    width: 100%; box-sizing: border-box; padding: 14px 16px; margin: 16px 0;
+    border-radius: var(--radius-sm); border: 2px solid var(--border);
+    background: var(--surface); color: var(--ink); font-family: var(--font-mono);
+  }
+  .key-gate input:focus { outline: none; border-color: var(--lime); }
+  .key-error { color: var(--coral); font-size: 0.88rem; min-height: 20px; margin-top: 4px; }
+
+  .kpi-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 32px; }
+  .kpi-card {
+    background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius);
+    padding: 20px; box-shadow: var(--shadow-sm);
+  }
+  .kpi-label { font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); }
+  .kpi-value { font-family: var(--font-display); font-size: 2rem; color: var(--lime); margin-top: 6px; }
+
+  .admin-section { background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 20px; }
+  .admin-section h2 { font-family: var(--font-display); font-size: 1.1rem; margin: 0 0 16px; }
+  .subject-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border-soft); font-size: 0.92rem; }
+  .subject-row:last-child { border-bottom: none; }
+  .empty-note { color: var(--ink-faint); font-size: 0.9rem; }
+  .purchase-note { color: var(--ink-soft); font-size: 0.92rem; line-height: 1.6; }
+  .status-pill { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 0.72rem; color: var(--gold); background: rgba(255, 209, 77, 0.12); border-radius: 999px; padding: 4px 10px; }
+
+  .refresh-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .refresh-row button { background: none; border: 2px solid var(--border); color: var(--ink-soft); border-radius: 999px; padding: 8px 16px; font-family: var(--font-body); font-weight: 600; cursor: pointer; }
+  .refresh-row button:hover { border-color: var(--lime); color: var(--lime); }
+
+  @media (max-width: 700px) {
+    .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+</style>
+</head>
+<body>
+<header class="site-nav"></header>
+
+<main>
+<div class="container">
+
+  <div id="keyGate" class="key-gate">
+    <div class="eyebrow" style="justify-content:center;">Admin access</div>
+    <h1 style="font-family:var(--font-display);font-size:1.6rem;margin:0 0 8px;">Enter your admin key</h1>
+    <p style="color:var(--ink-soft);">This matches the <code>ADMIN_KEY</code> environment variable set on the server / Netlify site.</p>
+    <input id="keyInput" type="password" placeholder="Admin key" autocomplete="off" />
+    <button class="btn-primary" id="unlockBtn" style="width:100%;">Unlock dashboard →</button>
+    <div class="key-error" id="keyError"></div>
+  </div>
+
+  <div id="adminBody" class="admin-wrap" style="display:none;">
+    <div class="admin-head">
+      <div class="eyebrow">Admin dashboard</div>
+      <h1>MindMesh usage stats</h1>
+      <p>Live numbers from the visit and chat tracking backend. Refreshes every 30s.</p>
+    </div>
+
+    <div class="refresh-row">
+      <span class="empty-note" id="lastUpdated"></span>
+      <button id="refreshBtn" type="button">Refresh now</button>
+    </div>
+
+    <div class="kpi-grid" id="kpiGrid"></div>
+
+    <div class="admin-section">
+      <h2>Top subjects (by chat volume)</h2>
+      <div id="subjectsList"></div>
+    </div>
+
+    <div class="admin-section">
+      <h2>Purchases <span class="status-pill">NOT CONNECTED</span></h2>
+      <p class="purchase-note" id="purchaseNote"></p>
+    </div>
+  </div>
+
+</div>
+</main>
+
+<footer class="site-footer"></footer>
+<script src="/layout.js" defer></script>
+<script>
+(function () {
+  const keyGate = document.getElementById('keyGate');
+  const adminBody = document.getElementById('adminBody');
+  const keyInput = document.getElementById('keyInput');
+  const keyError = document.getElementById('keyError');
+  const unlockBtn = document.getElementById('unlockBtn');
+  const refreshBtn = document.getElementById('refreshBtn');
+  const kpiGrid = document.getElementById('kpiGrid');
+  const subjectsList = document.getElementById('subjectsList');
+  const purchaseNote = document.getElementById('purchaseNote');
+  const lastUpdated = document.getElementById('lastUpdated');
+
+  let pollTimer = null;
+
+  function kpi(label, value) {
+    return `<div class="kpi-card"><div class="kpi-label">${label}</div><div class="kpi-value">${value}</div></div>`;
+  }
+
+  function render(data) {
+    kpiGrid.innerHTML = [
+      kpi('Total users (all time)', data.totalVisitors ?? 0),
+      kpi('Active right now', data.activeNow ?? 0),
+      kpi('Active today', data.dailyActiveUsers ?? 0),
+      kpi('Active this month', data.monthlyActiveUsers ?? 0),
+      kpi('Total chats', data.totalChats ?? 0),
+      kpi('Chats today', data.chatsToday ?? 0),
+    ].join('');
+
+    const subjects = data.topSubjects || [];
+    subjectsList.innerHTML = subjects.length
+      ? subjects.map((s) => `<div class="subject-row"><span>${s.subject}</span><span>${s.count}</span></div>`).join('')
+      : '<p class="empty-note">No chat activity recorded yet.</p>';
+
+    const purchases = data.purchases || { count: 0, status: 'Stripe not connected yet' };
+    purchaseNote.textContent = `${purchases.count} purchases recorded — ${purchases.status}. Wire up Stripe checkout to start tracking real revenue here.`;
+
+    lastUpdated.textContent = `Last updated ${new Date().toLocaleTimeString()}`;
+  }
+
+  async function loadStats(key) {
+    const res = await fetch('/api/admin-stats', { headers: { 'X-Admin-Key': key } });
+    if (!res.ok) {
+      throw new Error(res.status === 401 ? 'Invalid admin key.' : `Server error (${res.status}).`);
+    }
+    return res.json();
+  }
+
+  async function unlock(key) {
+    keyError.textContent = '';
+    try {
+      const data = await loadStats(key);
+      sessionStorage.setItem('mm_admin_key', key);
+      keyGate.style.display = 'none';
+      adminBody.style.display = 'block';
+      render(data);
+      if (pollTimer) clearInterval(pollTimer);
+      pollTimer = setInterval(async () => {
+        try {
+          render(await loadStats(key));
+        } catch (error) {
+          lastUpdated.textContent = `Refresh failed: ${error.message}`;
+        }
+      }, 30000);
+    } catch (error) {
+      keyError.textContent = error.message;
+    }
+  }
+
+  unlockBtn.addEventListener('click', () => {
+    const key = keyInput.value.trim();
+    if (key) unlock(key);
+  });
+  keyInput.addEventListener('keypress', (event) => {
+    if (event.key === 'Enter') unlockBtn.click();
+  });
+  refreshBtn.addEventListener('click', () => {
+    const key = sessionStorage.getItem('mm_admin_key');
+    if (key) loadStats(key).then(render).catch((error) => { lastUpdated.textContent = `Refresh failed: ${error.message}`; });
+  });
+
+  const savedKey = sessionStorage.getItem('mm_admin_key');
+  if (savedKey) unlock(savedKey);
+})();
+</script>
+</body>
+</html>

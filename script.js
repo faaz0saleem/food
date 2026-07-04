@@ -72,12 +72,31 @@ function getSubjectByName(name) {
   return subjects.find((subject) => subject.name === name) || subjects[0];
 }
 
+const LEVEL_THRESHOLDS = [
+  { name: 'Newbie', icon: '🌱', min: 0, max: 25 },
+  { name: 'Learner', icon: '📖', min: 25, max: 60 },
+  { name: 'Explorer', icon: '🧭', min: 60, max: 100 },
+  { name: 'Scholar', icon: '📚', min: 100, max: 150 },
+  { name: 'Master', icon: '🏆', min: 150, max: Infinity },
+];
+
 function getLevelForCount(count) {
-  if (count >= 150) return 'Master';
-  if (count >= 100) return 'Scholar';
-  if (count >= 60) return 'Explorer';
-  if (count >= 25) return 'Learner';
-  return 'Newbie';
+  const entry = LEVEL_THRESHOLDS.find((level) => count >= level.min && count < level.max);
+  return (entry || LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length - 1]).name;
+}
+
+function getLevelProgress(count) {
+  const index = LEVEL_THRESHOLDS.findIndex((level) => count >= level.min && count < level.max);
+  const level = index === -1 ? LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length - 1] : LEVEL_THRESHOLDS[index];
+  const next = LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.indexOf(level) + 1] || null;
+  const pct = level.max === Infinity ? 100 : Math.round(((count - level.min) / (level.max - level.min)) * 100);
+  return {
+    level: level.name,
+    icon: level.icon,
+    pct,
+    nextLevel: next ? next.name : null,
+    remaining: next ? Math.max(0, next.min - count) : 0,
+  };
 }
 
 function updateLevel() {
@@ -265,16 +284,6 @@ function renderSubjectCards(container, category = 'All', search = '') {
       `;
     })
     .join('');
-}
-
-function initIndex() {
-  buildNav();
-  const startButton = document.querySelector('#start-free');
-  if (!startButton) return;
-  startButton.addEventListener('click', () => {
-    const name = lsGet('mm_name', '');
-    window.location.href = name ? 'dashboard.html' : 'onboarding.html';
-  });
 }
 
 function initOnboarding() {
@@ -466,76 +475,6 @@ function initSignup() {
 }
 
 
-function initDashboard() {
-  buildNav();
-  setTheme(lsGet('mm_theme', 'dark'));
-  ensureProfile();
-
-  const vitals = getVitals();
-  const welcomeName = document.querySelector('#dashboard-name');
-  const levelValue = document.querySelector('#dashboard-level');
-  const countValue = document.querySelector('#dashboard-count');
-  const levelCard = document.querySelector('#dashboard-level-card');
-  const subjectCount = document.querySelector('#dashboard-subjects');
-  const resumeSubject = document.querySelector('#dashboard-resume-subject');
-  const resumeLink = document.querySelector('#dashboard-resume-link');
-
-  if (welcomeName) welcomeName.textContent = formatName(vitals.name);
-  if (levelValue) levelValue.textContent = vitals.level;
-  if (countValue) countValue.textContent = vitals.count;
-  if (levelCard) levelCard.textContent = vitals.level;
-  if (subjectCount) subjectCount.textContent = Object.keys(vitals.subjectsData).filter((key) => vitals.subjectsData[key] > 0).length;
-  if (resumeSubject) resumeSubject.textContent = vitals.subject;
-  if (resumeLink) resumeLink.href = `chat.html?subject=${encodeURIComponent(vitals.subject)}`;
-
-  const subjectList = document.querySelector('#dashboard-subject-list');
-  if (subjectList) {
-    const explored = getExploredSubjects();
-    subjectList.innerHTML = explored.length
-      ? explored.map((item) => `
-          <article class="subject-progress-card">
-            <div class="subject-progress-top">
-              <span class="subject-icon">${item.icon}</span>
-              <div>
-                <h3>${item.name}</h3>
-                <small>${item.count} messages</small>
-              </div>
-            </div>
-            <div class="progress-bar small"><span style="width: ${Math.min(100, item.count * 2)}%"></span></div>
-          </article>
-        `).join('')
-      : '<p class="empty-state">No subject activity yet. Start learning to build your tracker.</p>';
-  }
-
-  const streakContainer = document.querySelector('#dashboard-streak');
-  if (streakContainer) {
-    streakContainer.innerHTML = Array.from({ length: 7 }, (_, index) => {
-      const date = new Date();
-      date.setDate(date.getDate() - (6 - index));
-      const key = date.toISOString().slice(0, 10);
-      return `<div class="streak-dot ${vitals.streak.includes(key) ? 'active' : ''}" title="${date.toLocaleDateString(undefined, { weekday: 'short' })}"></div>`;
-    }).join('');
-  }
-
-  const challengeBox = document.querySelector('#dashboard-challenge');
-  if (challengeBox) {
-    fetch('/api/quiz-question', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subject: vitals.subject }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        challengeBox.innerHTML = data.question
-          ? `<p>${data.question}</p><small>${vitals.subject}</small>`
-          : '<p>Try the quiz to discover a new challenge.</p>';
-      })
-      .catch(() => {
-        challengeBox.innerHTML = '<p>Unable to load challenge right now.</p>';
-      });
-  }
-}
-
 function initSubjects() {
   buildNav();
   setTheme(lsGet('mm_theme', 'dark'));
@@ -563,276 +502,6 @@ function initSubjects() {
   }
 
   refresh();
-}
-
-function initChat() {
-  buildNav();
-  setTheme(lsGet('mm_theme', 'dark'));
-  ensureProfile();
-
-  const subjectParam = getQueryParam('subject');
-  const subjectName = subjectParam || lsGet('mm_subject', 'Math');
-  const subject = getSubjectByName(subjectName);
-  const chatSubject = document.querySelector('#chat-subject');
-  const switchLink = document.querySelector('#switch-subject');
-  const form = document.querySelector('#chat-form');
-  const input = document.querySelector('#message-input');
-  const messages = document.querySelector('#messages');
-
-  if (chatSubject) chatSubject.textContent = `${subject.icon} ${subject.name}`;
-  if (switchLink) switchLink.href = 'subjects.html';
-  if (messages) messages.innerHTML = '';
-
-  function appendMessage(text, sender) {
-    if (!messages) return;
-    const node = document.createElement('div');
-    node.className = `message ${sender}`;
-    node.innerHTML = `<div class="bubble">${text}</div>`;
-    messages.appendChild(node);
-    messages.scrollTop = messages.scrollHeight;
-  }
-
-  function showTyping() {
-    if (!messages) return;
-    const node = document.createElement('div');
-    node.className = 'message assistant typing-indicator';
-    node.id = 'typing-indicator';
-    node.innerHTML = `<div class="bubble typing"><span></span><span></span><span></span></div>`;
-    messages.appendChild(node);
-    messages.scrollTop = messages.scrollHeight;
-  }
-
-  function hideTyping() {
-    const indicator = document.querySelector('#typing-indicator');
-    if (indicator) indicator.remove();
-  }
-
-  if (messages) appendMessage(`Ready to study ${subject.name}. Ask your first question!`, 'assistant');
-
-  form?.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const text = input.value.trim();
-    if (!text) return;
-    appendMessage(text, 'user');
-    input.value = '';
-    showTyping();
-    try {
-      const result = await apiPost('/api/chat', { 
-        visitorId: getSessionId(), 
-        subject: subject.name, 
-        message: text,
-        userLevel: lsGet('mm_level', 'Newbie')
-      });
-      hideTyping();
-      const reply = result.reply || 'Sorry, I could not answer that.';
-      appendMessage(reply, 'assistant');
-      recordChat(subject.name);
-      recordConversation(subject.name, text, reply);
-    } catch (error) {
-      hideTyping();
-      const errorMsg = 'Connection error. Try again later.';
-      appendMessage(errorMsg, 'assistant');
-      recordConversation(subject.name, text, 'Error: ' + error.message);
-    }
-  });
-}
-
-function initQuiz() {
-  buildNav();
-  setTheme(lsGet('mm_theme', 'dark'));
-  ensureProfile();
-
-  const tabs = [...document.querySelectorAll('.quiz-subject-tab button')];
-  const generateButton = document.querySelector('#generate-quiz');
-  const scoreLabel = document.querySelector('#quiz-score');
-  const questionPanel = document.querySelector('#quiz-question');
-  const nextButton = document.querySelector('#quiz-next');
-  const resultsPanel = document.querySelector('#quiz-results');
-
-  let activeSubject = getFavoriteSubject();
-  let questions = [];
-  let currentIndex = 0;
-  let correctCount = 0;
-  let answered = false;
-
-  function updateScore() {
-    if (scoreLabel) scoreLabel.textContent = `${correctCount} / ${questions.length || 5} correct`;
-  }
-
-  function renderQuestion() {
-    if (!questionPanel) return;
-    const question = questions[currentIndex];
-    if (!question) {
-      questionPanel.innerHTML = '<p class="empty-state">Generate a quiz to begin.</p>';
-      nextButton.disabled = true;
-      return;
-    }
-    questionPanel.innerHTML = `
-      <div class="quiz-card-panel">
-        <h2>${question.question}</h2>
-        <div class="quiz-options">${question.options
-          .map((option) => `<button class="button quiz-option" data-answer="${option[0]}">${option}</button>`)
-          .join('')}</div>
-        <div class="quiz-explanation"></div>
-      </div>
-    `;
-    answered = false;
-    nextButton.disabled = true;
-    nextButton.textContent = currentIndex + 1 === questions.length ? 'Finish quiz' : 'Next question →';
-    questionPanel.querySelectorAll('.quiz-option').forEach((button) => {
-      button.addEventListener('click', () => {
-        if (answered) return;
-        answered = true;
-        const selected = button.dataset.answer;
-        questionPanel.querySelectorAll('.quiz-option').forEach((btn) => {
-          btn.classList.add(btn.dataset.answer === question.correct ? 'correct' : 'wrong');
-          btn.disabled = true;
-        });
-        if (selected === question.correct) correctCount += 1;
-        const explanation = questionPanel.querySelector('.quiz-explanation');
-        if (explanation) explanation.textContent = question.explanation;
-        nextButton.disabled = false;
-        updateScore();
-      });
-    });
-    updateScore();
-  }
-
-  function renderResults() {
-    if (!resultsPanel) return;
-    const percent = questions.length ? Math.round((correctCount / questions.length) * 100) : 0;
-    const grade = percent >= 90 ? 'A' : percent >= 75 ? 'B' : percent >= 60 ? 'C' : percent >= 50 ? 'D' : 'F';
-    const message = grade === 'A' ? 'Excellent work!' : grade === 'B' ? 'Great job!' : grade === 'C' ? 'Solid effort!' : grade === 'D' ? 'Keep practicing!' : 'Let’s study this topic more.';
-    resultsPanel.innerHTML = `
-      <div class="quiz-results-card">
-        <h2>${percent}%</h2>
-        <p class="grade">Grade ${grade}</p>
-        <p>${message}</p>
-        <div class="quiz-results-actions">
-          <button id="quiz-retry" class="button button-secondary">Try again</button>
-          <a class="button button-primary" href="chat.html?subject=${encodeURIComponent(activeSubject)}">Learn this topic →</a>
-        </div>
-      </div>
-    `;
-    const scores = lsGet('mm_quiz_scores', {});
-    scores[activeSubject] = scores[activeSubject] || [];
-    scores[activeSubject].push(percent);
-    lsSet('mm_quiz_scores', scores);
-    addMilestone(`Completed quiz in ${activeSubject}`);
-    document.querySelector('#quiz-retry')?.addEventListener('click', () => {
-      resultsPanel.innerHTML = '';
-      startQuiz();
-    });
-  }
-
-  function startQuiz() {
-    questions = [];
-    currentIndex = 0;
-    correctCount = 0;
-    answered = false;
-    if (questionPanel) questionPanel.innerHTML = '<p class="empty-state">Generate a quiz to begin.</p>';
-    if (resultsPanel) resultsPanel.innerHTML = '';
-    if (nextButton) nextButton.disabled = true;
-    updateScore();
-  }
-
-  tabs.forEach((tab) => {
-    tab.addEventListener('click', () => {
-      activeSubject = tab.dataset.subject || 'Math';
-      tabs.forEach((item) => item.classList.toggle('active', item === tab));
-    });
-  });
-
-  generateButton?.addEventListener('click', async () => {
-    if (!generateButton) return;
-    generateButton.disabled = true;
-    generateButton.textContent = 'Generating...';
-    if (questionPanel) questionPanel.innerHTML = '<p class="empty-state">Generating quiz…</p>';
-    questions = [];
-    currentIndex = 0;
-    correctCount = 0;
-    updateScore();
-    try {
-      const data = await apiPost('/api/quiz', { subject: activeSubject });
-      questions = Array.isArray(data) ? data : [];
-      if (!questions.length) {
-        if (questionPanel) questionPanel.innerHTML = '<p class="empty-state">Unable to generate quiz.</p>';
-        nextButton.disabled = true;
-      } else {
-        currentIndex = 0;
-        renderQuestion();
-      }
-    } catch (error) {
-      if (questionPanel) questionPanel.innerHTML = '<p class="empty-state">Unable to generate quiz right now.</p>';
-    }
-    generateButton.disabled = false;
-    generateButton.textContent = 'Generate Quiz';
-  });
-
-  nextButton?.addEventListener('click', () => {
-    if (currentIndex + 1 < questions.length) {
-      currentIndex += 1;
-      renderQuestion();
-    } else {
-      renderResults();
-      nextButton.disabled = true;
-    }
-  });
-
-  startQuiz();
-}
-
-function initProgress() {
-  buildNav();
-  setTheme(lsGet('mm_theme', 'dark'));
-  ensureProfile();
-
-  const vitals = getVitals();
-  const quizMetrics = getQuizMetrics();
-
-  const levelName = document.querySelector('#progress-level-name');
-  const totalMessages = document.querySelector('#progress-total-messages');
-  const totalSessions = document.querySelector('#progress-total-sessions');
-  const totalMessages2 = document.querySelector('#progress-total-messages-2');
-  const favorite = document.querySelector('#progress-favorite-subject');
-  const quizzesTaken = document.querySelector('#progress-quizzes-taken');
-  const avgScore = document.querySelector('#progress-avg-score');
-  const weakArea = document.querySelector('#progress-weak-area');
-  const journeyList = document.querySelector('#progress-journey');
-  const breakdown = document.querySelector('#progress-breakdown');
-
-  if (levelName) levelName.textContent = vitals.level;
-  if (totalMessages) totalMessages.textContent = vitals.count;
-  if (totalMessages2) totalMessages2.textContent = vitals.count;
-  if (totalSessions) totalSessions.textContent = lsGet('mm_sessions', []).length;
-  if (favorite) favorite.textContent = getFavoriteSubject();
-  if (quizzesTaken) quizzesTaken.textContent = quizMetrics.total;
-  if (avgScore) avgScore.textContent = `${quizMetrics.average}%`;
-  if (weakArea) weakArea.textContent = getWeakArea();
-
-  if (journeyList) {
-    const milestones = lsGet('mm_milestones', []);
-    journeyList.innerHTML = milestones.length
-      ? milestones.map((item) => `<li><span>${item.date}</span>${item.event}</li>`).join('')
-      : '<li>No milestones yet.</li>';
-  }
-
-  if (breakdown) {
-    const total = Object.values(vitals.subjectsData).reduce((sum, value) => sum + value, 0) || 1;
-    breakdown.innerHTML = subjects
-      .map((subject) => {
-        const value = vitals.subjectsData[subject.name] || 0;
-        const width = total ? Math.round((value / total) * 100) : 0;
-        return `
-          <div class="breakdown-row">
-            <span>${subject.name}</span>
-            <div class="breakdown-bar"><span style="width: ${width}%"></span></div>
-            <strong>${value}</strong>
-          </div>
-        `;
-      })
-      .join('');
-  }
 }
 
 function initProfile() {
@@ -930,13 +599,8 @@ function initPage() {
 
   ensureProfile();
   registerVisitor();
-  if (pageId === 'index') return initIndex();
   if (pageId === 'onboarding') return initOnboarding();
-  if (pageId === 'dashboard') return initDashboard();
   if (pageId === 'subjects') return initSubjects();
-  if (pageId === 'chat') return initChat();
-  if (pageId === 'quiz') return initQuiz();
-  if (pageId === 'progress') return initProgress();
   if (pageId === 'profile') return initProfile();
   if (pageId === 'signup') return initSignup();
 }
