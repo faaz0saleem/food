@@ -1,91 +1,877 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Onboarding | MindMesh</title>
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="/styles.css" />
-  </head>
-  <body data-page="onboarding">
-    <div class="page-shell fade-in">
-      <header class="site-nav"></header>
-      <main class="page-card onboarding-card">
-        <div class="section-header">
-          <p class="eyebrow">Welcome to MindMesh</p>
-          <h1>Let's set up your learning profile.</h1>
-          <p>Answer a few quick questions so we can personalize your experience.</p>
-        </div>
-        <p id="onboarding-status" class="onboarding-status" aria-live="polite">Step 1 of 5</p>
-        <progress id="onboarding-progress" value="1" max="5" class="progress-bar"></progress>
-        <p id="onboarding-error" class="onboarding-error" role="alert" aria-live="assertive"></p>
-        
-        <!-- Step 1: Name -->
-        <section class="onboarding-step active">
-          <h2>Step 1 of 5: Your Name</h2>
-          <p>What should we call you?</p>
-          <input id="onboarding-name" type="text" placeholder="Your first name" />
-        </section>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Set Up Your Profile | MindMesh</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/brand.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-        <!-- Step 2: Age -->
-        <section class="onboarding-step">
-          <h2>Step 2 of 5: Your Age</h2>
-          <p>This helps us adjust difficulty levels</p>
-          <div class="grid-3">
-            <button type="button" class="card age-choice" data-value="8-10" aria-pressed="false">8-10 years</button>
-            <button type="button" class="card age-choice" data-value="11-13" aria-pressed="false">11-13 years</button>
-            <button type="button" class="card age-choice" data-value="14-16" aria-pressed="false">14-16 years</button>
-            <button type="button" class="card age-choice" data-value="17-19" aria-pressed="false">17-19 years</button>
-            <button type="button" class="card age-choice" data-value="20+" aria-pressed="false">20+ years</button>
-          </div>
-        </section>
+    body {
+      font-family: var(--font-body);
+      color: var(--ink);
+      min-height: 100vh;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 24px 16px 48px;
+      background-image:
+        radial-gradient(circle at 20% 10%, rgba(200,255,77,0.08), transparent 45%),
+        radial-gradient(circle at 80% 80%, rgba(255,77,227,0.07), transparent 45%);
+    }
 
-        <!-- Step 3: Grade/Class Level -->
-        <section class="onboarding-step">
-          <h2>Step 3 of 5: Your Class</h2>
-          <p>What grade or level are you in?</p>
-          <div class="grid-3">
-            <button type="button" class="card grade-choice" data-value="Elementary" aria-pressed="false">Elementary</button>
-            <button type="button" class="card grade-choice" data-value="Middle School" aria-pressed="false">Middle School</button>
-            <button type="button" class="card grade-choice" data-value="High School" aria-pressed="false">High School</button>
-            <button type="button" class="card grade-choice" data-value="College" aria-pressed="false">College</button>
-            <button type="button" class="card grade-choice" data-value="Self-Learning" aria-pressed="false">Self-Learning</button>
-          </div>
-        </section>
+    /* ── XP HUD ─────────────────────────── */
+    .ob-hud {
+      width: min(680px, 100%);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .ob-brand {
+      font-family: var(--font-display);
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--ink);
+    }
+    .ob-xp-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+      justify-content: flex-end;
+    }
+    .ob-xp-label {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: var(--lime);
+      white-space: nowrap;
+    }
+    .ob-xp-bar {
+      width: 120px;
+      height: 8px;
+      background: var(--surface);
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .ob-xp-fill {
+      height: 100%;
+      background: var(--lime);
+      border-radius: 999px;
+      transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+      width: 0%;
+    }
+    .ob-level-badge {
+      font-family: var(--font-display);
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 999px;
+      background: rgba(200,255,77,0.12);
+      border: 1px solid rgba(200,255,77,0.25);
+      color: var(--lime);
+    }
 
-        <!-- Step 4: Learning Style -->
-        <section class="onboarding-step">
-          <h2>Step 4 of 5: Learning Style</h2>
-          <p>How do you learn best?</p>
-          <div class="grid-4">
-            <button type="button" class="card learning-style-card" data-value="Visual" aria-pressed="false">Visual 👁</button>
-            <button type="button" class="card learning-style-card" data-value="Examples" aria-pressed="false">Examples 💡</button>
-            <button type="button" class="card learning-style-card" data-value="Step-by-step" aria-pressed="false">Step-by-step 📝</button>
-            <button type="button" class="card learning-style-card" data-value="Stories" aria-pressed="false">Stories 📖</button>
-          </div>
-        </section>
+    /* ── STEP DOTS ───────────────────────── */
+    .ob-dots {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 28px;
+    }
+    .ob-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--surface);
+      border: 2px solid var(--border);
+      transition: all 0.3s ease;
+    }
+    .ob-dot.done { background: var(--lime); border-color: var(--lime); }
+    .ob-dot.active { background: var(--lime); border-color: var(--lime); transform: scale(1.35); box-shadow: 0 0 10px rgba(200,255,77,0.5); }
 
-        <!-- Step 5: First Subject -->
-        <section class="onboarding-step">
-          <h2>Step 5 of 5: Your First Subject</h2>
-          <p>Pick a subject to start learning</p>
-          <div class="grid-3 subject-choice-grid">
-            <button type="button" class="card subject-choice" data-value="Math" aria-pressed="false">Math 🔢</button>
-            <button type="button" class="card subject-choice" data-value="Science" aria-pressed="false">Science 🔬</button>
-            <button type="button" class="card subject-choice" data-value="English" aria-pressed="false">English 📚</button>
-            <button type="button" class="card subject-choice" data-value="History" aria-pressed="false">History 🌍</button>
-            <button type="button" class="card subject-choice" data-value="Coding" aria-pressed="false">Coding 💻</button>
-            <button type="button" class="card subject-choice" data-value="Biology" aria-pressed="false">Biology 🧬</button>
-          </div>
-        </section>
+    /* ── CARD SHELL ──────────────────────── */
+    .ob-card {
+      width: min(680px, 100%);
+      background: rgba(42,27,77,0.7);
+      border: 2px solid var(--border);
+      border-radius: 28px;
+      padding: 44px 48px;
+      backdrop-filter: blur(18px);
+      position: relative;
+      overflow: hidden;
+    }
+    .ob-card::before {
+      content: '';
+      position: absolute;
+      top: -60px;
+      right: -60px;
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      background: var(--accent-glow, rgba(200,255,77,0.06));
+      pointer-events: none;
+    }
+    @media (max-width: 600px) {
+      .ob-card { padding: 28px 20px; }
+    }
 
-        <div class="page-actions">
-          <button id="onboarding-back" class="button button-secondary">← Back</button>
-          <button id="onboarding-next" class="button button-primary">Next →</button>
-        </div>
-      </main>
+    /* ── SCREEN VISIBILITY ───────────────── */
+    .ob-screen { display: none; flex-direction: column; gap: 28px; }
+    .ob-screen.active { display: flex; animation: slideIn 0.35s ease both; }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── SCREEN HEADER ───────────────────── */
+    .ob-screen-header { display: flex; flex-direction: column; gap: 6px; }
+    .ob-eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+    }
+    .ob-title {
+      font-family: var(--font-display);
+      font-size: clamp(1.5rem, 3.5vw, 2rem);
+      font-weight: 600;
+      color: var(--ink);
+      line-height: 1.2;
+    }
+    .ob-subtitle {
+      font-size: 0.95rem;
+      color: var(--ink-soft);
+      margin-top: 4px;
+    }
+
+    /* ── AVATAR PREVIEW ──────────────────── */
+    .ob-avatar-row {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+    .ob-avatar-preview {
+      width: 90px;
+      height: 90px;
+      border-radius: 28px;
+      border: 3px solid var(--lime);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-display);
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--bg-deep);
+      background: var(--lime);
+      box-shadow: 6px 6px 0 var(--bg-deep);
+      transition: background 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+      user-select: none;
+    }
+    .ob-color-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .ob-color-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 3px solid transparent;
+      cursor: pointer;
+      transition: transform 0.15s ease, border-color 0.15s ease;
+      flex-shrink: 0;
+    }
+    .ob-color-btn:hover { transform: scale(1.2); }
+    .ob-color-btn.selected { border-color: #fff; transform: scale(1.2); box-shadow: 0 0 0 3px rgba(255,255,255,0.15); }
+
+    /* ── NAME INPUT ──────────────────────── */
+    .ob-name-input {
+      width: 100%;
+      padding: 18px 22px;
+      font-family: var(--font-display);
+      font-size: 1.25rem;
+      font-weight: 600;
+      background: rgba(255,255,255,0.05);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--ink);
+      outline: none;
+      text-align: center;
+      transition: border-color 0.2s ease;
+    }
+    .ob-name-input::placeholder { color: var(--ink-faint); font-weight: 400; }
+    .ob-name-input:focus { border-color: var(--lime); box-shadow: 0 0 0 3px rgba(200,255,77,0.15); }
+
+    /* ── MCQ GRID ────────────────────────── */
+    .ob-mcq-grid {
+      display: grid;
+      gap: 14px;
+    }
+    .ob-mcq-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+    .ob-mcq-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+    .ob-mcq-grid.cols-4 { grid-template-columns: repeat(2, 1fr); }
+    @media (min-width: 520px) {
+      .ob-mcq-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+      .ob-mcq-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 460px) {
+      .ob-mcq-grid.cols-3 { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    .ob-choice {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 18px 12px;
+      border-radius: 18px;
+      border: 2px solid var(--border);
+      background: rgba(255,255,255,0.03);
+      cursor: pointer;
+      font-family: var(--font-display);
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--ink-soft);
+      text-align: center;
+      line-height: 1.3;
+      transition: all 0.18s ease;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    .ob-choice:hover {
+      border-color: rgba(200,255,77,0.5);
+      background: rgba(200,255,77,0.06);
+      color: var(--ink);
+      transform: translateY(-2px);
+    }
+    .ob-choice:active { transform: translateY(0) scale(0.97); }
+    .ob-choice.selected {
+      border-color: var(--lime);
+      background: rgba(200,255,77,0.12);
+      color: var(--ink);
+      box-shadow: 0 0 0 3px rgba(200,255,77,0.18), 4px 4px 0 var(--bg-deep);
+    }
+    .ob-choice.selected .ob-check { opacity: 1; transform: scale(1); }
+    .ob-choice-emoji { font-size: 2rem; line-height: 1; }
+    .ob-choice-label { font-size: 0.92rem; }
+    .ob-choice-desc { font-size: 0.78rem; font-family: var(--font-body); color: var(--ink-faint); font-weight: 400; }
+    .ob-check {
+      position: absolute;
+      top: 8px;
+      right: 10px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--lime);
+      color: var(--bg-deep);
+      font-size: 0.7rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transform: scale(0.5);
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    /* ── SECTION DIVIDER ─────────────────── */
+    .ob-section-label {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      color: var(--ink-faint);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+
+    /* ── ERROR ───────────────────────────── */
+    .ob-error {
+      font-size: 0.88rem;
+      color: var(--coral);
+      min-height: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .ob-error:empty { display: none; }
+
+    /* ── FOOTER ACTIONS ──────────────────── */
+    .ob-footer {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+    }
+    .ob-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border: none;
+      border-radius: 999px;
+      padding: 14px 26px;
+      font-family: var(--font-display);
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .ob-btn-primary {
+      background: var(--lime);
+      color: var(--bg-deep);
+      box-shadow: 4px 4px 0 var(--bg-deep);
+      flex: 1;
+    }
+    .ob-btn-primary:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--bg-deep); }
+    .ob-btn-primary:active { transform: translate(0,0); box-shadow: 2px 2px 0 var(--bg-deep); }
+    .ob-btn-secondary {
+      background: rgba(255,255,255,0.05);
+      color: var(--ink-soft);
+      border: 2px solid var(--border);
+    }
+    .ob-btn-secondary:hover { background: rgba(255,255,255,0.08); color: var(--ink); }
+
+    /* ── COMPLETION SCREEN ───────────────── */
+    .ob-complete {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 24px;
+    }
+    .ob-trophy { font-size: 5rem; line-height: 1; animation: bounce 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+    @keyframes bounce { from { opacity: 0; transform: scale(0.4); } to { opacity: 1; transform: scale(1); } }
+    .ob-xp-total {
+      font-family: var(--font-display);
+      font-size: 3rem;
+      font-weight: 700;
+      color: var(--lime);
+      line-height: 1;
+    }
+    .ob-xp-total span { font-size: 1.2rem; color: var(--ink-soft); display: block; margin-top: 4px; }
+    .ob-reward-row {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .ob-reward-pill {
+      font-family: var(--font-display);
+      font-size: 0.88rem;
+      font-weight: 600;
+      padding: 6px 16px;
+      border-radius: 999px;
+      border: 2px solid var(--border);
+      background: rgba(255,255,255,0.04);
+      color: var(--ink-soft);
+    }
+    .ob-reward-pill.highlight {
+      border-color: var(--lime);
+      background: rgba(200,255,77,0.1);
+      color: var(--lime);
+    }
+
+    /* ── XP POP ──────────────────────────── */
+    .xp-pop {
+      position: fixed;
+      font-family: var(--font-display);
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--lime);
+      pointer-events: none;
+      z-index: 9999;
+      animation: xpFly 0.9s ease-out forwards;
+    }
+    @keyframes xpFly {
+      0%   { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(-60px) scale(1.2); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HUD -->
+  <div class="ob-hud">
+    <div class="ob-brand">🧠 MindMesh</div>
+    <div class="ob-xp-wrap">
+      <span class="ob-level-badge" id="hudLevel">Newbie 🌱</span>
+      <div class="ob-xp-bar"><div class="ob-xp-fill" id="xpFill"></div></div>
+      <span class="ob-xp-label" id="xpLabel">0 XP</span>
     </div>
-    <script src="/layout.js" defer></script>
-    <script src="/script.js" defer></script>
-  </body>
+  </div>
+
+  <!-- STEP DOTS -->
+  <div class="ob-dots" id="stepDots">
+    <div class="ob-dot active" data-step="1"></div>
+    <div class="ob-dot" data-step="2"></div>
+    <div class="ob-dot" data-step="3"></div>
+    <div class="ob-dot" data-step="4"></div>
+  </div>
+
+  <!-- CARD -->
+  <div class="ob-card">
+
+    <!-- SCREEN 1: IDENTITY -->
+    <div class="ob-screen active" id="screen1" style="--accent-glow: rgba(200,255,77,0.08);">
+      <div class="ob-screen-header">
+        <p class="ob-eyebrow">Step 1 of 4 · Identity</p>
+        <h1 class="ob-title">Who's the learner? 👋</h1>
+        <p class="ob-subtitle">Pick an avatar and tell us your name. This is your MindMesh identity.</p>
+      </div>
+
+      <div class="ob-avatar-row">
+        <div class="ob-avatar-preview" id="avatarPreview">MM</div>
+        <div class="ob-color-row" id="colorRow">
+          <button type="button" class="ob-color-btn selected" data-color="#c8ff4d" style="background:#c8ff4d" aria-label="Lime"></button>
+          <button type="button" class="ob-color-btn" data-color="#ff4de3" style="background:#ff4de3" aria-label="Pink"></button>
+          <button type="button" class="ob-color-btn" data-color="#4dd8ff" style="background:#4dd8ff" aria-label="Blue"></button>
+          <button type="button" class="ob-color-btn" data-color="#ff6b4a" style="background:#ff6b4a" aria-label="Coral"></button>
+          <button type="button" class="ob-color-btn" data-color="#ffd14d" style="background:#ffd14d" aria-label="Gold"></button>
+          <button type="button" class="ob-color-btn" data-color="#a78bfa" style="background:#a78bfa" aria-label="Violet"></button>
+        </div>
+      </div>
+
+      <input class="ob-name-input" id="nameInput" type="text" maxlength="24"
+             placeholder="Your first name…" autocomplete="given-name" autocapitalize="words" />
+
+      <p class="ob-error" id="error1"></p>
+      <div class="ob-footer">
+        <button type="button" class="ob-btn ob-btn-primary" id="next1">Continue →</button>
+      </div>
+    </div>
+
+    <!-- SCREEN 2: STAGE -->
+    <div class="ob-screen" id="screen2" style="--accent-glow: rgba(255,77,227,0.07);">
+      <div class="ob-screen-header">
+        <p class="ob-eyebrow">Step 2 of 4 · Your Stage</p>
+        <h1 class="ob-title">Where are you in life? 🎯</h1>
+        <p class="ob-subtitle">Select your age range and current grade level. This sets your difficulty baseline.</p>
+      </div>
+
+      <div>
+        <p class="ob-section-label">Age range</p>
+        <div class="ob-mcq-grid cols-3" style="margin-top:14px;">
+          <button type="button" class="ob-choice" data-group="age" data-value="8-10" aria-pressed="false">
+            <div class="ob-check">✓</div>
+            <span class="ob-choice-emoji">🧒</span>
+            <span class="ob-choice-label">8 – 10</span>
+          </button>
+          <button type="button" class="ob-choice" data-group="age" data-value="11-13" aria-pressed="false">
+            <div class="ob-check">✓</div>
+            <span class="ob-choice-emoji">👦</span>
+            <span class="ob-choice-label">11 – 13</span>
+          </button>
+          <button type="button" class="ob-choice" data-group="age" data-value="14-16" aria-pressed="false">
+            <div class="ob-check">✓</div>
+            <span class="ob-choice-emoji">🧑</span>
+            <span class="ob-choice-label">14 – 16</span>
+          </button>
+          <button type="button" class="ob-choice" data-group="age" data-value="17-19" aria-pressed="false">
+            <div class="ob-check">✓</div>
+            <span class="ob-choice-emoji">🧑‍🎓</span>
+            <span class="ob-choice-label">17 – 19</span>
+          </button>
+          <button type="button" class="ob-choice" data-group="age" data-value="20+" aria-pressed="false">
+            <div class="ob-check">✓</div>
+            <span class="ob-choice-emoji">🧑‍💼</span>
+            <span class="ob-choice-label">20+</span>
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <p class="ob-section-label">Grade / Level</p>
+        <div class="ob-mcq-grid cols-3" style="margin-top:14px;">
+          <button type="button" class="ob-choice" data-group="grade" data-value="Elementary" aria-pressed="false">
+            <div class="ob-check">✓</div>
+            <span class="ob-choice-emoji">🏫</span>
+            <span class="ob-choice-label">Elementary</span>
+          </button>
+          <button type="button" class="ob-choice" data-group="grade" data-value="Middle School" aria-pressed="false">
+            <div class="ob-check">✓</div>
+            <span class="ob-choice-emoji">📐</span>
+            <span class="ob-choice-label">Middle School</span>
+          </button>
+          <button type="button" class="ob-choice" data-group="grade" data-value="High School" aria-pressed="false">
+            <div class="ob-check">✓</div>
+            <span class="ob-choice-emoji">🎒</span>
+            <span class="ob-choice-label">High School</span>
+          </button>
+          <button type="button" class="ob-choice" data-group="grade" data-value="College" aria-pressed="false">
+            <div class="ob-check">✓</div>
+            <span class="ob-choice-emoji">🎓</span>
+            <span class="ob-choice-label">College</span>
+          </button>
+          <button type="button" class="ob-choice" data-group="grade" data-value="Self-Learning" aria-pressed="false">
+            <div class="ob-check">✓</div>
+            <span class="ob-choice-emoji">🌐</span>
+            <span class="ob-choice-label">Self-Learning</span>
+          </button>
+        </div>
+      </div>
+
+      <p class="ob-error" id="error2"></p>
+      <div class="ob-footer">
+        <button type="button" class="ob-btn ob-btn-secondary" id="back2">← Back</button>
+        <button type="button" class="ob-btn ob-btn-primary" id="next2">Continue →</button>
+      </div>
+    </div>
+
+    <!-- SCREEN 3: LEARNING STYLE -->
+    <div class="ob-screen" id="screen3" style="--accent-glow: rgba(77,216,255,0.07);">
+      <div class="ob-screen-header">
+        <p class="ob-eyebrow">Step 3 of 4 · Your Learning Brain</p>
+        <h1 class="ob-title">How do you learn best? 🧠</h1>
+        <p class="ob-subtitle">MindMesh will route your questions to the right AI tutor engine based on this.</p>
+      </div>
+
+      <div class="ob-mcq-grid cols-4">
+        <button type="button" class="ob-choice" data-group="style" data-value="Visual" aria-pressed="false">
+          <div class="ob-check">✓</div>
+          <span class="ob-choice-emoji">👁️</span>
+          <span class="ob-choice-label">Visual</span>
+          <span class="ob-choice-desc">Charts, diagrams & imagery</span>
+        </button>
+        <button type="button" class="ob-choice" data-group="style" data-value="Examples" aria-pressed="false">
+          <div class="ob-check">✓</div>
+          <span class="ob-choice-emoji">💡</span>
+          <span class="ob-choice-label">Examples</span>
+          <span class="ob-choice-desc">Worked problems & code</span>
+        </button>
+        <button type="button" class="ob-choice" data-group="style" data-value="Step-by-step" aria-pressed="false">
+          <div class="ob-check">✓</div>
+          <span class="ob-choice-emoji">📝</span>
+          <span class="ob-choice-label">Step-by-step</span>
+          <span class="ob-choice-desc">Detailed walkthroughs</span>
+        </button>
+        <button type="button" class="ob-choice" data-group="style" data-value="Stories" aria-pressed="false">
+          <div class="ob-check">✓</div>
+          <span class="ob-choice-emoji">📖</span>
+          <span class="ob-choice-label">Stories</span>
+          <span class="ob-choice-desc">Analogies & narratives</span>
+        </button>
+      </div>
+
+      <p class="ob-error" id="error3"></p>
+      <div class="ob-footer">
+        <button type="button" class="ob-btn ob-btn-secondary" id="back3">← Back</button>
+        <button type="button" class="ob-btn ob-btn-primary" id="next3">Continue →</button>
+      </div>
+    </div>
+
+    <!-- SCREEN 4: FIRST QUEST -->
+    <div class="ob-screen" id="screen4" style="--accent-glow: rgba(255,107,74,0.07);">
+      <div class="ob-screen-header">
+        <p class="ob-eyebrow">Step 4 of 4 · First Quest</p>
+        <h1 class="ob-title">Pick your first subject ⚡</h1>
+        <p class="ob-subtitle">This becomes your starting quest. You can explore any subject later.</p>
+      </div>
+
+      <div class="ob-mcq-grid cols-3">
+        <button type="button" class="ob-choice" data-group="subject" data-value="Math" aria-pressed="false">
+          <div class="ob-check">✓</div>
+          <span class="ob-choice-emoji">🔢</span>
+          <span class="ob-choice-label">Math</span>
+        </button>
+        <button type="button" class="ob-choice" data-group="subject" data-value="Science" aria-pressed="false">
+          <div class="ob-check">✓</div>
+          <span class="ob-choice-emoji">🔬</span>
+          <span class="ob-choice-label">Science</span>
+        </button>
+        <button type="button" class="ob-choice" data-group="subject" data-value="English" aria-pressed="false">
+          <div class="ob-check">✓</div>
+          <span class="ob-choice-emoji">📚</span>
+          <span class="ob-choice-label">English</span>
+        </button>
+        <button type="button" class="ob-choice" data-group="subject" data-value="History" aria-pressed="false">
+          <div class="ob-check">✓</div>
+          <span class="ob-choice-emoji">🌍</span>
+          <span class="ob-choice-label">History</span>
+        </button>
+        <button type="button" class="ob-choice" data-group="subject" data-value="Coding" aria-pressed="false">
+          <div class="ob-check">✓</div>
+          <span class="ob-choice-emoji">💻</span>
+          <span class="ob-choice-label">Coding</span>
+        </button>
+        <button type="button" class="ob-choice" data-group="subject" data-value="Biology" aria-pressed="false">
+          <div class="ob-check">✓</div>
+          <span class="ob-choice-emoji">🧬</span>
+          <span class="ob-choice-label">Biology</span>
+        </button>
+        <button type="button" class="ob-choice" data-group="subject" data-value="Physics" aria-pressed="false">
+          <div class="ob-check">✓</div>
+          <span class="ob-choice-emoji">⚡</span>
+          <span class="ob-choice-label">Physics</span>
+        </button>
+        <button type="button" class="ob-choice" data-group="subject" data-value="Philosophy" aria-pressed="false">
+          <div class="ob-check">✓</div>
+          <span class="ob-choice-emoji">🧠</span>
+          <span class="ob-choice-label">Philosophy</span>
+        </button>
+        <button type="button" class="ob-choice" data-group="subject" data-value="Economics" aria-pressed="false">
+          <div class="ob-check">✓</div>
+          <span class="ob-choice-emoji">📈</span>
+          <span class="ob-choice-label">Economics</span>
+        </button>
+      </div>
+
+      <p class="ob-error" id="error4"></p>
+      <div class="ob-footer">
+        <button type="button" class="ob-btn ob-btn-secondary" id="back4">← Back</button>
+        <button type="button" class="ob-btn ob-btn-primary" id="next4">Finish &amp; Start Learning 🚀</button>
+      </div>
+    </div>
+
+    <!-- SCREEN 5: COMPLETE -->
+    <div class="ob-screen" id="screen5">
+      <div class="ob-complete">
+        <div class="ob-trophy">🏆</div>
+        <div class="ob-xp-total" id="totalXpDisplay">100 XP<span>earned this setup</span></div>
+        <div>
+          <h2 style="font-family:var(--font-display);font-size:1.6rem;margin-bottom:8px;">Profile complete, <span id="completeName">Explorer</span>!</h2>
+          <p style="color:var(--ink-soft);font-size:0.95rem;">You're starting as a <strong style="color:var(--lime)">Newbie 🌱</strong>. Every question earns you XP and levels you up.</p>
+        </div>
+        <div class="ob-reward-row" id="rewardRow"></div>
+        <button type="button" class="ob-btn ob-btn-primary" id="startBtn" style="width:100%;font-size:1.1rem;padding:18px;">
+          Enter MindMesh →
+        </button>
+      </div>
+    </div>
+
+  </div><!-- /ob-card -->
+
+<script>
+(function () {
+  // ── STATE ──────────────────────────────
+  const state = {
+    name: '',
+    avatarColor: '#c8ff4d',
+    age: '',
+    grade: '',
+    style: '',
+    subject: '',
+    xp: 0,
+  };
+
+  const XP = { name: 15, age: 15, grade: 15, style: 20, subject: 25, bonus: 10 };
+  const TOTAL_MAX = Object.values(XP).reduce((a, b) => a + b, 0);
+
+  // ── DOM SHORTCUTS ──────────────────────
+  const $ = (id) => document.getElementById(id);
+  const screens = [null, $('screen1'), $('screen2'), $('screen3'), $('screen4'), $('screen5')];
+  let currentScreen = 1;
+
+  // ── LS HELPERS ─────────────────────────
+  const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} };
+  const lsGet = (k, d) => { try { const r = localStorage.getItem(k); return r ? JSON.parse(r) : d; } catch { return d; } };
+  function getSessionId() {
+    let id = lsGet('mm_sessionId', null);
+    if (!id) { id = `s-${Date.now()}-${Math.random().toString(36).slice(2,8)}`; lsSet('mm_sessionId', id); }
+    return id;
+  }
+
+  // ── XP ──────────────────────────────────
+  function addXp(amount, el) {
+    state.xp = Math.min(state.xp + amount, TOTAL_MAX);
+    updateHud();
+    if (el) spawnXpPop(amount, el);
+  }
+
+  function updateHud() {
+    const pct = Math.round((state.xp / TOTAL_MAX) * 100);
+    $('xpFill').style.width = pct + '%';
+    $('xpLabel').textContent = state.xp + ' XP';
+  }
+
+  function spawnXpPop(amount, referenceEl) {
+    const pop = document.createElement('div');
+    pop.className = 'xp-pop';
+    pop.textContent = '+' + amount + ' XP';
+    const rect = referenceEl.getBoundingClientRect();
+    pop.style.left = (rect.left + rect.width / 2 - 30) + 'px';
+    pop.style.top  = (rect.top + window.scrollY - 10) + 'px';
+    document.body.appendChild(pop);
+    pop.addEventListener('animationend', () => pop.remove());
+  }
+
+  // ── DOTS ────────────────────────────────
+  function updateDots(n) {
+    document.querySelectorAll('.ob-dot').forEach((dot) => {
+      const s = parseInt(dot.dataset.step);
+      dot.classList.remove('active', 'done');
+      if (s === n) dot.classList.add('active');
+      else if (s < n) dot.classList.add('done');
+    });
+  }
+
+  // ── SCREEN SWITCH ───────────────────────
+  function goTo(n) {
+    screens[currentScreen].classList.remove('active');
+    currentScreen = n;
+    if (n <= 4) updateDots(n);
+    screens[n].classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ── CHOICE HELPERS ───────────────────────
+  function makeGroup(groupName, onSelect) {
+    document.querySelectorAll(`[data-group="${groupName}"]`).forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const prev = state[groupName];
+        document.querySelectorAll(`[data-group="${groupName}"]`).forEach((b) => {
+          b.classList.remove('selected');
+          b.setAttribute('aria-pressed', 'false');
+        });
+        btn.classList.add('selected');
+        btn.setAttribute('aria-pressed', 'true');
+        if (onSelect) onSelect(btn.dataset.value, prev, btn);
+      });
+    });
+  }
+
+  function setError(id, msg) {
+    const el = $(id);
+    if (el) el.textContent = msg || '';
+  }
+
+  // ── AVATAR ──────────────────────────────
+  const preview = $('avatarPreview');
+  const nameInput = $('nameInput');
+
+  function updateAvatar() {
+    const n = (nameInput.value.trim() || 'MM').slice(0, 2).toUpperCase();
+    preview.textContent = n;
+    const isDark = ['#c8ff4d','#ffd14d','#4dd8ff'].includes(state.avatarColor);
+    preview.style.background = state.avatarColor;
+    preview.style.color = isDark ? '#120b26' : '#fff8f0';
+    preview.style.boxShadow = `6px 6px 0 ${state.avatarColor}44`;
+  }
+
+  nameInput.addEventListener('input', updateAvatar);
+
+  document.querySelectorAll('.ob-color-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.ob-color-btn').forEach((b) => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      state.avatarColor = btn.dataset.color;
+      updateAvatar();
+    });
+  });
+
+  updateAvatar();
+
+  // ── GROUPS ──────────────────────────────
+  makeGroup('age', (val, prev, el) => {
+    if (prev !== val) addXp(prev ? 0 : XP.age, el);
+    state.age = val;
+    setError('error2', '');
+  });
+  makeGroup('grade', (val, prev, el) => {
+    if (prev !== val) addXp(prev ? 0 : XP.grade, el);
+    state.grade = val;
+    setError('error2', '');
+  });
+  makeGroup('style', (val, prev, el) => {
+    if (prev !== val) addXp(prev ? 0 : XP.style, el);
+    state.style = val;
+    setError('error3', '');
+  });
+  makeGroup('subject', (val, prev, el) => {
+    if (prev !== val) addXp(prev ? 0 : XP.subject, el);
+    state.subject = val;
+    setError('error4', '');
+  });
+
+  // ── NAV BUTTONS ─────────────────────────
+  $('next1').addEventListener('click', () => {
+    const name = nameInput.value.trim();
+    if (!name) { setError('error1', '⚠ Please enter your name.'); nameInput.focus(); return; }
+    setError('error1', '');
+    if (!state.name) addXp(XP.name, $('next1'));
+    state.name = name;
+    goTo(2);
+  });
+
+  $('back2').addEventListener('click', () => goTo(1));
+  $('next2').addEventListener('click', () => {
+    if (!state.age) { setError('error2', '⚠ Please pick your age range.'); return; }
+    if (!state.grade) { setError('error2', '⚠ Please pick your grade level.'); return; }
+    setError('error2', '');
+    goTo(3);
+  });
+
+  $('back3').addEventListener('click', () => goTo(2));
+  $('next3').addEventListener('click', () => {
+    if (!state.style) { setError('error3', '⚠ Please choose your learning style.'); return; }
+    setError('error3', '');
+    goTo(4);
+  });
+
+  $('back4').addEventListener('click', () => goTo(3));
+  $('next4').addEventListener('click', () => {
+    if (!state.subject) { setError('error4', '⚠ Please pick a subject to start with.'); return; }
+    setError('error4', '');
+    finish();
+  });
+
+  $('startBtn').addEventListener('click', () => {
+    window.location.href = '/dashboard.html';
+  });
+
+  // ── FINISH ──────────────────────────────
+  function finish() {
+    addXp(XP.bonus, $('next4'));
+
+    lsSet('mm_name', state.name);
+    lsSet('mm_avatarColor', state.avatarColor);
+    lsSet('mm_age_range', state.age);
+    lsSet('mm_grade', state.grade);
+    lsSet('mm_style', state.style);
+    lsSet('mm_subject', state.subject);
+    lsSet('mm_level', 'Newbie');
+    lsSet('mm_count', lsGet('mm_count', 0) || 0);
+    lsSet('mm_subjects', { [state.subject]: 0 });
+    lsSet('mm_streak', []);
+    lsSet('mm_quiz_scores', {});
+    lsSet('mm_milestones', [{ event: 'Completed onboarding 🎉', date: new Date().toLocaleDateString() }]);
+    lsSet('mm_today_count', 0);
+    lsSet('mm_theme', 'dark');
+    getSessionId();
+
+    // populate completion screen
+    $('totalXpDisplay').innerHTML = `${state.xp} XP<span>earned this setup</span>`;
+    $('completeName').textContent = state.name;
+    const pills = [
+      { label: '🌱 Newbie', highlight: true },
+      { label: '🎯 ' + state.subject, highlight: true },
+      { label: '📖 ' + state.style, highlight: false },
+      { label: '🎒 ' + state.grade, highlight: false },
+    ];
+    $('rewardRow').innerHTML = pills
+      .map(p => `<div class="ob-reward-pill ${p.highlight ? 'highlight' : ''}">${p.label}</div>`)
+      .join('');
+
+    document.querySelectorAll('.ob-dot').forEach((d) => {
+      d.classList.remove('active');
+      d.classList.add('done');
+    });
+    updateHud();
+    goTo(5);
+  }
+
+})();
+</script>
+</body>
 </html>
