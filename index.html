@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- BASE_URL: https://YOUR_DOMAIN_HERE -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MindMesh — The AI tutor that gets you</title>
   <meta name="description" content="MindMesh combines four AI engines into one adaptive tutor for any subject. Start free during beta.">
-  <link rel="canonical" href="https://mindmesh.app/">
+  <link rel="canonical" href="https://YOUR_DOMAIN_HERE/">
   <meta property="og:type" content="website">
   <meta property="og:title" content="MindMesh — The AI tutor that gets you">
   <meta property="og:description" content="Four AI specialists. One tutor built for how you learn.">
@@ -20,6 +21,16 @@
   <link rel="stylesheet" href="/brand.css">
   <link rel="stylesheet" href="/nav.css">
   <link rel="stylesheet" href="/landing.css">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": ["SoftwareApplication", "EducationalOrganization"],
+    "name": "MindMesh",
+    "description": "MindMesh is an adaptive AI tutor that personalizes explanations using multiple AI engines.",
+    "applicationCategory": "EducationalApplication",
+    "url": "https://YOUR_DOMAIN_HERE/"
+  }
+  </script>
 </head>
 <body>
   <header class="site-nav"></header>
@@ -31,7 +42,7 @@
         <h1>The tutor that finally <span class="pop">gets you.</span></h1>
         <p class="lead">MindMesh routes your questions through four specialist AI engines — reasoning, solving, exploring, and storytelling — so every explanation matches how your brain learns. Free during beta. No card required.</p>
         <div class="hero-ctas">
-          <a href="/onboarding.html" class="btn-primary">Start free →</a>
+          <a href="/signup.html" class="btn-primary">Start free →</a>
           <a href="#how" class="btn-ghost">See how it works</a>
         </div>
       </div>
@@ -68,11 +79,22 @@
     </div>
 
     <div class="stats-row container">
-      <div class="sticker"><span>1</span> engine live · 3 coming soon</div>
+      <div class="sticker" data-live-engines><span>1</span> engine live · 3 coming soon</div>
       <div class="sticker">Teaches <span>your</span> way, not the textbook's</div>
       <div class="sticker"><span>Free</span> during beta testing</div>
     </div>
   </header>
+
+  <section class="how" id="daily-question">
+    <div class="container">
+      <p class="eyebrow" style="text-align:center;display:block;">QUESTION OF THE DAY</p>
+      <h2 class="sec-title">Start with one sharp question</h2>
+      <div class="how-card" style="max-width:780px;margin:0 auto;text-align:center;">
+        <p id="dailyPrompt" style="font-size:1rem;color:var(--ink);margin-bottom:16px;"></p>
+        <a id="dailyPromptLink" href="/chat.html" class="btn-primary">Open in chat →</a>
+      </div>
+    </div>
+  </section>
 
   <section class="how" id="how">
     <div class="container">
@@ -107,7 +129,7 @@
             <li>3 subjects</li>
             <li>Progress tracking</li>
           </ul>
-          <a href="/onboarding.html" class="price-btn">Start free</a>
+          <a href="/signup.html" class="price-btn">Start free</a>
         </div>
         <div class="price-card featured">
           <span class="popped">MOST PICKED</span>
@@ -150,12 +172,36 @@
       <div class="final-card">
         <h2>Ready to level up?</h2>
         <p>Join the beta today. No credit card, no catch — just a smarter way to learn.</p>
-        <a href="/onboarding.html" class="btn-primary">Start free →</a>
+        <a href="/signup.html" class="btn-primary">Start free →</a>
       </div>
     </div>
   </section>
 
   <footer class="site-footer"></footer>
   <script src="/layout.js" defer></script>
+  <script>
+    (function () {
+      const prompts = [
+        'Why does the sky look blue at noon but orange at sunset?',
+        'Explain compound interest like I am 12 years old.',
+        'What is one real-world use of momentum in sports?',
+        'How can I remember the periodic table groups faster?',
+        'Teach me fractions using pizza slices.',
+        'Why do eclipses not happen every month?',
+        'Explain debugging like detective work.',
+        'How does photosynthesis connect to the food chain?',
+        'What is the difference between speed and velocity?',
+        'Teach me one memory trick for history dates.'
+      ];
+      const now = new Date();
+      const start = new Date(now.getFullYear(), 0, 0);
+      const dayOfYear = Math.floor((now - start) / 86400000);
+      const prompt = prompts[dayOfYear % prompts.length];
+      const promptEl = document.getElementById('dailyPrompt');
+      const linkEl = document.getElementById('dailyPromptLink');
+      if (promptEl) promptEl.textContent = prompt;
+      if (linkEl) linkEl.href = `/chat.html?q=${encodeURIComponent(prompt)}`;
+    })();
+  </script>
 </body>
 </html>

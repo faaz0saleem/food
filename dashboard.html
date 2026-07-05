@@ -1,10 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- BASE_URL: https://YOUR_DOMAIN_HERE -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MindMesh — Dashboard</title>
 <meta name="description" content="Your MindMesh learning dashboard — track progress, streaks, and AI insights.">
+<link rel="canonical" href="https://YOUR_DOMAIN_HERE/dashboard.html">
+<meta property="og:type" content="website">
+<meta property="og:title" content="MindMesh — Dashboard">
+<meta property="og:description" content="Track your XP, streaks, badges, and learning insights in one place.">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/brand.css">
 <link rel="stylesheet" href="/nav.css">
@@ -51,9 +56,18 @@
   <div class="stats-grid">
     <div class="stat-card c1">
       <div class="stat-delta" id="todayDelta">today: 0</div>
-      <div class="stat-icon">💬</div>
-      <div class="stat-val" id="totalMsgs">0</div>
-      <div class="stat-label">Total messages sent</div>
+      <div class="stat-icon">⚡</div>
+      <div class="stat-val" id="totalXP">0</div>
+      <div class="stat-label">Total XP</div>
+      <button type="button" id="toggleXpBreakdown" class="xp-breakdown-toggle">Show XP breakdown</button>
+      <div class="xp-breakdown" id="xpBreakdown" hidden>
+        <div><span>Messages</span><strong id="xpMessage">0</strong></div>
+        <div><span>Subjects</span><strong id="xpSubjects">0</strong></div>
+        <div><span>Quiz Participation</span><strong id="xpQuizParticipation">0</strong></div>
+        <div><span>Quiz Accuracy</span><strong id="xpQuizAccuracy">0</strong></div>
+        <div><span>Streak</span><strong id="xpStreak">0</strong></div>
+        <div><span>Milestones</span><strong id="xpMilestones">0</strong></div>
+      </div>
     </div>
     <div class="stat-card c2">
       <div class="stat-icon">🔥</div>
@@ -108,6 +122,17 @@
     <a href="/quiz.html" class="quiz-btn">Start quiz →</a>
   </div>
 
+  <div class="card" style="margin-bottom:24px;">
+    <h3>🏅 Achievement badges</h3>
+    <div class="badge-row" id="achievementBadges"></div>
+  </div>
+
+  <div class="card" style="margin-bottom:24px;">
+    <h3>📌 Question of the Day</h3>
+    <p id="dailyQuestionText"></p>
+    <a id="dailyQuestionLink" href="/chat.html" class="quiz-btn" style="display:inline-flex;margin-top:10px;">Try this in chat →</a>
+  </div>
+
   <!-- TWO COL -->
   <div class="two-col">
     <div class="card">
@@ -150,6 +175,8 @@ const el = (id) => document.getElementById(id);
 // ---- load data ----
 const name = get('mm_name') || 'Explorer';
 const count = get('mm_count') || 0;
+const xpBreakdown = getXPBreakdown();
+const totalXP = calculateXP();
 const subjectCounts = get('mm_subjects') || {};
 const milestones = get('mm_milestones') || [];
 const streak = get('mm_streak') || [];
@@ -161,20 +188,37 @@ const plan = get('mm_plan') || 'Free';
 el('nameEl').textContent = name;
 el('planName').textContent = plan;
 
-const progress = getLevelProgress(count);
+const progress = getLevelProgress(totalXP);
 const currentLevelDef = LEVEL_THRESHOLDS.find((level) => level.name === progress.level);
 
 el('levelName').textContent = `You're a ${progress.level} ${progress.icon}`;
-el('levelDesc').textContent = progress.nextLevel ? `${progress.remaining} more messages to become a ${progress.nextLevel}!` : 'You\'ve reached the top! You\'re a Master 🏆';
+el('levelDesc').textContent = progress.nextLevel ? `${progress.remaining} more XP to become a ${progress.nextLevel}!` : 'You\'ve reached the top! You\'re a Master 🏆';
 el('levelIcon').textContent = progress.icon;
 el('levelBadge').textContent = progress.level;
-el('levelNextHint').textContent = progress.nextLevel ? `${progress.remaining} msgs to ${progress.nextLevel}` : 'Max level reached!';
-el('xpLabel').textContent = `${count} / ${currentLevelDef.max === Infinity ? '∞' : currentLevelDef.max} msgs`;
+el('levelNextHint').textContent = progress.nextLevel ? `${progress.remaining} XP to ${progress.nextLevel}` : 'Max level reached!';
+el('xpLabel').textContent = `${totalXP} / ${currentLevelDef.max === Infinity ? '∞' : currentLevelDef.max} XP`;
 el('topBar').style.width = progress.pct + '%';
 setTimeout(()=>{ el('xpFill').style.width = progress.pct + '%'; }, 300);
 
-el('totalMsgs').textContent = count;
+el('totalXP').textContent = totalXP;
 el('todayDelta').textContent = `today: ${todayCount}`;
+el('xpMessage').textContent = `${xpBreakdown.messageXP} XP`;
+el('xpSubjects').textContent = `${xpBreakdown.subjectXP} XP`;
+el('xpQuizParticipation').textContent = `${xpBreakdown.quizParticipationXP} XP`;
+el('xpQuizAccuracy').textContent = `${xpBreakdown.quizAccuracyXP} XP`;
+el('xpStreak').textContent = `${xpBreakdown.streakXP} XP`;
+el('xpMilestones').textContent = `${xpBreakdown.milestoneXP} XP`;
+
+const xpBreakdownPanel = el('xpBreakdown');
+const xpBreakdownToggle = el('toggleXpBreakdown');
+if (xpBreakdownToggle && xpBreakdownPanel) {
+  xpBreakdownToggle.addEventListener('click', () => {
+    const expanded = xpBreakdownToggle.getAttribute('aria-expanded') === 'true';
+    xpBreakdownToggle.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+    xpBreakdownToggle.textContent = expanded ? 'Show XP breakdown' : 'Hide XP breakdown';
+    xpBreakdownPanel.hidden = expanded;
+  });
+}
 
 const today = new Date().toDateString();
 const last7 = [...Array(7)].map((_,i)=>{const d=new Date();d.setDate(d.getDate()-i);return d.toDateString();}).reverse();
@@ -191,6 +235,23 @@ el('streakVal').textContent=currentStreak;
 el('streakBig').textContent=currentStreak+' days';
 
 const subjKeys = Object.keys(subjectCounts);
+const achievementBadges = [];
+if (currentStreak >= 7) achievementBadges.push('🔥 7-Day Streak');
+if (Object.values(quizScores).flat().length >= 1) achievementBadges.push('🎯 First Quiz');
+if (subjKeys.length >= 5) achievementBadges.push('🌍 5 Subjects Explored');
+if (count >= 25) achievementBadges.push('💬 25 Messages');
+if ((allScores.length && Math.round(allScores.reduce((a,b)=>a+b,0)/allScores.length) >= 80)) achievementBadges.push('📈 80% Quiz Average');
+if (!achievementBadges.length) achievementBadges.push('🌱 First steps');
+
+const badgesEl = el('achievementBadges');
+if (badgesEl) {
+  badgesEl.innerHTML = achievementBadges.map((badge) => `<span class="badge-pill">${badge}</span>`).join('');
+}
+
+const qotd = getQuestionOfDay();
+if (el('dailyQuestionText')) el('dailyQuestionText').textContent = qotd.prompt;
+if (el('dailyQuestionLink')) el('dailyQuestionLink').href = `/${qotd.href}`;
+
 el('subjCount').textContent = subjKeys.length;
 const subjBars = el('subjBars');
 if(subjKeys.length){

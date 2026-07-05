@@ -1,310 +1,416 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MindMesh — Progress</title>
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="/brand.css">
-    <link rel="stylesheet" href="/nav.css">
-    <link rel="stylesheet" href="/tailwind-compat.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body {
-            background: linear-gradient(135deg, #130d26 0%, #1a1133 50%, #221442 100%);
-            color: #e2dbea;
-            min-height: 100vh;
-            background-attachment: fixed;
-        }
-        .glass-panel {
-            background: rgba(42, 31, 76, 0.6);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(154, 141, 184, 0.15);
-            border-radius: 20px;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-            transition: transform 0.3s ease, border-color 0.3s ease;
-        }
-        .glass-panel:hover {
-            border-color: rgba(184, 255, 74, 0.3);
-            transform: translateY(-2px);
-        }
-        .nav-item {
-            color: #9a8db8;
-            transition: all 0.2s ease;
-        }
-        .nav-item:hover {
-            color: #e2dbea;
-        }
-        .nav-item.active {
-            background-color: rgba(42, 31, 76, 0.8);
-            color: #b8ff4a;
-            border-radius: 20px;
-            box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
-        }
-        .primary-btn {
-            background-color: #b8ff4a;
-            color: #130d26;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            font-weight: 600;
-        }
-        .primary-btn:hover {
-            background-color: #9ee63a;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(184, 255, 74, 0.3);
-        }
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #130d26;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #2a1f4c;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #9a8db8;
-        }
-        @keyframes pulse-glow {
-            0% { box-shadow: 0 0 0 0 rgba(184, 255, 74, 0.4); }
-            70% { box-shadow: 0 0 0 10px rgba(184, 255, 74, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(184, 255, 74, 0); }
-        }
-        .level-badge {
-            animation: pulse-glow 3s infinite;
-        }
-        .progress-track {
-            background-color: rgba(154, 141, 184, 0.2);
-            border-radius: 9999px;
-            overflow: hidden;
-        }
-        .progress-fill {
-            height: 100%;
-            border-radius: 9999px;
-            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-    </style>
+  <!-- BASE_URL: https://YOUR_DOMAIN_HERE -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MindMesh — Progress</title>
+  <meta name="description" content="Detailed MindMesh progress insights including XP, streaks, quiz trends, and mastery.">
+  <link rel="canonical" href="https://YOUR_DOMAIN_HERE/progress.html">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="MindMesh — Progress">
+  <meta property="og:description" content="See your XP growth, quiz results, and subject mastery over time.">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/brand.css">
+  <link rel="stylesheet" href="/nav.css">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/progress.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="font-sans antialiased p-4 md:p-8">
-    <header class="site-nav"></header>
-    <main class="max-w-7xl mx-auto">
-        <div class="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+<body data-page="progress">
+  <div class="top-bar"><div class="top-bar-fill" id="topBar" style="width:0%"></div></div>
+  <header class="site-nav"></header>
+
+  <main class="progress-page">
+    <section class="progress-hero">
+      <div class="progress-hero-head">
+        <div>
+          <p class="eyebrow">Live Analytics</p>
+          <h1>Your learning graph, not just your streak.</h1>
+          <p>MindMesh tracks how often you practice, how your quiz accuracy shifts over time, and which subjects need a closer look next.</p>
+        </div>
+        <span class="progress-tag">Student Snapshot</span>
+      </div>
+      <div class="progress-hero-stats">
+        <article class="summary-card">
+          <p class="quiz-label">Day Streak</p>
+          <div class="summary-value" id="streak-count">0</div>
+          <p>Consistency compounds faster than long cramming sessions.</p>
+        </article>
+        <article class="summary-card">
+          <p class="quiz-label">Current Level</p>
+          <div class="summary-value" id="level-rank">Newbie</div>
+          <p>Your nav badge and dashboard level stay in sync with stored progress.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="progress-meter-grid">
+      <article class="progress-card">
+        <div class="progress-meter-head">
+          <div>
+            <p class="quiz-label">Progress Meter</p>
+            <h2>Journey to the next level</h2>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button id="printProgress" class="progress-button" type="button">Print my progress</button>
+            <a id="open-chat" class="progress-link" href="/chat.html">Ask AI</a>
+          </div>
+        </div>
+        <div class="progress-meter-copy">
+          <p>Your XP is estimated from chats and quizzes, then mapped to the shared level ladder used across MindMesh.</p>
+        </div>
+        <div class="summary-grid">
+          <article class="summary-card">
+            <p class="quiz-label">XP</p>
+            <div class="xp-value" id="xp-value">0</div>
+            <p>Total earned from quizzes and conversations.</p>
+          </article>
+          <article class="summary-card">
+            <p class="quiz-label">Target</p>
+            <div class="xp-value" id="xp-target">10,000 XP Needed</div>
+            <p>Keep stacking practice to move up.</p>
+          </article>
+          <article class="summary-card">
+            <p class="quiz-label">Weak Area</p>
+            <div class="xp-value" id="weak-area">None</div>
+            <p>Lowest quiz average so you know what to review first.</p>
+          </article>
+        </div>
+        <div class="progress-track"><div id="xp-progress-fill" class="progress-fill" style="width:0%"></div></div>
+      </article>
+
+      <article class="coach-card">
+        <div class="coach-head">
+          <div>
+            <p class="quiz-label">AI Coach</p>
+            <h2>Next best study move</h2>
+          </div>
+          <button id="refresh-ai" type="button" class="progress-button">Refresh Insight</button>
+        </div>
+        <p id="ai-coach-text">Loading AI-driven guidance...</p>
+      </article>
+    </section>
+
+    <section class="chart-layout">
+      <article class="timeline-card">
+        <div class="timeline-head">
+          <div>
+            <p class="quiz-label">Activity</p>
+            <h2>Recent milestones</h2>
+          </div>
+          <button id="view-milestones" type="button" class="progress-button">View All</button>
+        </div>
+        <div id="activity-timeline" class="timeline-list"></div>
+      </article>
+
+      <article class="chart-card">
+        <div class="chart-head">
+          <div>
+            <p class="quiz-label">Knowledge Retention</p>
+            <h2>Quiz performance over time</h2>
+          </div>
+          <select id="performance-filter" class="filter-select">
+            <option>All Subjects</option>
+            <option>Science</option>
+            <option>Math</option>
+            <option>Philosophy</option>
+          </select>
+        </div>
+        <div class="chart-shell"><canvas id="performanceChart"></canvas></div>
+      </article>
+    </section>
+
+    <section class="chart-layout">
+      <article class="chart-card">
+        <div class="chart-head">
+          <div>
+            <p class="quiz-label">Cognitive Profile</p>
+            <h2>Your current balance</h2>
+          </div>
+          <span class="progress-tag">Radar</span>
+        </div>
+        <div class="chart-shell"><canvas id="cognitiveChart"></canvas></div>
+        <p><strong id="logic-label">High</strong> logic and <strong id="memory-label">Strong</strong> memory are inferred from your recent activity mix.</p>
+      </article>
+
+      <article class="chart-card">
+        <div class="mastery-head">
+          <div>
+            <p class="quiz-label">Subject Mastery</p>
+            <h2>Which lanes are strongest?</h2>
+          </div>
+          <span class="progress-tag">Updated Live</span>
+        </div>
+        <div class="mastery-grid">
+          <article class="mastery-card" id="science-card">
+            <div class="mastery-icon">🧬</div>
             <div>
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold uppercase tracking-widest mb-4"><span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>Live Analytics</div>
-                <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight text-white mb-2">Your Neural Growth</h1>
-                <p class="text-muted text-lg max-w-xl">You're building smarter pathways with every quiz and chat session.</p>
+              <h3>Science</h3>
+              <p class="mastery-rank" id="science-label">Rank S</p>
             </div>
-            <div class="flex gap-4">
-                <div class="glass-panel p-4 flex items-center gap-4 min-w-[160px]"><div class="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xl">🔥</div><div><div class="text-2xl font-bold text-white" id="streak-count">0</div><div class="text-xs text-muted font-medium uppercase tracking-wider">Day Streak</div></div></div>
-                <div class="glass-panel p-4 flex items-center gap-4 min-w-[160px] level-badge"><div class="w-12 h-12 rounded-full bg-gradient-to-tr from-accentPink to-accentOrange flex items-center justify-center text-white text-xl font-bold">Lvl</div><div><div class="text-2xl font-bold text-white" id="level-rank">Newbie</div><div class="text-xs text-primary font-medium uppercase tracking-wider">Polymath</div></div></div>
+            <div class="mastery-meter">
+              <div class="mastery-meta"><span>Mastery</span><strong id="science-value">92%</strong></div>
+              <div class="progress-track"><div id="science-fill" class="progress-fill" style="width:92%"></div></div>
             </div>
+          </article>
+          <article class="mastery-card" id="tech-card">
+            <div class="mastery-icon">💻</div>
+            <div>
+              <h3>Computer Science</h3>
+              <p class="mastery-rank" id="tech-label">Rank A</p>
+            </div>
+            <div class="mastery-meter">
+              <div class="mastery-meta"><span>Mastery</span><strong id="tech-value">78%</strong></div>
+              <div class="progress-track"><div id="tech-fill" class="progress-fill" style="width:78%"></div></div>
+            </div>
+          </article>
+          <article class="mastery-card" id="math-card">
+            <div class="mastery-icon">📐</div>
+            <div>
+              <h3>Mathematics</h3>
+              <p class="mastery-rank" id="math-label">Needs Focus</p>
+            </div>
+            <div class="mastery-meter">
+              <div class="mastery-meta"><span>Mastery</span><strong id="math-value">45%</strong></div>
+              <div class="progress-track"><div id="math-fill" class="progress-fill" style="width:45%"></div></div>
+            </div>
+          </article>
+          <article class="mastery-card" id="history-card">
+            <div class="mastery-icon">🏛️</div>
+            <div>
+              <h3>History</h3>
+              <p class="mastery-rank" id="history-label">Rank B</p>
+            </div>
+            <div class="mastery-meter">
+              <div class="mastery-meta"><span>Mastery</span><strong id="history-value">62%</strong></div>
+              <div class="progress-track"><div id="history-fill" class="progress-fill" style="width:62%"></div></div>
+            </div>
+          </article>
         </div>
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            <div class="glass-panel p-6 lg:col-span-2 relative overflow-hidden flex flex-col justify-between"><div class="absolute -right-20 -top-20 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none"></div><div class="relative z-10"><div class="flex justify-between items-start mb-6"><div><h3 class="text-lg font-semibold text-white mb-1">Journey to the next level</h3><p class="text-sm text-muted">Unlock a stronger Grok recommendation streak.</p></div><span class="text-3xl font-bold text-primary" id="xp-value">0</span></div><div class="mb-4"><div class="flex justify-between text-xs font-medium text-muted mb-2"><span>Current: Level</span><span id="xp-target">10,000 XP Needed</span></div><div class="progress-track h-4 w-full"><div id="xp-progress-fill" class="progress-fill bg-gradient-to-r from-primary to-green-400" style="width: 0%"></div></div></div><div class="bg-panelHover/50 rounded-xl p-4 border border-white/5 flex items-center gap-4"><div class="p-2 bg-accentBlue/20 rounded-lg text-accentBlue"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg></div><div class="flex-1"><p class="text-sm text-white font-medium">Daily Goal: Complete 2 Grok quizzes</p><p class="text-xs text-muted">Earn 500 bonus XP</p></div><button class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-sm font-medium transition-colors">Start</button></div></div></div>
-            <div class="glass-panel p-6 flex flex-col items-center justify-center"><h3 class="text-lg font-semibold text-white mb-1 self-start w-full">Cognitive Profile</h3><p class="text-xs text-muted mb-4 self-start w-full">Your learning balance</p><div class="w-full max-w-[220px] aspect-square relative"><canvas id="cognitiveChart"></canvas></div><div class="mt-4 flex flex-wrap justify-center gap-2 text-xs"><span class="px-2 py-1 rounded bg-panelHover text-muted">Logic: <span class="text-white font-medium" id="logic-label">High</span></span><span class="px-2 py-1 rounded bg-panelHover text-muted">Memory: <span class="text-white font-medium" id="memory-label">Strong</span></span></div></div>
-        </div>
-        <div class="glass-panel p-6 mb-8"><div class="flex justify-between items-center mb-4"><div><h3 class="text-lg font-semibold text-white">Grok AI Coach</h3><p class="text-xs text-muted">Personalized advice based on your latest progress.</p></div><button id="refresh-ai" class="primary-btn px-4 py-2 rounded-full text-sm">Refresh insight</button></div><p id="ai-coach-text" class="text-muted leading-relaxed">Loading AI-driven guidance...</p></div>
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8"><div class="glass-panel p-6 lg:col-span-1"><div class="flex justify-between items-center mb-6"><h3 class="text-lg font-semibold text-white">Neural Pathways</h3><button id="view-milestones" class="text-xs text-primary hover:underline">View All</button></div><div class="relative border-l border-white/10 ml-3 space-y-6" id="activity-timeline"></div></div><div class="glass-panel p-6 lg:col-span-2"><div class="flex justify-between items-center mb-6"><div><h3 class="text-lg font-semibold text-white">Knowledge Retention</h3><p class="text-xs text-muted">Accuracy over your last quizzes</p></div><select id="performance-filter" class="bg-panelHover border border-white/10 text-white text-xs rounded-lg px-3 py-1.5 outline-none focus:border-primary/50"><option>All Subjects</option><option>Science</option><option>Math</option><option>Philosophy</option></select></div><div class="w-full h-64"><canvas id="performanceChart"></canvas></div></div></div>
-        <h3 class="text-xl font-semibold text-white mb-4 mt-12">Subject Mastery Synapses</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div id="science-card" class="glass-panel p-5 hover:bg-panelHover/40 cursor-pointer group"><div class="flex justify-between items-start mb-4"><div class="w-10 h-10 rounded-lg bg-green-500/20 text-green-400 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">🧬</div><span id="science-label" class="text-xs font-bold text-green-400 bg-green-500/10 px-2 py-1 rounded">Rank S</span></div><h4 class="font-semibold text-white mb-1">Science</h4><div class="flex justify-between text-xs text-muted mb-2"><span>Mastery</span><span id="science-value">92%</span></div><div class="progress-track h-1.5 w-full"><div id="science-fill" class="progress-fill bg-green-400" style="width: 92%"></div></div></div>
-            <div id="tech-card" class="glass-panel p-5 hover:bg-panelHover/40 cursor-pointer group"><div class="flex justify-between items-start mb-4"><div class="w-10 h-10 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">💻</div><span id="tech-label" class="text-xs font-bold text-blue-400 bg-blue-500/10 px-2 py-1 rounded">Rank A</span></div><h4 class="font-semibold text-white mb-1">Computer Science</h4><div class="flex justify-between text-xs text-muted mb-2"><span>Mastery</span><span id="tech-value">78%</span></div><div class="progress-track h-1.5 w-full"><div id="tech-fill" class="progress-fill bg-blue-400" style="width: 78%"></div></div></div>
-            <div id="math-card" class="glass-panel p-5 hover:bg-panelHover/40 cursor-pointer group relative overflow-hidden"><div class="absolute right-0 top-0 w-2 h-full bg-accentOrange/80"></div><div class="flex justify-between items-start mb-4"><div class="w-10 h-10 rounded-lg bg-orange-500/20 text-orange-400 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">📐</div><span id="math-label" class="text-xs font-bold text-orange-400 bg-orange-500/10 px-2 py-1 rounded">Needs Focus</span></div><h4 class="font-semibold text-white mb-1">Mathematics</h4><div class="flex justify-between text-xs text-muted mb-2"><span>Mastery</span><span id="math-value">45%</span></div><div class="progress-track h-1.5 w-full"><div id="math-fill" class="progress-fill bg-orange-400" style="width: 45%"></div></div></div>
-            <div id="history-card" class="glass-panel p-5 hover:bg-panelHover/40 cursor-pointer group"><div class="flex justify-between items-start mb-4"><div class="w-10 h-10 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center text-xl group-hover:scale-110 transition-transform">🏛️</div><span id="history-label" class="text-xs font-bold text-purple-400 bg-purple-500/10 px-2 py-1 rounded">Rank B</span></div><h4 class="font-semibold text-white mb-1">History</h4><div class="flex justify-between text-xs text-muted mb-2"><span>Mastery</span><span id="history-value">62%</span></div><div class="progress-track h-1.5 w-full"><div id="history-fill" class="progress-fill bg-purple-400" style="width: 62%"></div></div></div>
-        </div>
-    </main>
-    <script>
-        function lsGet(key, fallback) {
-            try {
-                const raw = localStorage.getItem(key);
-                return raw ? JSON.parse(raw) : fallback;
-            } catch {
-                return fallback;
+      </article>
+    </section>
+  </main>
+
+  <script src="/script.js"></script>
+  <script src="/layout.js" defer></script>
+  <script>
+    ensureProfile();
+
+    const topBar = document.getElementById('topBar');
+    const palette = getComputedStyle(document.documentElement);
+    const colorInk = palette.getPropertyValue('--ink').trim();
+    const colorInkSoft = palette.getPropertyValue('--ink-soft').trim();
+    const colorLime = palette.getPropertyValue('--lime').trim();
+    const colorBlue = palette.getPropertyValue('--blue').trim();
+    const colorCoral = palette.getPropertyValue('--coral').trim();
+    const colorPink = palette.getPropertyValue('--pink').trim();
+    const colorSurface = palette.getPropertyValue('--surface').trim();
+    const colorBorder = palette.getPropertyValue('--border').trim();
+
+    function refreshTopBar() {
+      const progress = getLevelProgress();
+      if (topBar) {
+        topBar.style.width = `${progress.pct}%`;
+      }
+    }
+
+    const stats = {
+      count: lsGet('mm_count', 0),
+      level: lsGet('mm_level', 'Newbie'),
+      streak: lsGet('mm_streak', []),
+      subjects: lsGet('mm_subjects', {}),
+      quizzes: lsGet('mm_quiz_scores', {}),
+      milestones: lsGet('mm_milestones', []),
+      favorite: lsGet('mm_subject', 'Science')
+    };
+
+    const scores = Object.values(stats.quizzes).flat();
+    const quizCount = scores.length;
+    const avgScore = quizCount ? Math.round(scores.reduce((sum, value) => sum + value, 0) / quizCount) : 0;
+    const xpValue = calculateXP();
+    const xpTarget = 10000;
+    const progressPercent = Math.min(100, Math.round((xpValue / xpTarget) * 100));
+    const weakArea = getWeakArea();
+    const subjectAverages = Object.fromEntries(
+      Object.entries(stats.quizzes).map(([subject, values]) => [
+        subject,
+        values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : 0
+      ])
+    );
+
+    const mastery = {
+      Science: subjectAverages.Science || 82,
+      'Computer Science': subjectAverages.Coding || 74,
+      Mathematics: subjectAverages.Math || 52,
+      History: subjectAverages.History || 64
+    };
+
+    const labels = ['Logic', 'Memory', 'Creativity', 'Analysis', 'Focus', 'Speed'];
+    const radarValues = [
+      Math.min(100, mastery['Computer Science'] + 10),
+      Math.min(100, mastery.Science + 5),
+      Math.min(100, mastery.History + 15),
+      Math.min(100, mastery.Mathematics + 10),
+      Math.min(100, avgScore + 5),
+      Math.min(100, Math.round((stats.count / 20) * 10 + 50))
+    ];
+
+    document.getElementById('streak-count').textContent = stats.streak.length || 0;
+    document.getElementById('level-rank').textContent = stats.level || 'Newbie';
+    document.getElementById('xp-value').textContent = xpValue;
+    document.getElementById('xp-target').textContent = `${xpTarget} XP Needed`;
+    document.getElementById('weak-area').textContent = weakArea;
+    document.getElementById('xp-progress-fill').style.width = `${progressPercent}%`;
+    document.getElementById('logic-label').textContent = radarValues[0] >= 80 ? 'High' : 'Balanced';
+    document.getElementById('memory-label').textContent = radarValues[1] >= 80 ? 'Strong' : 'Growing';
+    document.getElementById('printProgress')?.addEventListener('click', () => window.print());
+
+    const activityTimeline = document.getElementById('activity-timeline');
+    const timelineItems = stats.milestones.slice(-5).reverse();
+    activityTimeline.innerHTML = timelineItems.length
+      ? timelineItems.map((item) => `
+          <article class="timeline-item">
+            <h3>${item.event}</h3>
+            <p class="timeline-date">${item.date}</p>
+          </article>
+        `).join('')
+      : '<article class="timeline-item"><h3>No recent activity yet.</h3><p class="timeline-date">Take a quiz or send a chat to start building your history.</p></article>';
+
+    function buildPerformanceChart(data, chartLabels) {
+      const chart = document.getElementById('performanceChart');
+      if (!chart || !window.Chart) {
+        return;
+      }
+      const ctx = chart.getContext('2d');
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: chartLabels,
+          datasets: [{
+            label: 'Accuracy %',
+            data,
+            borderColor: colorLime,
+            backgroundColor: colorBlue,
+            pointBackgroundColor: colorSurface,
+            pointBorderColor: colorLime,
+            pointBorderWidth: 2,
+            pointRadius: 4,
+            fill: false,
+            tension: 0.35
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: colorSurface,
+              titleColor: colorInk,
+              bodyColor: colorInkSoft,
+              borderColor: colorBorder,
+              borderWidth: 1,
+              displayColors: false
             }
-        }
-        function lsSet(key, value) {
-            localStorage.setItem(key, JSON.stringify(value));
-        }
-        function getSessionId() {
-            let id = lsGet('mm_sessionId', null);
-            if (!id) {
-                id = `session-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-                lsSet('mm_sessionId', id);
-            }
-            return id;
-        }
-        function apiPost(path, payload) {
-            return fetch(path, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-            }).then((res) => res.json());
-        }
-        const stats = {
-            count: lsGet('mm_count', 0),
-            level: lsGet('mm_level', 'Newbie'),
-            streak: lsGet('mm_streak', []),
-            subjects: lsGet('mm_subjects', {}),
-            quizzes: lsGet('mm_quiz_scores', {}),
-            milestones: lsGet('mm_milestones', []),
-            favorite: lsGet('mm_subject', 'Science'),
-        };
-        const scores = Object.values(stats.quizzes).flat();
-        const quizCount = scores.length;
-        const avgScore = quizCount ? Math.round(scores.reduce((acc, value) => acc + value, 0) / quizCount) : 0;
-        const xpValue = stats.count * 25 + quizCount * 90;
-        const xpTarget = 10000;
-        const progressPercent = Math.min(100, Math.round((xpValue / xpTarget) * 100));
-        const subjectAverages = Object.fromEntries(Object.entries(stats.quizzes).map(([subject, values]) => [subject, values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : 0]));
-        const mastery = {
-            Science: subjectAverages.Science || 82,
-            'Computer Science': subjectAverages.Coding || 74,
-            Mathematics: subjectAverages.Math || 52,
-            History: subjectAverages.History || 64,
-        };
-        const labels = ['Logic', 'Memory', 'Creativity', 'Analysis', 'Focus', 'Speed'];
-        const radarValues = [
-            Math.min(100, mastery['Computer Science'] + 10),
-            Math.min(100, mastery['Science'] + 5),
-            Math.min(100, mastery['History'] + 15),
-            Math.min(100, mastery['Mathematics'] + 10),
-            Math.min(100, avgScore + 5),
-            Math.min(100, (stats.count / 20) * 10 + 50),
-        ];
-        document.getElementById('streak-count').textContent = stats.streak.length || 0;
-        document.getElementById('level-rank').textContent = stats.level || 'Newbie';
-        document.getElementById('xp-value').textContent = xpValue;
-        document.getElementById('xp-target').textContent = `${xpTarget} XP Needed`;
-        document.getElementById('xp-progress-fill').style.width = `${progressPercent}%`;
-        document.getElementById('logic-label').textContent = radarValues[0] >= 80 ? 'High' : 'Balanced';
-        document.getElementById('memory-label').textContent = radarValues[1] >= 80 ? 'Strong' : 'Growing';
-        const activityTimeline = document.getElementById('activity-timeline');
-        if (activityTimeline) {
-            const timelineItems = stats.milestones.slice(-4).reverse();
-            activityTimeline.innerHTML = timelineItems.length ? timelineItems.map((item) => `
-                    <div class="relative pl-6">
-                        <div class="absolute -left-1.5 top-1 w-3 h-3 bg-primary rounded-full shadow-[0_0_8px_rgba(184,255,74,0.6)]"></div>
-                        <p class="text-sm font-medium text-white mb-1">${item.event}</p>
-                        <p class="text-xs text-muted mb-2">${item.date}</p>
-                    </div>
-                `).join('') : '<div class="relative pl-6"><p class="text-sm text-muted">No recent activity yet.</p></div>';
-        }
-        function buildPerformanceChart(data, labels) {
-            const ctxLine = document.getElementById('performanceChart').getContext('2d');
-            const gradientFill = ctxLine.createLinearGradient(0, 0, 0, 300);
-            gradientFill.addColorStop(0, 'rgba(184, 255, 74, 0.3)');
-            gradientFill.addColorStop(1, 'rgba(184, 255, 74, 0.0)');
-            new Chart(ctxLine, {
-                type: 'line',
-                data: {
-                    labels,
-                    datasets: [{
-                        label: 'Accuracy %',
-                        data,
-                        borderColor: '#b8ff4a',
-                        backgroundColor: gradientFill,
-                        borderWidth: 3,
-                        pointBackgroundColor: '#130d26',
-                        pointBorderColor: '#b8ff4a',
-                        pointBorderWidth: 2,
-                        pointRadius: 4,
-                        pointHoverRadius: 6,
-                        fill: true,
-                        tension: 0.4,
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: 'rgba(42, 31, 76, 0.9)',
-                            titleColor: '#e2dbea',
-                            bodyColor: '#b8ff4a',
-                            borderColor: 'rgba(154, 141, 184, 0.2)',
-                            borderWidth: 1,
-                            padding: 10,
-                            displayColors: false,
-                        }
-                    },
-                    scales: {
-                        x: { grid: { display: false, drawBorder: false } },
-                        y: {
-                            grid: { color: 'rgba(154, 141, 184, 0.05)', drawBorder: false },
-                            min: 40,
-                            max: 100,
-                            ticks: { callback: (value) => `${value}%` }
-                        }
-                    },
-                    interaction: { intersect: false, mode: 'index' }
-                }
-            });
-        }
-        function refreshSubjectCard(valueId, fillId, labelId, average) {
-            const normalized = Math.max(20, Math.min(100, average || 0));
-            document.getElementById(valueId).textContent = `${normalized}%`;
-            document.getElementById(fillId).style.width = `${normalized}%`;
-            const labelText = normalized >= 90 ? 'Rank S' : normalized >= 75 ? 'Rank A' : normalized >= 60 ? 'Rank B' : 'Needs Focus';
-            document.getElementById(labelId).textContent = labelText;
-        }
-        refreshSubjectCard('science-value', 'science-fill', 'science-label', mastery['Science']);
-        refreshSubjectCard('tech-value', 'tech-fill', 'tech-label', mastery['Computer Science']);
-        refreshSubjectCard('math-value', 'math-fill', 'math-label', mastery['Mathematics']);
-        refreshSubjectCard('history-value', 'history-fill', 'history-label', mastery['History']);
-        const historyData = scores.slice(-6);
-        const performanceData = historyData.length ? historyData : [58, 64, 71, 79, 84, avgScore || 68];
-        const performanceLabels = historyData.length ? historyData.map((_, index) => `Quiz ${index + 1}`) : ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6'];
-        buildPerformanceChart(performanceData, performanceLabels);
-        const ctxRadar = document.getElementById('cognitiveChart').getContext('2d');
-        new Chart(ctxRadar, {
-            type: 'radar',
-            data: {
-                labels,
-                datasets: [{
-                    label: 'Current Profile',
-                    data: radarValues,
-                    backgroundColor: 'rgba(184, 255, 74, 0.2)',
-                    borderColor: '#b8ff4a',
-                    pointBackgroundColor: '#b8ff4a',
-                    pointBorderColor: '#130d26',
-                    pointHoverBackgroundColor: '#fff',
-                    pointHoverBorderColor: '#b8ff4a',
-                    borderWidth: 2,
-                }]
+          },
+          scales: {
+            x: {
+              ticks: { color: colorInkSoft },
+              grid: { color: colorBorder }
             },
-            options: {
-                scales: {
-                    r: {
-                        angleLines: { color: 'rgba(154, 141, 184, 0.1)' },
-                        grid: { color: 'rgba(154, 141, 184, 0.1)' },
-                        pointLabels: { color: '#e2dbea', font: { size: 10 } },
-                        ticks: { display: false, min: 0, max: 100 }
-                    }
-                },
-                plugins: { legend: { display: false } },
-                maintainAspectRatio: false
+            y: {
+              min: 40,
+              max: 100,
+              ticks: {
+                color: colorInkSoft,
+                callback: (value) => `${value}%`
+              },
+              grid: { color: colorBorder }
             }
-        });
-        async function loadGrokInsight() {
-            const aiCard = document.getElementById('ai-coach-text');
-            aiCard.textContent = 'Asking Grok for the next best study move...';
-            try {
-                const response = await apiPost('/api/chat', {
-                    visitorId: getSessionId(),
-                    subject: stats.favorite,
-                    userLevel: stats.level,
-                    message: `I have ${stats.count} interactions, a ${quizCount}-quiz history, and an average score of ${avgScore}%. Give me three focused study instructions and one weakness to improve.`
-                });
-                aiCard.textContent = response.reply || 'Grok could not generate guidance right now.';
-            } catch {
-                aiCard.textContent = 'Unable to connect with Grok. Try again later.';
-            }
+          }
         }
-        document.getElementById('refresh-ai').addEventListener('click', loadGrokInsight);
-        document.getElementById('open-chat').addEventListener('click', () => window.location.href = 'chat.html');
-        loadGrokInsight();
-    </script>
-    <script src="/layout.js" defer></script>
+      });
+    }
+
+    function buildRadarChart() {
+      const chart = document.getElementById('cognitiveChart');
+      if (!chart || !window.Chart) {
+        return;
+      }
+      const ctx = chart.getContext('2d');
+      new Chart(ctx, {
+        type: 'radar',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Current Profile',
+            data: radarValues,
+            backgroundColor: colorBlue,
+            borderColor: colorLime,
+            pointBackgroundColor: colorLime,
+            pointBorderColor: colorSurface,
+            pointHoverBackgroundColor: colorInk,
+            pointHoverBorderColor: colorLime,
+            borderWidth: 2
+          }]
+        },
+        options: {
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            r: {
+              angleLines: { color: colorBorder },
+              grid: { color: colorBorder },
+              pointLabels: { color: colorInkSoft },
+              ticks: { display: false, min: 0, max: 100 }
+            }
+          }
+        }
+      });
+    }
+
+    function refreshSubjectCard(valueId, fillId, labelId, average) {
+      const normalized = Math.max(20, Math.min(100, average || 0));
+      document.getElementById(valueId).textContent = `${normalized}%`;
+      document.getElementById(fillId).style.width = `${normalized}%`;
+      document.getElementById(labelId).textContent = normalized >= 90 ? 'Rank S' : normalized >= 75 ? 'Rank A' : normalized >= 60 ? 'Rank B' : 'Needs Focus';
+    }
+
+    refreshSubjectCard('science-value', 'science-fill', 'science-label', mastery.Science);
+    refreshSubjectCard('tech-value', 'tech-fill', 'tech-label', mastery['Computer Science']);
+    refreshSubjectCard('math-value', 'math-fill', 'math-label', mastery.Mathematics);
+    refreshSubjectCard('history-value', 'history-fill', 'history-label', mastery.History);
+
+    const historyData = scores.slice(-6);
+    const performanceData = historyData.length ? historyData : [58, 64, 71, 79, 84, avgScore || 68];
+    const performanceLabels = historyData.length ? historyData.map((_, index) => `Quiz ${index + 1}`) : ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6'];
+
+    async function loadGrokInsight() {
+      const aiCard = document.getElementById('ai-coach-text');
+      aiCard.textContent = 'Asking MindMesh for the next best study move...';
+      try {
+        const response = await apiPost('/api/chat', {
+          visitorId: getSessionId(),
+          subject: stats.favorite,
+          userLevel: stats.level,
+          message: `I have ${stats.count} interactions, a ${quizCount}-quiz history, and an average score of ${avgScore}%. Give me three focused study instructions and one weakness to improve.`
+        });
+        aiCard.textContent = response.reply || 'MindMesh could not generate guidance right now.';
+      } catch {
+        aiCard.textContent = 'Unable to connect right now. Try again later.';
+      }
+    }
+
+    document.getElementById('refresh-ai').addEventListener('click', loadGrokInsight);
+    document.getElementById('view-milestones').addEventListener('click', () => {
+      window.location.href = '/dashboard.html';
+    });
+
+    refreshTopBar();
+    buildPerformanceChart(performanceData, performanceLabels);
+    buildRadarChart();
+    loadGrokInsight();
+  </script>
 </body>
 </html>

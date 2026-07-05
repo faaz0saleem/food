@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- BASE_URL: https://YOUR_DOMAIN_HERE -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Checkout — MindMesh</title>
 <meta name="description" content="Upgrade your MindMesh plan with secure RapidPay checkout.">
-<link rel="canonical" href="https://mindmesh.app/checkout.html">
+<link rel="canonical" href="https://YOUR_DOMAIN_HERE/checkout.html">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Checkout — MindMesh">
 <meta property="og:description" content="Upgrade your MindMesh plan with secure RapidPay checkout.">
@@ -26,6 +27,9 @@
 
   <section class="checkout-wrapper">
     <div class="container">
+      <div class="beta-warning-banner">
+        <strong>BETA TESTING MODE:</strong> No money will be charged. Checkout is in testing phase only.
+      </div>
       <div class="checkout-head">
         <h1>Upgrade your plan</h1>
         <p>You're in the testing phase — no real charges yet. Stripe checkout connects before public launch.</p>
@@ -66,7 +70,7 @@
         <div class="form-section">
           <div class="checkbox-group">
             <input type="checkbox" id="terms" required>
-            <label for="terms">I agree to the <a href="#" style="color: var(--lime); text-decoration:underline;">Terms of Service</a> and <a href="#" style="color: var(--lime); text-decoration:underline;">Privacy Policy</a></label>
+            <label for="terms">I agree to the <a href="/terms.html" style="color: var(--lime); text-decoration:underline;">Terms of Service</a> and <a href="/privacy.html" style="color: var(--lime); text-decoration:underline;">Privacy Policy</a></label>
           </div>
           <div class="checkbox-group" style="margin-top:12px;">
             <input type="checkbox" id="emails">
@@ -75,13 +79,13 @@
         </div>
 
         <!-- Submit Button -->
-        <button class="submit-btn" type="button" onclick="completeCheckout()">Continue to secure payment</button>
+        <button class="submit-btn" type="button" onclick="completeCheckout()">Activate beta access and continue →</button>
         
         <div class="security-badge">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
           </svg>
-          RapidPay secure iframe checkout
+          Beta checkout simulation enabled
         </div>
 
         <div id="checkoutStatus" class="test-mode-note" style="display:none; margin-top:16px;"></div>
@@ -171,10 +175,38 @@
     }
 
     function savePlanLocally(plan) {
-      localStorage.setItem('mm_plan', plan.name);
-      localStorage.setItem('mm_plan_price', String(plan.price));
-      localStorage.setItem('mm_plan_started', new Date().toISOString());
-      localStorage.setItem('mm_plan_status', 'active');
+      localStorage.setItem('mm_plan', JSON.stringify(plan.name));
+      localStorage.setItem('mm_plan_price', JSON.stringify(Number(plan.price || 0)));
+      localStorage.setItem('mm_plan_started', JSON.stringify(new Date().toISOString()));
+      localStorage.setItem('mm_plan_status', JSON.stringify('active'));
+    }
+
+    function getAuthToken() {
+      const raw = localStorage.getItem('mm_auth_token');
+      if (!raw) return '';
+      try {
+        return JSON.parse(raw) || '';
+      } catch {
+        return raw;
+      }
+    }
+
+    async function syncSubscriptionToServer(plan) {
+      const token = getAuthToken();
+      if (!token) return;
+      await fetch('/api/subscription', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          planName: plan.name,
+          planPrice: Number(plan.price || 0),
+          planStatus: 'active',
+          planStarted: new Date().toISOString(),
+        }),
+      });
     }
 
     async function createCheckoutSession(plan, email, mobile) {
@@ -286,16 +318,14 @@
       }
 
       localStorage.setItem('mm_email', JSON.stringify(email));
-      setCheckoutStatus('Creating secure checkout session...');
-
+      setCheckoutStatus('Beta mode active: no payment will be charged. Enabling your subscription and redirecting to dashboard...');
+      savePlanLocally(selectedPlan);
       try {
-        const session = await createCheckoutSession(selectedPlan, email, mobile);
-        activeSessionId = session.sessionId;
-        setCheckoutStatus('Session created. Complete payment below.');
-        mountRapidPay(session, selectedPlan);
-      } catch (error) {
-        setCheckoutStatus(error.message, true);
+        await syncSubscriptionToServer(selectedPlan);
+      } catch {
+        // local activation still allows access during beta
       }
+      setTimeout(() => { window.location.href = '/dashboard.html'; }, 1200);
     }
 
     function getQueryParam(name) {

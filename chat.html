@@ -1,11 +1,12 @@
-<!DOCTYPE html>
+3<!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- BASE_URL: https://YOUR_DOMAIN_HERE -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MindMesh — Chat</title>
 <meta name="description" content="Ask MindMesh's AI tutor anything — explanations tuned to how you learn.">
-<link rel="canonical" href="https://mindmesh.app/chat.html">
+<link rel="canonical" href="https://YOUR_DOMAIN_HERE/chat.html">
 <meta property="og:type" content="website">
 <meta property="og:title" content="MindMesh — Chat">
 <meta property="og:description" content="Ask MindMesh's AI tutor anything — explanations tuned to how you learn.">
@@ -84,6 +85,7 @@
   const topBar = document.getElementById('topBar');
   let typingIndicator = null;
   const fallbackModel = 'llama-3.3-70b-versatile';
+  let pendingQuestion = null;
 
   function apiUrl(path) {
     const rawBase = localStorage.getItem('mm_api_base') || '';
@@ -98,11 +100,11 @@
   }
 
   function refreshTopBar() {
-    const progress = getLevelProgress(lsGet('mm_count', 0));
+    const progress = getLevelProgress();
     if (topBar) topBar.style.width = `${progress.pct}%`;
   }
 
-  function formatMessage(text, sender, engine) {
+  function formatMessage(text, sender, engine, sourcePrompt) {
     const row = document.createElement('div');
     row.className = `msg-row ${sender}`;
     const avatar = document.createElement('div');
@@ -119,12 +121,42 @@
     const textNode = document.createElement('div');
     textNode.textContent = text;
     bubble.appendChild(textNode);
+    if (sender === 'ai') {
+      const actions = document.createElement('div');
+      actions.className = 'msg-actions';
+
+      const readBtn = document.createElement('button');
+      readBtn.type = 'button';
+      readBtn.className = 'msg-action-btn';
+      readBtn.textContent = '🔊 Read aloud';
+      readBtn.addEventListener('click', () => {
+        if (!('speechSynthesis' in window)) return;
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.rate = 0.95;
+        utter.pitch = 1;
+        window.speechSynthesis.speak(utter);
+      });
+      actions.appendChild(readBtn);
+
+      if (sourcePrompt) {
+        const explainBtn = document.createElement('button');
+        explainBtn.type = 'button';
+        explainBtn.className = 'msg-action-btn';
+        explainBtn.textContent = 'Explain differently';
+        explainBtn.addEventListener('click', () => {
+          sendMessage(sourcePrompt, { excludeEngine: String(engine || '').split(',')[0].trim() });
+        });
+        actions.appendChild(explainBtn);
+      }
+      bubble.appendChild(actions);
+    }
     row.appendChild(avatar);
     row.appendChild(bubble);
     return row;
   }
 
-  function appendMessage(text, sender, engine) {
+  function appendMessage(text, sender, engine, sourcePrompt) {
     if (!welcomeScreen.classList.contains('hidden-perm')) {
       welcomeScreen.style.display = 'none';
       welcomeScreen.classList.add('hidden-perm');
@@ -134,7 +166,7 @@
       typingIndicator.remove();
       typingIndicator = null;
     }
-    messages.appendChild(formatMessage(text, sender, engine));
+    messages.appendChild(formatMessage(text, sender, engine, sourcePrompt));
     messages.scrollTop = messages.scrollHeight;
     document.getElementById('chatFeed').scrollTop = document.getElementById('chatFeed').scrollHeight;
   }
@@ -165,7 +197,7 @@
     }
   }
 
-  async function fetchAIResponse(prompt, subject) {
+  async function fetchAIResponse(prompt, subject, options = {}) {
     try {
       const response = await fetch(apiUrl('/api/chat'), {
         method: 'POST',
@@ -176,6 +208,7 @@
           learningStyle: lsGet('mm_style', 'Visual'),
           userLevel: lsGet('mm_level', 'Newbie'),
           message: prompt,
+          excludeEngine: options.excludeEngine || undefined,
         }),
       });
       const data = await response.json();
@@ -199,19 +232,19 @@
     }
   }
 
-  async function sendMessage() {
-    const text = chatInput.value.trim();
+  async function sendMessage(overrideText, options = {}) {
+    const text = (overrideText || chatInput.value || '').trim();
     if (!text) return;
     const subject = lsGet('mm_subject', 'General');
     appendMessage(text, 'user');
     chatInput.value = '';
     showTyping();
-    const { reply, engine } = await fetchAIResponse(text, subject);
+    const { reply, engine } = await fetchAIResponse(text, subject, options);
     if (typingIndicator) {
       typingIndicator.remove();
       typingIndicator = null;
     }
-    appendMessage(reply, 'ai', engine);
+    appendMessage(reply, 'ai', engine, text);
     recordChat(subject);
     recordConversation(subject, text, reply);
     refreshTopBar();
@@ -232,6 +265,11 @@
   });
 
   sendButton.addEventListener('click', sendMessage);
+  const params = new URLSearchParams(window.location.search);
+  pendingQuestion = params.get('q');
+  if (pendingQuestion) {
+    chatInput.value = pendingQuestion;
+  }
   loadModelInfo();
   refreshTopBar();
 })();

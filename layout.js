@@ -18,7 +18,12 @@
   function lsGet(key, fallback) {
     try {
       const raw = localStorage.getItem(key);
-      return raw ? JSON.parse(raw) : fallback;
+      if (raw === null || raw === undefined) return fallback;
+      try {
+        return JSON.parse(raw);
+      } catch {
+        return raw;
+      }
     } catch {
       return fallback;
     }
@@ -40,6 +45,36 @@
     return path === href || path.endsWith(href.replace(/^\//, ''));
   }
 
+  function getLevelMeta() {
+    const count = Number(lsGet('mm_count', 0) || 0);
+    const subjects = lsGet('mm_subjects', {});
+    const quizScores = lsGet('mm_quiz_scores', {});
+    const streak = lsGet('mm_streak', []);
+    const milestones = lsGet('mm_milestones', []);
+    const allScores = Object.values(quizScores || {}).flat();
+    const xp = Number(
+      count * 2 +
+      Object.keys(subjects || {}).length * 25 +
+      allScores.length * 15 +
+      allScores.reduce((sum, score) => sum + Math.round(Number(score || 0) * 0.2), 0) +
+      Math.min(streak.length, 7) * 10 +
+      milestones.length * 5
+    );
+    const storedLevel = lsGet('mm_level', 'Newbie');
+    const levels = [
+      { name: 'Newbie', icon: '🌱', min: 0, max: 150 },
+      { name: 'Learner', icon: '📖', min: 150, max: 400 },
+      { name: 'Explorer', icon: '🧭', min: 400, max: 800 },
+      { name: 'Scholar', icon: '📚', min: 800, max: 1500 },
+      { name: 'Master', icon: '🏆', min: 1500, max: Infinity },
+    ];
+    const matched = levels.find((level) => xp >= level.min && xp < level.max);
+    if (matched) {
+      return { ...matched, xp };
+    }
+    return { ...(levels.find((level) => level.name === storedLevel) || levels[0]), xp };
+  }
+
   function buildBetaBanner() {
     if (document.querySelector('.beta-banner')) return;
     const banner = document.createElement('div');
@@ -52,22 +87,40 @@
     const nav = document.querySelector('.site-nav');
     if (!nav || nav.dataset.built === 'true') return;
 
+    const path = window.location.pathname;
+    const isLanding = path === '/' || path.endsWith('/index.html');
+    const isCheckout = path.endsWith('/checkout.html');
+    if (isLanding || isCheckout) {
+      nav.style.display = 'none';
+      nav.dataset.built = 'true';
+      return;
+    }
+
     const name = lsGet('mm_name', '');
+    const brandHref = name ? '/dashboard.html' : '/';
     const avatarColor = lsGet('mm_avatarColor', '#7b7cff');
     const initials = getInitials(name);
+    const level = getLevelMeta();
     const links = NAV_LINKS.map((link) => {
       const active = isActive(link.href) ? ' active' : '';
       return `<a href="${link.href}" class="nav-link${active}">${link.label}</a>`;
     }).join('');
 
     nav.innerHTML = `
-      <div class="nav-brand"><a href="/">🧠 MindMesh</a></div>
+      <div class="nav-brand"><a href="${brandHref}">🧠 MindMesh</a></div>
       <button class="nav-toggle" type="button" aria-label="Open menu" aria-expanded="false">
         <span></span><span></span><span></span>
       </button>
       <div class="nav-panel">
         <nav class="nav-links">${links}</nav>
         <div class="nav-right">
+          <div class="nav-level-badge" aria-label="Current level">
+            <span class="nav-level-icon">${level.icon}</span>
+            <span class="nav-level-copy">
+              <strong>${level.name}</strong>
+              <small>${Math.max(0, Number(level.xp || 0))} XP</small>
+            </span>
+          </div>
           <a href="/chat.html" class="chat-btn">Ask AI →</a>
           <a href="/profile.html" class="avatar" style="background-color:${avatarColor}" title="Profile">${initials}</a>
         </div>
@@ -84,6 +137,53 @@
     panel?.querySelectorAll('a').forEach((link) => {
       link.addEventListener('click', () => nav.classList.remove('open'));
     });
+  }
+
+  function calculateXPForNav() {
+    const count = Number(lsGet('mm_count', 0) || 0);
+    const subjects = lsGet('mm_subjects', {});
+    const quizScores = lsGet('mm_quiz_scores', {});
+    const streak = lsGet('mm_streak', []);
+    const milestones = lsGet('mm_milestones', []);
+    const allScores = Object.values(quizScores || {}).flat();
+    return Number(
+      count * 2 +
+      Object.keys(subjects || {}).length * 25 +
+      allScores.length * 15 +
+      allScores.reduce((sum, score) => sum + Math.round(Number(score || 0) * 0.2), 0) +
+      Math.min(streak.length, 7) * 10 +
+      milestones.length * 5
+    );
+  }
+
+  function ensureTopProgressBar() {
+    const path = window.location.pathname;
+    if (path === '/' || path.endsWith('/index.html')) {
+      return;
+    }
+    let topBar = document.querySelector('.top-bar');
+    if (!topBar) {
+      topBar = document.createElement('div');
+      topBar.className = 'top-bar';
+      topBar.style.height = '4px';
+      topBar.style.background = 'var(--surface-2)';
+      topBar.innerHTML = '<div class="top-bar-fill" style="height:100%;background:linear-gradient(90deg,var(--lime),var(--blue));width:0%;border-radius:999px;"></div>';
+      document.body.prepend(topBar);
+    }
+    const fill = topBar.querySelector('.top-bar-fill');
+    if (fill) {
+      const xp = calculateXPForNav();
+      const levels = [
+        { min: 0, max: 150 },
+        { min: 150, max: 400 },
+        { min: 400, max: 800 },
+        { min: 800, max: 1500 },
+        { min: 1500, max: Infinity },
+      ];
+      const level = levels.find((item) => xp >= item.min && xp < item.max) || levels[levels.length - 1];
+      const pct = level.max === Infinity ? 100 : Math.max(0, Math.min(100, Math.round(((xp - level.min) / (level.max - level.min)) * 100)));
+      fill.style.width = `${pct}%`;
+    }
   }
 
   function buildFooter() {
@@ -107,8 +207,14 @@
           <div class="footer-col">
             <h4>Company</h4>
             <a href="/#pricing">Pricing</a>
-            <a href="/onboarding.html">Get started</a>
+            <a href="/signup.html">Get started</a>
             <a href="/checkout.html?plan=student">Upgrade</a>
+          </div>
+          <div class="footer-col">
+            <h4>Legal</h4>
+            <a href="/terms.html">Terms</a>
+            <a href="/privacy.html">Privacy</a>
+            <a href="/faq.html">FAQ</a>
           </div>
           <div class="footer-col" data-footer-status>
             <h4>Status</h4>
@@ -157,12 +263,21 @@
   async function renderEngineStatus(container) {
     const fallbackStatuses = { reasoner: true, solver: false, explorer: false, storyteller: false };
     if (container) renderEngineCards(container, fallbackStatuses);
+    const sticker = document.querySelector('[data-live-engines]');
+    if (sticker) {
+      const liveFallback = Object.values(fallbackStatuses).filter(Boolean).length;
+      sticker.textContent = `${liveFallback} engine${liveFallback === 1 ? '' : 's'} live · ${4 - liveFallback} coming soon`;
+    }
     try {
       const response = await fetch('/api/status');
       const data = await response.json();
       if (data.engines) {
         if (container) renderEngineCards(container, data.engines);
         renderFooterStatus(data.engines);
+        if (sticker) {
+          const liveCount = Object.values(data.engines).filter(Boolean).length;
+          sticker.textContent = `${liveCount} engine${liveCount === 1 ? '' : 's'} live · ${4 - liveCount} coming soon`;
+        }
       }
     } catch {
       // keep the fallback render (Groq only) if /api/status is unreachable
@@ -182,6 +297,7 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     buildBetaBanner();
+    ensureTopProgressBar();
     buildNav();
     buildFooter();
     renderEngineStatus(document.querySelector('[data-engine-status]'));

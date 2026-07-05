@@ -62,6 +62,47 @@
   gap: 12px;
 }
 
+.nav-level-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
+  box-shadow: var(--shadow-sm);
+}
+
+.nav-level-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--lime) 24%, var(--surface));
+  color: var(--ink);
+  font-size: 0.95rem;
+}
+
+.nav-level-copy {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.05;
+}
+
+.nav-level-copy strong {
+  color: var(--ink);
+  font-size: 0.85rem;
+}
+
+.nav-level-copy small {
+  color: var(--ink-soft);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .chat-btn {
   display: inline-flex;
   align-items: center;
@@ -157,5 +198,10 @@
   .nav-right {
     justify-content: center;
     flex-wrap: wrap;
+  }
+
+  .nav-level-badge {
+    width: 100%;
+    justify-content: center;
   }
 }

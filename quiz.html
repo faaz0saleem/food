@@ -1,224 +1,164 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MindMesh - Quiz</title>
-  <link rel="stylesheet" href="/brand.css" />
-  <link rel="stylesheet" href="/tailwind-compat.css" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/nav.css" />
-  <style>
-    body { font-family: 'Inter', sans-serif; margin: 0; min-height: 100vh; background: radial-gradient(circle at top, rgba(184,255,74,0.15), transparent 35%), linear-gradient(135deg, #130d26 0%, #221442 100%); color: #e2dbea; }
-    .glass { background: rgba(24, 16, 44, 0.78); backdrop-filter: blur(14px); border: 1px solid rgba(184,255,74,0.14); border-radius: 28px; }
-    .btn-primary { background: #b8ff4a; color: #130d26; }
-    .btn-primary:hover { background: #a5e23a; }
-    .btn-soft { background: rgba(154,141,184,0.18); color: #e2dbea; }
-    .btn-soft:hover { background: rgba(154,141,184,0.28); }
-    .answer-card { background: rgba(154,141,184,0.06); border: 1px solid rgba(154,141,184,0.2); }
-    .answer-card:hover { background: rgba(154,141,184,0.12); }
-    .selected { border-color: rgba(184,255,74,0.9); background: rgba(184,255,74,0.14); }
-    .correct { border-color: #4ee87d; background: rgba(78,232,125,0.16); }
-    .wrong { border-color: #ff6b6b; background: rgba(255,107,107,0.14); }
-    .badge { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.55rem 0.9rem; border-radius: 999px; border: 1px solid rgba(184,255,74,0.18); background: rgba(184,255,74,0.08); color: #b8ff4a; }
-    .hidden { display: none; }
-    input[type=number]::-webkit-outer-spin-button, input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-    input[type=number] { -moz-appearance: textfield; }
-  </style>
+  <!-- BASE_URL: https://YOUR_DOMAIN_HERE -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MindMesh — Quiz</title>
+  <meta name="description" content="Take adaptive MindMesh quizzes with fresh AI-generated questions and track your quiz growth.">
+  <link rel="canonical" href="https://YOUR_DOMAIN_HERE/quiz.html">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="MindMesh — Quiz">
+  <meta property="og:description" content="Practice with adaptive quizzes and improve your subject mastery in MindMesh.">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/brand.css">
+  <link rel="stylesheet" href="/nav.css">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/quiz.css">
 </head>
-<body class="p-5 sm:p-8 lg:p-12">
+<body data-page="quiz">
+  <div class="top-bar"><div class="top-bar-fill" id="topBar" style="width:0%"></div></div>
   <header class="site-nav"></header>
-  <div class="max-w-6xl mx-auto space-y-8">
-    <header class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-      <div class="space-y-4">
-        <p class="text-sm uppercase tracking-[0.35em] text-[#9a8db8]">MindMesh Quiz</p>
-        <h1 class="text-4xl sm:text-5xl font-semibold tracking-tight text-white">AI-powered quizzes with adaptive history tracking.</h1>
-        <p class="max-w-2xl text-[#b8b1d8]">Select a subject, choose 5 / 10 / 15 / custom length, and let MindMesh generate non-repeating quiz questions tailored to your session.</p>
+
+  <main class="quiz-page">
+    <section class="quiz-hero">
+      <div class="quiz-hero-head">
+        <div class="quiz-hero-copy">
+          <p class="eyebrow">Quiz Mode</p>
+          <h1>Adaptive quizzes that stay fresh every round.</h1>
+          <p>Pick a subject, set your quiz length, and let MindMesh generate new multiple-choice practice without repeating your recent questions.</p>
+        </div>
+        <div class="quiz-actions">
+          <a class="quiz-button-secondary quiz-link" href="/progress.html">View Progress</a>
+          <a class="quiz-link" href="/chat.html">Ask AI</a>
+        </div>
       </div>
-      <div class="grid gap-3 sm:grid-cols-2">
-        <a href="/progress.html" class="inline-flex items-center justify-center rounded-full px-5 py-3 btn-soft text-sm font-medium">View Progress</a>
-        <a href="/chat.html" class="inline-flex items-center justify-center rounded-full px-5 py-3 btn-primary text-sm font-medium">Ask AI</a>
-      </div>
-    </header>
+    </section>
 
-    <section id="mainSection" class="glass p-6 sm:p-8 shadow-[0_30px_80px_rgba(0,0,0,0.25)]">
-      <!-- OPTIONS VIEW -->
-      <div id="optionsView" class="grid gap-8 xl:grid-cols-[1.3fr_1fr]">
-        <div class="space-y-8">
-          <div>
-            <p class="text-xs uppercase tracking-[0.35em] text-[#9a8db8] mb-3">Subject</p>
-            <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              <button type="button" data-subject="Math" class="subject-btn btn-soft rounded-3xl px-4 py-3 text-sm">Math</button>
-              <button type="button" data-subject="Science" class="subject-btn btn-soft rounded-3xl px-4 py-3 text-sm active">Science</button>
-              <button type="button" data-subject="English" class="subject-btn btn-soft rounded-3xl px-4 py-3 text-sm">English</button>
-              <button type="button" data-subject="History" class="subject-btn btn-soft rounded-3xl px-4 py-3 text-sm">History</button>
-              <button type="button" data-subject="Coding" class="subject-btn btn-soft rounded-3xl px-4 py-3 text-sm">Coding</button>
-              <button type="button" data-subject="Philosophy" class="subject-btn btn-soft rounded-3xl px-4 py-3 text-sm">Philosophy</button>
+    <section class="quiz-layout" id="mainSection">
+      <div id="optionsView" class="quiz-options-grid">
+        <div class="quiz-stack">
+          <section class="quiz-panel">
+            <p class="quiz-label">Subject</p>
+            <div class="quiz-chip-grid">
+              <button type="button" data-subject="Math" class="subject-chip">Math</button>
+              <button type="button" data-subject="Science" class="subject-chip is-active">Science</button>
+              <button type="button" data-subject="English" class="subject-chip">English</button>
+              <button type="button" data-subject="History" class="subject-chip">History</button>
+              <button type="button" data-subject="Coding" class="subject-chip">Coding</button>
+              <button type="button" data-subject="Philosophy" class="subject-chip">Philosophy</button>
             </div>
-          </div>
+          </section>
 
-          <div>
-            <p class="text-xs uppercase tracking-[0.35em] text-[#9a8db8] mb-3">Quiz length</p>
-            <div class="flex flex-wrap gap-3 items-center">
-              <button type="button" data-count="5" class="length-btn btn-soft rounded-3xl px-4 py-3 text-sm active">5</button>
-              <button type="button" data-count="10" class="length-btn btn-soft rounded-3xl px-4 py-3 text-sm">10</button>
-              <button type="button" data-count="15" class="length-btn btn-soft rounded-3xl px-4 py-3 text-sm">15</button>
-              <button type="button" id="customLengthBtn" class="length-btn btn-soft rounded-3xl px-4 py-3 text-sm">Custom</button>
-              <input id="customCount" type="number" min="1" max="50" value="10" class="hidden rounded-3xl border border-white/10 bg-[#1a1136] px-4 py-3 text-sm text-white w-28 outline-none" placeholder="Custom" />
+          <section class="quiz-panel">
+            <p class="quiz-label">Quiz Length</p>
+            <div class="quiz-length-row">
+              <button type="button" data-count="5" class="length-chip is-active">5 questions</button>
+              <button type="button" data-count="10" class="length-chip">10 questions</button>
+              <button type="button" data-count="15" class="length-chip">15 questions</button>
+              <button type="button" id="customLengthBtn" class="length-chip">Custom</button>
+              <input id="customCount" class="quiz-custom-input" type="number" min="1" max="50" value="10" placeholder="Count">
             </div>
-            <p class="mt-3 text-sm text-[#9a8db8]">AI avoids repeating past questions by tracking your answered quiz history in localStorage.</p>
-          </div>
+            <p class="quiz-note">MindMesh remembers your recent quiz history in localStorage and uses it to avoid obvious repeats.</p>
+          </section>
 
-          <div class="rounded-[28px] border border-white/10 bg-[#191239] p-5">
-            <div class="flex items-center justify-between gap-4 mb-4">
+          <section class="quiz-panel">
+            <div class="quiz-tip-head">
               <div>
-                <p class="text-xs uppercase tracking-[0.35em] text-[#9a8db8]">AI insight</p>
-                <h2 class="text-xl font-semibold text-white">Adaptive study tip</h2>
+                <p class="quiz-label">AI Insight</p>
+                <h2>Study tip for this quiz</h2>
               </div>
-              <span class="badge">AI Powered</span>
+              <span class="quiz-tip-pill">Adaptive</span>
             </div>
-            <p id="grokTip" class="text-[#d1caea] leading-7">AI is ready to generate a study hint based on your selected quiz.</p>
-            <button id="refreshTip" type="button" class="mt-5 inline-flex items-center justify-center rounded-full bg-white/10 px-5 py-3 text-sm text-white hover:bg-white/15">Refresh tip</button>
-          </div>
+            <p id="grokTip" class="quiz-tip-copy">AI is ready to generate a study hint based on your selected quiz.</p>
+            <button id="refreshTip" type="button" class="quiz-button-secondary">Refresh Tip</button>
+          </section>
         </div>
 
-        <div class="rounded-[28px] border border-white/10 bg-[#191239] p-6 flex flex-col justify-between">
-          <div class="space-y-4">
-            <div class="flex items-center justify-between gap-4">
-              <div>
-                <p class="text-xs uppercase tracking-[0.35em] text-[#9a8db8]">Quiz summary</p>
-                <h2 id="previewHeadline" class="text-2xl font-semibold text-white">Science · 5 questions</h2>
-              </div>
-              <div class="text-right">
-                <p class="text-xs uppercase tracking-[0.35em] text-[#9a8db8]">Est. time</p>
-                <p id="previewTime" class="text-xl font-semibold text-white">4 min</p>
-              </div>
+        <aside class="quiz-panel">
+          <div class="quiz-summary-head">
+            <div class="quiz-summary-copy">
+              <p class="quiz-label">Quiz Summary</p>
+              <h2 id="previewHeadline">Science · 5 questions</h2>
+              <p>No repeated questions from your recent session history. Every run is meant to feel new.</p>
             </div>
-            <p class="text-sm text-[#b8ff4a]">No repeated questions from your session history. AI and MindMesh keep each quiz fresh.</p>
+            <span class="quiz-summary-pill">Ready</span>
           </div>
-          <button id="generateQuiz" type="button" class="mt-4 rounded-full btn-primary px-6 py-4 text-base font-semibold">Generate Quiz</button>
-        </div>
+          <div class="quiz-stack">
+            <div class="quiz-preview-line"><span>Estimated time</span><strong id="previewTime">4 min</strong></div>
+            <div class="quiz-preview-line"><span>Current focus</span><strong id="previewSubject">Science</strong></div>
+            <div class="quiz-preview-line"><span>AI mode</span><strong>Groq quiz generation</strong></div>
+          </div>
+          <button id="generateQuiz" type="button" class="quiz-button">Generate Quiz</button>
+        </aside>
       </div>
 
-      <!-- QUIZ VIEW -->
-      <div id="quizView" class="hidden space-y-6">
-        <div class="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+      <section id="quizView" class="quiz-panel quiz-screen hidden">
+        <div class="question-head">
           <div>
-            <p class="text-sm text-[#9a8db8]" id="progressLabel">Question 1 of 5</p>
-            <h2 id="questionText" class="text-3xl font-semibold text-white">Loading question…</h2>
+            <div class="question-meta">
+              <span id="progressLabel">Question 1 of 5</span>
+              <span>Subject switch stays in-session</span>
+            </div>
+            <h2 id="questionText" class="question-title">Loading question…</h2>
           </div>
-          <div class="text-right">
-            <p class="text-xs uppercase tracking-[0.35em] text-[#9a8db8]">Current score</p>
-            <p id="scoreBadge" class="mt-1 text-3xl font-semibold text-[#b8ff4a]">0</p>
-          </div>
+          <div class="quiz-summary-pill">Score <span id="scoreBadge">0</span></div>
         </div>
+
         <div>
-          <p class="text-xs uppercase tracking-[0.35em] text-[#9a8db8] mb-3">Switch subject</p>
-          <div id="quizSubjectBtns" class="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <button type="button" data-subject="Math" class="quiz-subject-btn btn-soft rounded-3xl px-4 py-3 text-sm">Math</button>
-            <button type="button" data-subject="Science" class="quiz-subject-btn btn-soft rounded-3xl px-4 py-3 text-sm active">Science</button>
-            <button type="button" data-subject="English" class="quiz-subject-btn btn-soft rounded-3xl px-4 py-3 text-sm">English</button>
-            <button type="button" data-subject="History" class="quiz-subject-btn btn-soft rounded-3xl px-4 py-3 text-sm">History</button>
-            <button type="button" data-subject="Coding" class="quiz-subject-btn btn-soft rounded-3xl px-4 py-3 text-sm">Coding</button>
-            <button type="button" data-subject="Philosophy" class="quiz-subject-btn btn-soft rounded-3xl px-4 py-3 text-sm">Philosophy</button>
+          <p class="quiz-label">Switch Subject</p>
+          <div class="quiz-subject-grid">
+            <button type="button" data-subject="Math" class="quiz-subject-chip">Math</button>
+            <button type="button" data-subject="Science" class="quiz-subject-chip is-active">Science</button>
+            <button type="button" data-subject="English" class="quiz-subject-chip">English</button>
+            <button type="button" data-subject="History" class="quiz-subject-chip">History</button>
+            <button type="button" data-subject="Coding" class="quiz-subject-chip">Coding</button>
+            <button type="button" data-subject="Philosophy" class="quiz-subject-chip">Philosophy</button>
           </div>
         </div>
-        <div id="answerOptions" class="grid gap-4"></div>
-        <div class="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
-          <button id="quitQuiz" type="button" class="rounded-full btn-soft px-5 py-3 text-sm">Quit</button>
-          <button id="nextQuestion" type="button" class="rounded-full btn-primary px-6 py-3 text-sm disabled:opacity-60" disabled>Next question</button>
+
+        <div id="answerOptions" class="answer-list"></div>
+
+        <div class="quiz-toolbar">
+          <button id="quitQuiz" type="button" class="quiz-button-secondary">Quit Quiz</button>
+          <button id="nextQuestion" type="button" class="quiz-button" disabled>Next Question</button>
         </div>
-      </div>
+      </section>
     </section>
 
-    <section id="resultArea" class="hidden glass p-6 sm:p-8 rounded-[28px]">
-      <div class="space-y-6 text-center">
-        <p class="text-xs uppercase tracking-[0.35em] text-[#9a8db8]">Quiz completed</p>
-        <h2 id="resultScore" class="text-5xl font-semibold text-white">0%</h2>
-        <p id="resultMessage" class="text-[#d1caea]">Great work! Ask AI to review your answers and discover your next focus area.</p>
-        <div class="flex flex-col gap-3 sm:flex-row sm:justify-center">
-          <button id="retryQuiz" type="button" class="rounded-full btn-soft px-6 py-3 text-sm">Retry</button>
-          <button id="askGrok" type="button" class="rounded-full btn-primary px-6 py-3 text-sm">Ask AI</button>
+    <section id="resultArea" class="quiz-result hidden">
+      <div class="result-head">
+        <div class="result-copy">
+          <p class="quiz-label">Quiz Complete</p>
+          <h2 id="resultScore">0%</h2>
+          <p id="resultMessage">Great work! Ask AI what to review next and keep the streak moving.</p>
         </div>
+        <span class="result-score-pill">Saved</span>
+      </div>
+      <div class="result-actions">
+        <button id="retryQuiz" type="button" class="quiz-button-secondary">Retry Quiz</button>
+        <button id="askGrok" type="button" class="quiz-button">Ask AI</button>
       </div>
     </section>
-  </div>
+  </main>
 
+  <script src="/script.js"></script>
+  <script src="/layout.js" defer></script>
   <script>
-    function lsGet(key, fallback) {
-      try { return JSON.parse(localStorage.getItem(key) || 'null') ?? fallback; } catch { return fallback; }
-    }
-    function lsSet(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
-    function getSessionId() {
-      let id = lsGet('mm_sessionId', null);
-      if (!id) { id = `session-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`; lsSet('mm_sessionId', id); }
-      return id;
-    }
-    function getAskedQuestions() { return lsGet('mm_asked_questions', []); }
-    function addAskedQuestions(questions) {
-      const current = getAskedQuestions();
-      const normalized = questions.filter((q) => typeof q === 'string' && q.trim().length).map((q) => q.trim());
-      lsSet('mm_asked_questions', Array.from(new Set([...current, ...normalized])).slice(-200));
-    }
-    function apiPost(path, payload) {
-      return fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).then((res) => res.json());
-    }
+    ensureProfile();
 
-    const questionPool = {
-      Math: [
-        { question: 'What is 7 × 8?', options: ['54', '56', '58', '64'], answer: '56' },
-        { question: 'Solve 3x + 5 = 20. What is x?', options: ['4', '5', '6', '15'], answer: '5' },
-        { question: 'What is the area of a square with side 6?', options: ['12', '18', '24', '36'], answer: '36' },
-        { question: 'What is 15% of 200?', options: ['20', '25', '30', '35'], answer: '30' },
-        { question: 'What is the next number in the series 2, 4, 8, 16?', options: ['18', '20', '24', '32'], answer: '32' },
-      ],
-      Science: [
-        { question: 'What gas do plants take in for photosynthesis?', options: ['Oxygen', 'Nitrogen', 'Carbon dioxide', 'Hydrogen'], answer: 'Carbon dioxide' },
-        { question: 'What is the basic unit of life?', options: ['Atom', 'Cell', 'Molecule', 'Tissue'], answer: 'Cell' },
-        { question: 'What force keeps us grounded on Earth?', options: ['Magnetism', 'Gravity', 'Friction', 'Electricity'], answer: 'Gravity' },
-        { question: 'What planet is known as the Red Planet?', options: ['Venus', 'Mars', 'Jupiter', 'Saturn'], answer: 'Mars' },
-        { question: 'What is H2O commonly called?', options: ['Salt', 'Water', 'Sugar', 'Air'], answer: 'Water' },
-      ],
-      English: [
-        { question: 'Which word is a noun?', options: ['Run', 'Beautiful', 'Happiness', 'Quick'], answer: 'Happiness' },
-        { question: 'Choose the correct past tense of "go".', options: ['goed', 'went', 'gone', 'going'], answer: 'went' },
-        { question: 'Which sentence is correct?', options: ['She dont like ice cream.', 'She doesn’t like ice cream.', 'She not likes ice cream.', 'She no like ice cream.'], answer: 'She doesn’t like ice cream.' },
-        { question: 'What is the plural of "child"?', options: ['Childs', 'Childes', 'Children', 'Child'], answer: 'Children' },
-        { question: 'Which word is the opposite of "happy"?', options: ['Sad', 'Bright', 'Brave', 'Kind'], answer: 'Sad' },
-      ],
-      History: [
-        { question: 'Who was the first President of the United States?', options: ['Abraham Lincoln', 'George Washington', 'Thomas Jefferson', 'John Adams'], answer: 'George Washington' },
-        { question: 'Which ancient civilization built the pyramids?', options: ['Romans', 'Greeks', 'Egyptians', 'Mayans'], answer: 'Egyptians' },
-        { question: 'What year did the first moon landing occur?', options: ['1965', '1969', '1972', '1976'], answer: '1969' },
-        { question: 'The Renaissance began in which country?', options: ['France', 'Spain', 'Italy', 'Germany'], answer: 'Italy' },
-        { question: 'Who wrote the Declaration of Independence?', options: ['Benjamin Franklin', 'John Adams', 'Thomas Jefferson', 'James Madison'], answer: 'Thomas Jefferson' },
-      ],
-      Coding: [
-        { question: 'What does HTML stand for?', options: ['Hypertext Markup Language', 'Hyperlink Machine Language', 'Hypertext Markdown Language', 'Hyperlink Markup Level'], answer: 'Hypertext Markup Language' },
-        { question: 'Which language is used primarily for styling web pages?', options: ['Python', 'JavaScript', 'CSS', 'Ruby'], answer: 'CSS' },
-        { question: 'What is the correct syntax to create a function in JavaScript?', options: ['function myFunc() {}', 'def myFunc() {}', 'fun myFunc() {}', 'create function myFunc() {}'], answer: 'function myFunc() {}' },
-        { question: 'Which symbol starts a JavaScript single-line comment?', options: ['//', '<!--', '/*', '#'], answer: '//' },
-        { question: 'What is a loop used for in programming?', options: ['Storing data', 'Repeating instructions', 'Displaying text', 'Sorting values'], answer: 'Repeating instructions' },
-      ],
-      Philosophy: [
-        { question: 'Which term refers to the study of knowledge?', options: ['Ethics', 'Logic', 'Epistemology', 'Metaphysics'], answer: 'Epistemology' },
-        { question: '"I think, therefore I am" is attributed to which philosopher?', options: ['Kant', 'Descartes', 'Nietzsche', 'Hume'], answer: 'Descartes' },
-        { question: 'Which concept explores right and wrong actions?', options: ['Ontology', 'Ethics', 'Aesthetics', 'Epistemology'], answer: 'Ethics' },
-        { question: 'What is the Greek word for love often used by philosophers?', options: ['Agape', 'Eros', 'Philia', 'All of the above'], answer: 'All of the above' },
-        { question: 'Who asked "What is the meaning of life?" as part of existential inquiry?', options: ['Socrates', 'Descartes', 'Albert Camus', 'Plato'], answer: 'Albert Camus' },
-      ],
-    };
-
-    const subjectButtons = Array.from(document.querySelectorAll('.subject-btn'));
-    const lengthButtons = Array.from(document.querySelectorAll('.length-btn'));
+    const topBar = document.getElementById('topBar');
+    const subjectButtons = Array.from(document.querySelectorAll('.subject-chip'));
+    const lengthButtons = Array.from(document.querySelectorAll('.length-chip')).filter((button) => button.id !== 'customLengthBtn');
+    const quizSubjectBtns = Array.from(document.querySelectorAll('.quiz-subject-chip'));
     const customLengthBtn = document.getElementById('customLengthBtn');
     const customCountInput = document.getElementById('customCount');
     const generateBtn = document.getElementById('generateQuiz');
     const refreshTipBtn = document.getElementById('refreshTip');
     const previewHeadline = document.getElementById('previewHeadline');
     const previewTime = document.getElementById('previewTime');
+    const previewSubject = document.getElementById('previewSubject');
     const grokTip = document.getElementById('grokTip');
-    const quizArea = document.getElementById('quizArea');
     const resultArea = document.getElementById('resultArea');
     const progressLabel = document.getElementById('progressLabel');
     const questionText = document.getElementById('questionText');
@@ -232,8 +172,51 @@
     const resultMessage = document.getElementById('resultMessage');
     const optionsView = document.getElementById('optionsView');
     const quizView = document.getElementById('quizView');
-    const mainSection = document.getElementById('mainSection');
-    const quizSubjectBtns = Array.from(document.querySelectorAll('.quiz-subject-btn'));
+
+    const questionPool = {
+      Math: [
+        { question: 'What is 7 × 8?', options: ['54', '56', '58', '64'], answer: '56' },
+        { question: 'Solve 3x + 5 = 20. What is x?', options: ['4', '5', '6', '15'], answer: '5' },
+        { question: 'What is the area of a square with side 6?', options: ['12', '18', '24', '36'], answer: '36' },
+        { question: 'What is 15% of 200?', options: ['20', '25', '30', '35'], answer: '30' },
+        { question: 'What is the next number in the series 2, 4, 8, 16?', options: ['18', '20', '24', '32'], answer: '32' }
+      ],
+      Science: [
+        { question: 'What gas do plants take in for photosynthesis?', options: ['Oxygen', 'Nitrogen', 'Carbon dioxide', 'Hydrogen'], answer: 'Carbon dioxide' },
+        { question: 'What is the basic unit of life?', options: ['Atom', 'Cell', 'Molecule', 'Tissue'], answer: 'Cell' },
+        { question: 'What force keeps us grounded on Earth?', options: ['Magnetism', 'Gravity', 'Friction', 'Electricity'], answer: 'Gravity' },
+        { question: 'What planet is known as the Red Planet?', options: ['Venus', 'Mars', 'Jupiter', 'Saturn'], answer: 'Mars' },
+        { question: 'What is H2O commonly called?', options: ['Salt', 'Water', 'Sugar', 'Air'], answer: 'Water' }
+      ],
+      English: [
+        { question: 'Which word is a noun?', options: ['Run', 'Beautiful', 'Happiness', 'Quick'], answer: 'Happiness' },
+        { question: 'Choose the correct past tense of "go".', options: ['goed', 'went', 'gone', 'going'], answer: 'went' },
+        { question: 'Which sentence is correct?', options: ['She dont like ice cream.', 'She doesn’t like ice cream.', 'She not likes ice cream.', 'She no like ice cream.'], answer: 'She doesn’t like ice cream.' },
+        { question: 'What is the plural of "child"?', options: ['Childs', 'Childes', 'Children', 'Child'], answer: 'Children' },
+        { question: 'Which word is the opposite of "happy"?', options: ['Sad', 'Bright', 'Brave', 'Kind'], answer: 'Sad' }
+      ],
+      History: [
+        { question: 'Who was the first President of the United States?', options: ['Abraham Lincoln', 'George Washington', 'Thomas Jefferson', 'John Adams'], answer: 'George Washington' },
+        { question: 'Which ancient civilization built the pyramids?', options: ['Romans', 'Greeks', 'Egyptians', 'Mayans'], answer: 'Egyptians' },
+        { question: 'What year did the first moon landing occur?', options: ['1965', '1969', '1972', '1976'], answer: '1969' },
+        { question: 'The Renaissance began in which country?', options: ['France', 'Spain', 'Italy', 'Germany'], answer: 'Italy' },
+        { question: 'Who wrote the Declaration of Independence?', options: ['Benjamin Franklin', 'John Adams', 'Thomas Jefferson', 'James Madison'], answer: 'Thomas Jefferson' }
+      ],
+      Coding: [
+        { question: 'What does HTML stand for?', options: ['Hypertext Markup Language', 'Hyperlink Machine Language', 'Hypertext Markdown Language', 'Hyperlink Markup Level'], answer: 'Hypertext Markup Language' },
+        { question: 'Which language is used primarily for styling web pages?', options: ['Python', 'JavaScript', 'CSS', 'Ruby'], answer: 'CSS' },
+        { question: 'What is the correct syntax to create a function in JavaScript?', options: ['function myFunc() {}', 'def myFunc() {}', 'fun myFunc() {}', 'create function myFunc() {}'], answer: 'function myFunc() {}' },
+        { question: 'Which symbol starts a JavaScript single-line comment?', options: ['//', '<!--', '/*', '#'], answer: '//' },
+        { question: 'What is a loop used for in programming?', options: ['Storing data', 'Repeating instructions', 'Displaying text', 'Sorting values'], answer: 'Repeating instructions' }
+      ],
+      Philosophy: [
+        { question: 'Which term refers to the study of knowledge?', options: ['Ethics', 'Logic', 'Epistemology', 'Metaphysics'], answer: 'Epistemology' },
+        { question: '"I think, therefore I am" is attributed to which philosopher?', options: ['Kant', 'Descartes', 'Nietzsche', 'Hume'], answer: 'Descartes' },
+        { question: 'Which concept explores right and wrong actions?', options: ['Ontology', 'Ethics', 'Aesthetics', 'Epistemology'], answer: 'Ethics' },
+        { question: 'What is the Greek word for love often used by philosophers?', options: ['Agape', 'Eros', 'Philia', 'All of the above'], answer: 'All of the above' },
+        { question: 'Who asked "What is the meaning of life?" as part of existential inquiry?', options: ['Socrates', 'Descartes', 'Albert Camus', 'Plato'], answer: 'Albert Camus' }
+      ]
+    };
 
     let selectedSubject = 'Science';
     let selectedCount = 5;
@@ -243,63 +226,69 @@
     let score = 0;
     let currentSelection = null;
 
+    function refreshTopBar() {
+      const progress = getLevelProgress();
+      if (topBar) {
+        topBar.style.width = `${progress.pct}%`;
+      }
+    }
+
+    function getAskedQuestions() {
+      return lsGet('mm_asked_questions', []);
+    }
+
+    function saveAskedQuestions(questions) {
+      const current = getAskedQuestions();
+      const normalized = questions
+        .filter((question) => typeof question === 'string' && question.trim().length)
+        .map((question) => question.trim());
+      lsSet('mm_asked_questions', Array.from(new Set([...current, ...normalized])).slice(-200));
+    }
+
     function setActiveSubject() {
-      subjectButtons.forEach((btn) => btn.classList.toggle('active', btn.dataset.subject === selectedSubject));
+      subjectButtons.forEach((button) => {
+        button.classList.toggle('is-active', button.dataset.subject === selectedSubject);
+      });
+      quizSubjectBtns.forEach((button) => {
+        button.classList.toggle('is-active', button.dataset.subject === selectedSubject);
+      });
+      previewSubject.textContent = selectedSubject;
     }
 
     function setActiveLength() {
-      lengthButtons.forEach((btn) => btn.classList.toggle('active', Number(btn.dataset.count) === selectedCount && !customMode));
-      customLengthBtn.classList.toggle('active', customMode);
-      customCountInput.classList.toggle('hidden', !customMode);
+      lengthButtons.forEach((button) => {
+        button.classList.toggle('is-active', Number(button.dataset.count) === selectedCount && !customMode);
+      });
+      customLengthBtn.classList.toggle('is-active', customMode);
+      customCountInput.classList.toggle('is-visible', customMode);
       const minutes = Math.max(2, Math.round(selectedCount * 0.7));
       previewHeadline.textContent = `${selectedSubject} · ${selectedCount} questions`;
       previewTime.textContent = `${minutes} min`;
     }
 
-    function lsGet2(key, fallback) {
-      try { return JSON.parse(localStorage.getItem(key) || 'null') ?? fallback; } catch { return fallback; }
-    }
-    function lsSet2(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
-    function getAskedQuestions() { return lsGet2('mm_asked_questions', []); }
-    function saveAskedQuestions(questions) {
-      const current = getAskedQuestions();
-      const normalized = questions.filter((q) => typeof q === 'string' && q.trim().length).map((q) => q.trim());
-      const merged = Array.from(new Set([...current, ...normalized]));
-      lsSet2('mm_asked_questions', merged.slice(-200));
-    }
-
-    function updateGrokTip(text) {
+    function updateTip(text) {
       grokTip.textContent = text;
     }
 
     async function refreshGrokTip() {
-      updateGrokTip('AI is generating a study tip...');
+      updateTip('AI is generating a study tip...');
       try {
-        const response = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ visitorId: getSessionId(), subject: selectedSubject, userLevel: lsGet2('mm_level', 'Newbie'), message: `Share one quick study tip for a ${selectedCount}-question ${selectedSubject} quiz and explain how I can avoid repeating questions.` }),
+        const payload = await apiPost('/api/chat', {
+          visitorId: getSessionId(),
+          subject: selectedSubject,
+          userLevel: lsGet('mm_level', 'Newbie'),
+          message: `Share one quick study tip for a ${selectedCount}-question ${selectedSubject} quiz and explain how I can avoid repeating questions.`
         });
-        const payload = await response.json();
-        updateGrokTip(payload.reply || 'AI could not generate a tip right now.');
-      } catch (error) {
-        updateGrokTip('AI is unavailable. Please try again later.');
+        updateTip(payload.reply || 'AI could not generate a tip right now.');
+      } catch {
+        updateTip('AI is unavailable. Please try again later.');
       }
     }
 
-    function getSessionId() {
-      let id = lsGet2('mm_sessionId', null);
-      if (!id) { id = `session-${Date.now()}-${Math.random().toString(36).slice(2,8)}`; lsSet2('mm_sessionId', id); }
-      return id;
-    }
-
     function getFallbackQuestions(subject, count) {
-      const pool = questionPool[subject] || questionPool['Science'];
-      const asked = getAskedQuestions().map((q) => q.trim().toLowerCase());
-      const filtered = pool.filter((item) => !asked.some((askedText) => {
-        const text = item.question.trim().toLowerCase();
-        return text.includes(askedText) || askedText.includes(text);
-      }));
+      const pool = questionPool[subject] || questionPool.Science;
+      const asked = getAskedQuestions().map((question) => question.trim().toLowerCase());
+      const filtered = pool.filter((item) => !asked.includes(item.question.trim().toLowerCase()));
       const result = filtered.slice(0, count);
       while (result.length < count) {
         const item = pool[result.length % pool.length];
@@ -308,25 +297,17 @@
       return result;
     }
 
-    async function switchQuizSubject(newSubject) {
-      selectedSubject = newSubject;
-      quizSubjectBtns.forEach((btn) => btn.classList.toggle('active', btn.dataset.subject === selectedSubject));
-      currentIndex = 0;
-      score = 0;
-      
-      let response;
+    async function fetchQuizQuestions(subject, count) {
       try {
-        const res = await fetch('/api/quiz', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ subject: selectedSubject, count: selectedCount, askedQuestions: getAskedQuestions() }),
+        const payload = await apiPost('/api/quiz', {
+          subject,
+          count,
+          askedQuestions: getAskedQuestions()
         });
-        response = await res.json();
-      } catch (err) {
-        response = null;
+        return Array.isArray(payload) && payload.length ? payload : getFallbackQuestions(subject, count);
+      } catch {
+        return getFallbackQuestions(subject, count);
       }
-      quizQuestions = Array.isArray(response) && response.length ? response : getFallbackQuestions(selectedSubject, selectedCount);
-      renderQuestion();
     }
 
     function showSection(section) {
@@ -336,22 +317,25 @@
     }
 
     function renderQuestion() {
-      const item = quizQuestions[currentIndex];
-      questionText.textContent = item.question;
+      const current = quizQuestions[currentIndex];
+      if (!current) {
+        return;
+      }
+      questionText.textContent = current.question;
       progressLabel.textContent = `Question ${currentIndex + 1} of ${quizQuestions.length}`;
       scoreBadge.textContent = score;
-      answerOptions.innerHTML = item.options.map((option, index) => `
-        <button type="button" class="answer-card rounded-3xl p-5 text-left transition" data-answer="${option}">
-          <span class="text-sm font-semibold text-white">${String.fromCharCode(65 + index)}.</span>
-          <p class="mt-2 text-base text-[#d1caea]">${option}</p>
+      answerOptions.innerHTML = current.options.map((option, index) => `
+        <button type="button" class="answer-card" data-answer="${String(option).replace(/"/g, '&quot;')}">
+          <span class="answer-index">${String.fromCharCode(65 + index)}.</span>
+          <p class="answer-text">${option}</p>
         </button>
       `).join('');
       currentSelection = null;
       nextQuestionBtn.disabled = true;
       document.querySelectorAll('.answer-card').forEach((button) => {
         button.addEventListener('click', () => {
-          document.querySelectorAll('.answer-card').forEach((btn) => btn.classList.remove('selected'));
-          button.classList.add('selected');
+          document.querySelectorAll('.answer-card').forEach((card) => card.classList.remove('is-selected'));
+          button.classList.add('is-selected');
           currentSelection = button.dataset.answer;
           nextQuestionBtn.disabled = false;
         });
@@ -361,36 +345,40 @@
     function showResults() {
       const percent = Math.round((score / quizQuestions.length) * 100);
       resultScore.textContent = `${percent}%`;
-      resultMessage.textContent = percent >= 85 ? 'Excellent! AI recommends building on this momentum.' : percent >= 65 ? 'Nice work! Review the weaker questions to improve.' : 'Good attempt — ask AI for a targeted review next.';
+      resultMessage.textContent = percent >= 85
+        ? 'Excellent work. Ask AI for a stretch challenge or move to a harder subject.'
+        : percent >= 65
+          ? 'Nice progress. Review the weaker questions once, then run another fresh quiz.'
+          : 'Good attempt. Ask AI for a targeted review and focus on the concepts you missed.';
       showSection('result');
-      saveAskedQuestions(quizQuestions.map((q) => q.question));
-      const quizHistory = lsGet2('mm_quiz_scores', {});
+      saveAskedQuestions(quizQuestions.map((question) => question.question));
+      const quizHistory = lsGet('mm_quiz_scores', {});
       quizHistory[selectedSubject] = [...(quizHistory[selectedSubject] || []), percent];
-      lsSet2('mm_quiz_scores', quizHistory);
-      const milestones = lsGet2('mm_milestones', []);
+      lsSet('mm_quiz_scores', quizHistory);
+      updateLevel();
+      refreshTopBar();
+      const milestones = lsGet('mm_milestones', []);
       milestones.push({ event: `Completed ${selectedCount}-question quiz in ${selectedSubject}`, date: new Date().toLocaleDateString() });
-      lsSet2('mm_milestones', milestones);
+      lsSet('mm_milestones', milestones);
     }
 
     async function startQuiz() {
       const count = customMode ? Math.max(1, Math.min(50, Number(customCountInput.value) || 5)) : selectedCount;
       selectedCount = count;
       setActiveLength();
-      let response;
-      try {
-        const res = await fetch('/api/quiz', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ subject: selectedSubject, count: selectedCount, askedQuestions: getAskedQuestions() }),
-        });
-        response = await res.json();
-      } catch (err) {
-        response = null;
-      }
-      quizQuestions = Array.isArray(response) && response.length ? response : getFallbackQuestions(selectedSubject, selectedCount);
+      quizQuestions = await fetchQuizQuestions(selectedSubject, selectedCount);
       currentIndex = 0;
       score = 0;
       showSection('quiz');
+      renderQuestion();
+    }
+
+    async function switchQuizSubject(subject) {
+      selectedSubject = subject;
+      setActiveSubject();
+      quizQuestions = await fetchQuizQuestions(selectedSubject, selectedCount);
+      currentIndex = 0;
+      score = 0;
       renderQuestion();
     }
 
@@ -414,7 +402,7 @@
 
     customLengthBtn.addEventListener('click', () => {
       customMode = true;
-      customCountInput.classList.remove('hidden');
+      customCountInput.classList.add('is-visible');
       customCountInput.focus();
       setActiveLength();
     });
@@ -431,8 +419,13 @@
     generateBtn.addEventListener('click', startQuiz);
     nextQuestionBtn.addEventListener('click', () => {
       const current = quizQuestions[currentIndex];
-      if (!currentSelection) { return; }
-      if (currentSelection === current.answer) score += 1;
+      if (!currentSelection || !current) {
+        return;
+      }
+      const answer = current.answer || current.correct;
+      if (currentSelection === answer) {
+        score += 1;
+      }
       if (currentIndex + 1 < quizQuestions.length) {
         currentIndex += 1;
         renderQuestion();
@@ -440,36 +433,39 @@
         showResults();
       }
     });
-    quitQuizBtn.addEventListener('click', () => { showSection('result'); resultScore.textContent = '0%'; resultMessage.textContent = 'You left early. Try again when ready.'; });
+
+    quitQuizBtn.addEventListener('click', () => {
+      showSection('options');
+    });
+
     retryQuizBtn.addEventListener('click', () => {
       showSection('options');
-      setTimeout(startQuiz, 100);
+      setTimeout(startQuiz, 120);
     });
+
     askGrokBtn.addEventListener('click', async () => {
       try {
-        const res = await fetch('/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ visitorId: getSessionId(), subject: selectedSubject, userLevel: lsGet2('mm_level', 'Newbie'), message: `I completed a ${selectedCount}-question ${selectedSubject} quiz and scored ${Math.round((score / selectedCount) * 100)}%. What should I review next?` }),
+        const payload = await apiPost('/api/chat', {
+          visitorId: getSessionId(),
+          subject: selectedSubject,
+          userLevel: lsGet('mm_level', 'Newbie'),
+          message: `I completed a ${selectedCount}-question ${selectedSubject} quiz and scored ${Math.round((score / selectedCount) * 100)}%. What should I review next?`
         });
-        const payload = await res.json();
         resultMessage.textContent = payload.reply || 'AI could not generate feedback right now.';
-      } catch (err) {
+      } catch {
         resultMessage.textContent = 'Unable to reach AI. Please try again later.';
       }
     });
 
+    quizSubjectBtns.forEach((button) => {
+      button.addEventListener('click', () => switchQuizSubject(button.dataset.subject));
+    });
+
+    refreshTopBar();
     setActiveSubject();
     setActiveLength();
     refreshGrokTip();
     showSection('options');
-
-    quizSubjectBtns.forEach((button) => {
-      button.addEventListener('click', () => {
-        switchQuizSubject(button.dataset.subject);
-      });
-    });
   </script>
-  <script src="/layout.js" defer></script>
 </body>
 </html>

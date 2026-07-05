@@ -1,14 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://mindmesh.app/</loc></url>
-  <url><loc>https://mindmesh.app/onboarding.html</loc></url>
-  <url><loc>https://mindmesh.app/dashboard.html</loc></url>
-  <url><loc>https://mindmesh.app/learn.html</loc></url>
-  <url><loc>https://mindmesh.app/subjects.html</loc></url>
-  <url><loc>https://mindmesh.app/chat.html</loc></url>
-  <url><loc>https://mindmesh.app/quiz.html</loc></url>
-  <url><loc>https://mindmesh.app/progress.html</loc></url>
-  <url><loc>https://mindmesh.app/profile.html</loc></url>
-  <url><loc>https://mindmesh.app/checkout.html</loc></url>
-  <url><loc>https://mindmesh.app/signup.html</loc></url>
+  <url><loc>https://YOUR_DOMAIN_HERE/</loc></url>
+  <url><loc>https://YOUR_DOMAIN_HERE/onboarding.html</loc></url>
+  <url><loc>https://YOUR_DOMAIN_HERE/dashboard.html</loc></url>
+  <url><loc>https://YOUR_DOMAIN_HERE/learn.html</loc></url>
+  <url><loc>https://YOUR_DOMAIN_HERE/subjects.html</loc></url>
+  <url><loc>https://YOUR_DOMAIN_HERE/chat.html</loc></url>
+  <url><loc>https://YOUR_DOMAIN_HERE/quiz.html</loc></url>
+  <url><loc>https://YOUR_DOMAIN_HERE/progress.html</loc></url>
+  <url><loc>https://YOUR_DOMAIN_HERE/profile.html</loc></url>
+  <url><loc>https://YOUR_DOMAIN_HERE/checkout.html</loc></url>
+  <url><loc>https://YOUR_DOMAIN_HERE/signup.html</loc></url>
+  <url><loc>https://YOUR_DOMAIN_HERE/about.html</loc></url>
+  <url><loc>https://YOUR_DOMAIN_HERE/terms.html</loc></url>
+  <url><loc>https://YOUR_DOMAIN_HERE/privacy.html</loc></url>
+  <url><loc>https://YOUR_DOMAIN_HERE/faq.html</loc></url>
 </urlset>

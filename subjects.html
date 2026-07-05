@@ -1,122 +1,151 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MindMesh — Subjects</title>
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="/brand.css">
-    <link rel="stylesheet" href="/nav.css">
-    <link rel="stylesheet" href="/tailwind-compat.css">
-    <style>
-        body { background: linear-gradient(135deg, #130d26 0%, #1a1133 50%, #221442 100%); color: #e2dbea; min-height: 100vh; }
-        .glass-panel { background: rgba(42, 31, 76, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(154, 141, 184, 0.15); border-radius: 20px; transition: all 0.3s ease; }
-        .glass-panel:hover { border-color: rgba(184, 255, 74, 0.3); transform: translateY(-2px); }
-        .hero-note { color: #9a8db8; }
-        .hero-note .developer-note { color: #b8ff4a; font-style: italic; }
-        .subject-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
-        @media (min-width: 768px) { .subject-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-        @media (min-width: 1024px) { .subject-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
-    </style>
+  <!-- BASE_URL: https://YOUR_DOMAIN_HERE -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MindMesh — Subjects</title>
+  <meta name="description" content="Browse and choose subjects in MindMesh to personalize your AI tutoring journey.">
+  <link rel="canonical" href="https://YOUR_DOMAIN_HERE/subjects.html">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="MindMesh — Subjects">
+  <meta property="og:description" content="Explore subjects and start a focused learning track with MindMesh.">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/brand.css">
+  <link rel="stylesheet" href="/nav.css">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/subjects.css">
 </head>
-<body data-page="subjects" class="font-sans antialiased p-4 md:p-8">
-    <header class="site-nav"></header>
+<body data-page="subjects">
+  <div class="top-bar"><div class="top-bar-fill" id="topBar" style="width:0%"></div></div>
+  <header class="site-nav"></header>
 
-    <main class="max-w-7xl mx-auto">
-        <section class="mb-12">
-            <h1 class="text-4xl font-extrabold text-white mb-4">Explore Subjects</h1>
-            <p class="hero-note">Select a field to master. Your picks sync with your dashboard and AI tutor.</p>
-        </section>
+  <main class="subjects-page">
+    <section class="subjects-hero">
+      <p class="eyebrow">Explore Subjects</p>
+      <h1>Choose the field you want to master next.</h1>
+      <p>Every pick updates your MindMesh profile, syncs your current subject, and gives the AI tutor more context for what to teach next.</p>
+    </section>
 
-        <div class="subject-grid" id="subjectsGrid">
-            <button class="glass-panel p-6 flex flex-col items-center gap-4 hover:border-primary subject-button">
-                <span class="text-4xl">⚛️</span>
-                <span class="font-medium">Physics</span>
-            </button>
-            <button class="glass-panel p-6 flex flex-col items-center gap-4 hover:border-primary subject-button">
-                <span class="text-4xl">🧬</span>
-                <span class="font-medium">Biology</span>
-            </button>
-            <button class="glass-panel p-6 flex flex-col items-center gap-4 hover:border-primary subject-button">
-                <span class="text-4xl">🧮</span>
-                <span class="font-medium">Math</span>
-            </button>
-            <button class="glass-panel p-6 flex flex-col items-center gap-4 hover:border-primary subject-button">
-                <span class="text-4xl">📜</span>
-                <span class="font-medium">History</span>
-            </button>
-            <button class="glass-panel p-6 flex flex-col items-center gap-4 hover:border-primary subject-button">
-                <span class="text-4xl">💻</span>
-                <span class="font-medium">Coding</span>
-            </button>
-            <button class="glass-panel p-6 flex flex-col items-center gap-4 hover:border-primary subject-button">
-                <span class="text-4xl">🌍</span>
-                <span class="font-medium">Geography</span>
-            </button>
-            <button class="glass-panel p-6 flex flex-col items-center gap-4 hover:border-primary subject-button">
-                <span class="text-4xl">⚗️</span>
-                <span class="font-medium">Chemistry</span>
-            </button>
-            <button class="glass-panel p-6 flex flex-col items-center gap-4 hover:border-primary subject-button">
-                <span class="text-4xl">📈</span>
-                <span class="font-medium">Economics</span>
-            </button>
-            <button class="glass-panel p-6 flex flex-col items-center gap-4 hover:border-primary subject-button">
-                <span class="text-4xl">🎨</span>
-                <span class="font-medium">Art</span>
-            </button>
-            <button class="glass-panel p-6 flex flex-col items-center gap-4 hover:border-primary subject-button">
-                <span class="text-4xl">🎵</span>
-                <span class="font-medium">Music</span>
-            </button>
-            <button class="glass-panel p-6 flex flex-col items-center gap-4 hover:border-primary subject-button">
-                <span class="text-4xl">⚖️</span>
-                <span class="font-medium">Philosophy</span>
-            </button>
-            <button class="glass-panel p-6 flex flex-col items-center gap-4 hover:border-primary subject-button">
-                <span class="text-4xl">🔭</span>
-                <span class="font-medium">Astronomy</span>
-            </button>
-            <button class="glass-panel p-6 flex flex-col items-center gap-4 hover:border-primary subject-button">
-                <span class="text-4xl">🗣️</span>
-                <span class="font-medium">Languages</span>
-            </button>
-            <button class="glass-panel p-6 flex flex-col items-center gap-4 hover:border-primary subject-button">
-                <span class="text-4xl">🏗️</span>
-                <span class="font-medium">Engineering</span>
-            </button>
-            <button class="glass-panel p-6 flex flex-col items-center gap-4 hover:border-primary subject-button">
-                <span class="text-4xl">🧠</span>
-                <span class="font-medium">Psychology</span>
-            </button>
-            <button class="glass-panel p-6 flex flex-col items-center gap-4 hover:border-primary subject-button">
-                <span class="text-4xl">📖</span>
-                <span class="font-medium">Literature</span>
-            </button>
+    <section class="subjects-controls">
+      <div class="subjects-controls-row">
+        <div>
+          <p class="quiz-label">Find a subject</p>
+          <input id="subjectSearch" class="subject-search" type="search" placeholder="Search by name or description">
         </div>
-    </main>
+        <a href="/chat.html" class="subject-quick-link">Open AI Tutor</a>
+      </div>
+      <div>
+        <p class="quiz-label">Filter</p>
+        <div class="subject-filter-row">
+          <select id="categoryFilter" class="subject-filter">
+            <option value="All">All categories</option>
+          </select>
+          <select id="statusFilter" class="subject-filter">
+            <option value="all">All progress</option>
+            <option value="explored">Explored only</option>
+            <option value="new">New only</option>
+          </select>
+        </div>
+      </div>
+    </section>
 
-    <script src="/script.js" defer></script>
-    <script defer>
-        window.addEventListener('DOMContentLoaded', () => {
-            const buttons = document.querySelectorAll('.subject-button');
-            buttons.forEach((btn) => {
-                btn.addEventListener('click', () => {
-                    const subject = btn.querySelector('span:last-child').textContent;
-                    const selected = lsGet('mm_selectedSubjects', []);
-                    if (!selected.includes(subject)) {
-                        selected.push(subject);
-                        lsSet('mm_selectedSubjects', selected);
-                    }
-                    lsSet('mm_subject', subject);
-                    const subjectsData = lsGet('mm_subjects', {});
-                    subjectsData[subject] = (subjectsData[subject] || 0) + 1;
-                    lsSet('mm_subjects', subjectsData);
-                    window.location.href = '/dashboard.html';
-                });
-            });
-        });
-    </script>
-    <script src="/layout.js" defer></script>
+    <section id="subjectsGrid" class="subject-grid"></section>
+  </main>
+
+  <script src="/script.js"></script>
+  <script src="/layout.js" defer></script>
+  <script>
+    ensureProfile();
+
+    const topBar = document.getElementById('topBar');
+    const subjectsGrid = document.getElementById('subjectsGrid');
+    const subjectSearch = document.getElementById('subjectSearch');
+    const categoryFilter = document.getElementById('categoryFilter');
+    const statusFilter = document.getElementById('statusFilter');
+
+    function refreshTopBar() {
+      const progress = getLevelProgress();
+      if (topBar) {
+        topBar.style.width = `${progress.pct}%`;
+      }
+    }
+
+    function getSelectedSubjects() {
+      return lsGet('mm_selectedSubjects', []);
+    }
+
+    function saveSubject(subjectName) {
+      const selected = getSelectedSubjects();
+      if (!selected.includes(subjectName)) {
+        selected.push(subjectName);
+        lsSet('mm_selectedSubjects', selected);
+      }
+      lsSet('mm_subject', subjectName);
+      const subjectsData = lsGet('mm_subjects', {});
+      subjectsData[subjectName] = (subjectsData[subjectName] || 0) + 1;
+      lsSet('mm_subjects', subjectsData);
+      window.location.href = '/dashboard.html';
+    }
+
+    function populateCategoryFilter() {
+      const categories = Array.from(new Set(subjects.map((subject) => subject.category))).sort();
+      categoryFilter.innerHTML = ['<option value="All">All categories</option>']
+        .concat(categories.map((category) => `<option value="${category}">${category}</option>`))
+        .join('');
+    }
+
+    function renderSubjects() {
+      const query = subjectSearch.value.trim().toLowerCase();
+      const category = categoryFilter.value;
+      const status = statusFilter.value;
+      const explored = lsGet('mm_subjects', {});
+      const filtered = subjects.filter((subject) => {
+        const matchesQuery = !query || subject.name.toLowerCase().includes(query) || subject.description.toLowerCase().includes(query);
+        const matchesCategory = category === 'All' || subject.category === category;
+        const count = explored[subject.name] || 0;
+        const matchesStatus = status === 'all' || (status === 'explored' ? count > 0 : count === 0);
+        return matchesQuery && matchesCategory && matchesStatus;
+      });
+
+      if (!filtered.length) {
+        subjectsGrid.innerHTML = '<div class="empty-state">No subjects matched that filter. Try a broader search or switch the progress view.</div>';
+        return;
+      }
+
+      subjectsGrid.innerHTML = filtered.map((subject) => {
+        const count = explored[subject.name] || 0;
+        const statusText = count > 0 ? `Explored ${count} time${count === 1 ? '' : 's'}` : 'New subject';
+        return `
+          <article class="subject-card">
+            <div class="subject-card-head">
+              <div class="subject-icon">${subject.icon}</div>
+              <div>
+                <div class="subject-chip">${subject.category}</div>
+                <h2>${subject.name}</h2>
+                <p>${subject.description}</p>
+              </div>
+            </div>
+            <div class="subject-card-actions">
+              <span class="subject-meta">${statusText}</span>
+              <button type="button" class="subject-action" data-subject="${subject.name}">Start Learning</button>
+            </div>
+          </article>
+        `;
+      }).join('');
+
+      document.querySelectorAll('.subject-action').forEach((button) => {
+        button.addEventListener('click', () => saveSubject(button.dataset.subject));
+      });
+    }
+
+    subjectSearch.addEventListener('input', renderSubjects);
+    categoryFilter.addEventListener('change', renderSubjects);
+    statusFilter.addEventListener('change', renderSubjects);
+
+    populateCategoryFilter();
+    refreshTopBar();
+    renderSubjects();
+  </script>
 </body>
 </html>

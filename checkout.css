@@ -1,6 +1,18 @@
 @import url('/brand.css');
 
 .checkout-wrapper { padding: 48px 0 72px; }
+.beta-warning-banner {
+	margin-bottom: 18px;
+	background: var(--coral);
+	color: var(--bg-deep);
+	border: 2px solid var(--bg-deep);
+	border-radius: var(--radius-sm);
+	font-family: var(--font-display);
+	font-size: 1.15rem;
+	line-height: 1.35;
+	padding: 14px 18px;
+	box-shadow: var(--shadow-sm);
+}
 .checkout-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 40px; align-items: start; }
 .order-summary { background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius); padding: 28px; position: sticky; top: 100px; }
 .order-summary h2 { font-family: var(--font-display); font-weight: 600; font-size: 1.3rem; margin-bottom: 20px; }

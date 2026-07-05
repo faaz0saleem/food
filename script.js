@@ -26,7 +26,12 @@ const navLinks = [
 function lsGet(key, fallback) {
   try {
     const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
+    if (raw === null || raw === undefined) return fallback;
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return raw;
+    }
   } catch (error) {
     return fallback;
   }
@@ -34,6 +39,68 @@ function lsGet(key, fallback) {
 
 function lsSet(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
+}
+
+function getAuthToken() {
+  return lsGet('mm_auth_token', '');
+}
+
+function setAuthToken(token) {
+  lsSet('mm_auth_token', token || '');
+}
+
+async function authRequest(path, method = 'GET', payload = null) {
+  const token = getAuthToken();
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  const response = await fetch(path, {
+    method,
+    headers,
+    body: payload ? JSON.stringify(payload) : undefined,
+  });
+  const data = await response.json().catch(() => ({}));
+  return { ok: response.ok, status: response.status, data };
+}
+
+function applyServerUser(user) {
+  if (!user) return;
+  lsSet('mm_name', user.name || '');
+  lsSet('mm_email', user.email || '');
+  lsSet('mm_style', user.learningStyle || 'Visual');
+  lsSet('mm_level', user.level || 'Newbie');
+  lsSet('mm_xp', Number(user.xp || 0));
+  lsSet('mm_plan', user.planName || '');
+  lsSet('mm_plan_price', Number(user.planPrice || 0));
+  lsSet('mm_plan_status', user.planStatus || 'inactive');
+  lsSet('mm_plan_started', user.planStarted || '');
+  if (user.visitorId) {
+    lsSet('mm_sessionId', user.visitorId);
+  }
+}
+
+async function hydrateProfileFromAuth() {
+  const token = getAuthToken();
+  if (!token) return false;
+  const { ok, data } = await authRequest('/api/auth/me', 'GET');
+  if (!ok || !data?.user) {
+    setAuthToken('');
+    return false;
+  }
+  applyServerUser(data.user);
+  return true;
+}
+
+async function saveProfileToServer() {
+  const token = getAuthToken();
+  if (!token) return;
+  await authRequest('/api/profile', 'POST', {
+    name: lsGet('mm_name', ''),
+    learningStyle: lsGet('mm_style', 'Visual'),
+    level: lsGet('mm_level', 'Newbie'),
+    xp: calculateXP(),
+  });
 }
 
 function getSessionId() {
@@ -73,36 +140,67 @@ function getSubjectByName(name) {
 }
 
 const LEVEL_THRESHOLDS = [
-  { name: 'Newbie', icon: '🌱', min: 0, max: 25 },
-  { name: 'Learner', icon: '📖', min: 25, max: 60 },
-  { name: 'Explorer', icon: '🧭', min: 60, max: 100 },
-  { name: 'Scholar', icon: '📚', min: 100, max: 150 },
-  { name: 'Master', icon: '🏆', min: 150, max: Infinity },
+  { name: 'Newbie', icon: '🌱', min: 0, max: 150 },
+  { name: 'Learner', icon: '📖', min: 150, max: 400 },
+  { name: 'Explorer', icon: '🧭', min: 400, max: 800 },
+  { name: 'Scholar', icon: '📚', min: 800, max: 1500 },
+  { name: 'Master', icon: '🏆', min: 1500, max: Infinity },
 ];
 
-function getLevelForCount(count) {
-  const entry = LEVEL_THRESHOLDS.find((level) => count >= level.min && count < level.max);
+function getXPBreakdown() {
+  const count = lsGet('mm_count', 0);
+  const subjectsData = lsGet('mm_subjects', {});
+  const quizScores = lsGet('mm_quiz_scores', {});
+  const streak = lsGet('mm_streak', []);
+  const milestones = lsGet('mm_milestones', []);
+  const messageXP = count * 2;
+  const subjectXP = Object.keys(subjectsData).length * 25;
+  const allScores = Object.values(quizScores).flat();
+  const quizParticipationXP = allScores.length * 15;
+  const quizAccuracyXP = allScores.reduce((sum, score) => sum + Math.round(score * 0.2), 0);
+  const streakXP = Math.min(streak.length, 7) * 10;
+  const milestoneXP = milestones.length * 5;
+  const total = messageXP + subjectXP + quizParticipationXP + quizAccuracyXP + streakXP + milestoneXP;
+  return {
+    messageXP,
+    subjectXP,
+    quizParticipationXP,
+    quizAccuracyXP,
+    streakXP,
+    milestoneXP,
+    total,
+  };
+}
+
+function calculateXP() {
+  return getXPBreakdown().total;
+}
+
+function getLevelForCount(totalXP = calculateXP()) {
+  const entry = LEVEL_THRESHOLDS.find((level) => totalXP >= level.min && totalXP < level.max);
   return (entry || LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length - 1]).name;
 }
 
-function getLevelProgress(count) {
-  const index = LEVEL_THRESHOLDS.findIndex((level) => count >= level.min && count < level.max);
+function getLevelProgress(totalXP = calculateXP()) {
+  const index = LEVEL_THRESHOLDS.findIndex((level) => totalXP >= level.min && totalXP < level.max);
   const level = index === -1 ? LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length - 1] : LEVEL_THRESHOLDS[index];
   const next = LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.indexOf(level) + 1] || null;
-  const pct = level.max === Infinity ? 100 : Math.round(((count - level.min) / (level.max - level.min)) * 100);
+  const pct = level.max === Infinity ? 100 : Math.round(((totalXP - level.min) / (level.max - level.min)) * 100);
   return {
     level: level.name,
     icon: level.icon,
     pct,
     nextLevel: next ? next.name : null,
-    remaining: next ? Math.max(0, next.min - count) : 0,
+    remaining: next ? Math.max(0, next.min - totalXP) : 0,
+    xp: totalXP,
   };
 }
 
 function updateLevel() {
-  const count = lsGet('mm_count', 0);
-  const level = getLevelForCount(count);
+  const totalXP = calculateXP();
+  const level = getLevelForCount(totalXP);
   lsSet('mm_level', level);
+  lsSet('mm_xp', totalXP);
   return level;
 }
 
@@ -171,6 +269,7 @@ function getVitals() {
     theme: lsGet('mm_theme', 'dark'),
     avatarColor: lsGet('mm_avatarColor', '#7b7cff'),
     level: lsGet('mm_level', 'Newbie'),
+    xp: calculateXP(),
     count: lsGet('mm_count', 0),
     streak: lsGet('mm_streak', []),
     subjectsData: lsGet('mm_subjects', {}),
@@ -212,6 +311,29 @@ function getWeakArea() {
   if (!averages.length) return 'None yet — take a quiz to find weak topics.';
   averages.sort((a, b) => a.average - b.average);
   return averages[0].subject;
+}
+
+function getQuestionOfDay() {
+  const prompts = [
+    'Why does the sky look blue at noon but orange at sunset?',
+    'Explain compound interest like I am 12 years old.',
+    'What is one real-world use of momentum in sports?',
+    'How can I remember the periodic table groups faster?',
+    'Teach me fractions using pizza slices.',
+    'Why do eclipses not happen every month?',
+    'Explain debugging like detective work.',
+    'How does photosynthesis connect to the food chain?',
+    'What is the difference between speed and velocity?',
+    'Teach me one memory trick for history dates.'
+  ];
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 0);
+  const dayOfYear = Math.floor((now - start) / 86400000);
+  const prompt = prompts[dayOfYear % prompts.length];
+  return {
+    prompt,
+    href: `chat.html?q=${encodeURIComponent(prompt)}`,
+  };
 }
 
 function setTheme(theme) {
@@ -368,17 +490,45 @@ function initSignup() {
 
     if (hasError) return;
 
-    // Store account info
-    lsSet('mm_email', email);
-    lsSet('mm_password', btoa(password)); // Basic encoding (not secure for production)
-    lsSet('mm_name', name);
-    lsSet('mm_level', 'Newbie');
-    lsSet('mm_count', 0);
-    lsSet('mm_subjects', {});
-    lsSet('mm_streak', []);
-    lsSet('mm_milestones', [{ event: 'Created account', date: new Date().toLocaleDateString() }]);
-    lsSet('mm_quiz_scores', {});
-    lsSet('mm_sessions', []);
+    let authPayload = null;
+    try {
+      const signupRes = await authRequest('/api/auth/signup', 'POST', {
+        name,
+        email,
+        password,
+        learningStyle: lsGet('mm_style', 'Visual')
+      });
+
+      if (signupRes.ok) {
+        authPayload = signupRes.data;
+      } else if (signupRes.status === 409) {
+        const loginRes = await authRequest('/api/auth/login', 'POST', { email, password });
+        if (loginRes.ok) {
+          authPayload = loginRes.data;
+        } else {
+          alert('This account already exists. Please check your password and try again.');
+          return;
+        }
+      } else {
+        alert(signupRes.data?.error || 'Unable to create account right now.');
+        return;
+      }
+    } catch {
+      alert('Unable to reach the server right now. Please try again.');
+      return;
+    }
+
+    if (authPayload?.token) {
+      setAuthToken(authPayload.token);
+      applyServerUser(authPayload.user);
+    }
+    if (!lsGet('mm_milestones', []).length) {
+      lsSet('mm_milestones', [{ event: 'Created account', date: new Date().toLocaleDateString() }]);
+    }
+    if (!lsGet('mm_quiz_scores', null)) lsSet('mm_quiz_scores', {});
+    if (!lsGet('mm_subjects', null)) lsSet('mm_subjects', {});
+    if (!lsGet('mm_streak', null)) lsSet('mm_streak', []);
+    if (!lsGet('mm_sessions', null)) lsSet('mm_sessions', []);
     getSessionId();
 
     // Show success and redirect to onboarding
@@ -494,6 +644,7 @@ function initProfile() {
     event.preventDefault();
     if (nameInput) lsSet('mm_name', nameInput.value.trim() || 'Learner');
     if (subjectSelect) lsSet('mm_subject', subjectSelect.value);
+    saveProfileToServer().catch(() => undefined);
     const toast = document.querySelector('#save-toast');
     if (toast) {
       toast.classList.add('visible');
@@ -508,17 +659,35 @@ function initProfile() {
   });
 }
 
-function initPage() {
+async function initPage() {
+  await hydrateProfileFromAuth();
   const publicPages = ['index', 'signup', 'onboarding', 'checkout'];
+  const appPages = ['dashboard', 'learn', 'subjects', 'quiz', 'progress', 'chat', 'profile'];
   const hasProfile = Boolean((lsGet('mm_name', '') || '').trim());
+  const hasSubscription = String(lsGet('mm_plan_status', '') || '').toLowerCase() === 'active';
 
-  if (!hasProfile && pageId && !publicPages.includes(pageId)) {
-    window.location.href = 'onboarding.html';
+  if (hasProfile && hasSubscription && pageId && publicPages.includes(pageId)) {
+    window.location.href = 'dashboard.html';
     return;
   }
 
-  if (hasProfile && pageId === 'signup') {
-    window.location.href = 'dashboard.html';
+  if (!hasProfile && pageId === 'checkout') {
+    window.location.href = 'signup.html';
+    return;
+  }
+
+  if (hasProfile && !hasSubscription && pageId === 'signup') {
+    window.location.href = 'checkout.html?plan=student';
+    return;
+  }
+
+  if (pageId && appPages.includes(pageId) && !hasProfile) {
+    window.location.href = 'signup.html';
+    return;
+  }
+
+  if (pageId && appPages.includes(pageId) && hasProfile && !hasSubscription) {
+    window.location.href = 'checkout.html?plan=student';
     return;
   }
 

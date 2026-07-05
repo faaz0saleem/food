@@ -134,6 +134,28 @@
   margin-bottom: 6px;
 }
 
+.msg-actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.msg-action-btn {
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 0.74rem;
+  cursor: pointer;
+}
+
+.msg-action-btn:hover {
+  border-color: var(--lime);
+  color: var(--lime);
+}
+
 .typing-dots {
   display: inline-flex;
   gap: 5px;

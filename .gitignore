@@ -6,3 +6,4 @@ server.log
 *.zip
 yes/
 public_html/
+database/*.db

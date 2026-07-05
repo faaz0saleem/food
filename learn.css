@@ -1,0 +1,219 @@
+@import url('/brand.css');
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, color-mix(in srgb, var(--pink) 14%, transparent), transparent 30%),
+    linear-gradient(180deg, var(--bg), var(--bg-deep));
+  color: var(--ink);
+  font-family: var(--font-body);
+}
+
+.learn-page {
+  width: min(1180px, calc(100% - 32px));
+  margin: 0 auto 56px;
+  display: grid;
+  gap: 24px;
+}
+
+.learn-hero,
+.learn-card,
+.learn-side-card,
+.learn-feature-card {
+  border: 2px solid var(--border);
+  border-radius: 28px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  box-shadow: var(--shadow);
+}
+
+.learn-hero,
+.learn-card,
+.learn-side-card,
+.learn-feature-card {
+  padding: 24px;
+}
+
+.learn-hero {
+  display: grid;
+  gap: 14px;
+}
+
+.learn-hero p,
+.learn-card p,
+.learn-side-card p,
+.learn-feature-card p,
+.learn-stat-copy,
+.learn-pill {
+  color: var(--ink-soft);
+}
+
+.learn-grid,
+.learn-modules,
+.learn-feature-grid,
+.learn-stats,
+.learn-tag-row {
+  display: grid;
+  gap: 18px;
+}
+
+.learn-grid {
+  grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.75fr);
+}
+
+.learn-card-head,
+.learn-side-head,
+.learn-feature-head,
+.learn-module-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.learn-button,
+.learn-link,
+.learn-tag,
+.learn-pill {
+  border: 2px solid var(--border);
+  border-radius: 18px;
+  text-decoration: none;
+}
+
+.learn-button,
+.learn-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 18px;
+  background: var(--lime);
+  color: var(--bg-deep);
+  font-family: var(--font-display);
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+}
+
+.learn-button:hover,
+.learn-link:hover,
+.learn-feature-card:hover,
+.learn-card:hover,
+.learn-side-card:hover {
+  transform: translate(-2px, -2px);
+}
+
+.learn-module {
+  padding: 20px;
+  border: 2px solid var(--border);
+  border-radius: 24px;
+  background: color-mix(in srgb, var(--surface-2) 92%, transparent);
+  display: grid;
+  gap: 14px;
+  box-shadow: var(--shadow-sm);
+}
+
+.learn-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  background: color-mix(in srgb, var(--surface-2) 88%, transparent);
+  color: var(--lime);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.learn-progress {
+  display: grid;
+  gap: 8px;
+}
+
+.learn-progress-track {
+  height: 14px;
+  border-radius: 999px;
+  overflow: hidden;
+  border: 2px solid var(--border);
+  background: var(--surface-2);
+}
+
+.learn-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--lime), var(--blue));
+}
+
+.learn-stat-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.learn-stat-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.learn-tag-row {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.learn-tag {
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--surface-2) 88%, transparent);
+  color: var(--ink-soft);
+  text-align: center;
+}
+
+.learn-feature-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.learn-feature-card {
+  display: grid;
+  grid-template-columns: 88px 1fr;
+  gap: 18px;
+  align-items: center;
+}
+
+.learn-feature-icon {
+  width: 88px;
+  height: 88px;
+  border-radius: 26px;
+  border: 2px solid var(--border);
+  background: color-mix(in srgb, var(--surface-2) 90%, transparent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.4rem;
+  box-shadow: var(--shadow-sm);
+}
+
+@media (max-width: 960px) {
+  .learn-grid,
+  .learn-feature-grid,
+  .learn-tag-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .learn-page {
+    width: min(100% - 20px, 1180px);
+    gap: 18px;
+  }
+
+  .learn-hero,
+  .learn-card,
+  .learn-side-card,
+  .learn-feature-card,
+  .learn-module {
+    padding: 20px;
+    border-radius: 24px;
+  }
+
+  .learn-feature-card {
+    grid-template-columns: 1fr;
+  }
+}
