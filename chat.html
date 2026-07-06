@@ -1,4 +1,4 @@
-3<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <!-- BASE_URL: https://YOUR_DOMAIN_HERE -->
@@ -61,11 +61,14 @@
     <div class="chat-composer">
       <div id="modelBadge" class="model-badge">Model: loading…</div>
       <div class="composer-row">
+        <button id="attachButton" class="attach-btn" type="button" aria-label="Attach file or image" title="Attach file or image">+</button>
+        <input id="fileInput" type="file" accept="image/*,.pdf,.txt,.md,.csv,.json,.js,.ts,.py,.java,.c,.cpp,.html,.css" multiple hidden />
         <input id="chatInput" type="text" placeholder="Analyze, create, or learn..." autocomplete="off" />
         <button id="sendButton" class="send-btn" type="button" aria-label="Send message">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M12 5l7 7-7 7"/></svg>
         </button>
       </div>
+      <div id="attachmentTray" class="attachment-tray" aria-live="polite"></div>
       <p class="composer-note">MindMesh can make mistakes. Verify important information and use prompts responsibly.</p>
     </div>
   </div>
@@ -81,11 +84,18 @@
   const messages = document.getElementById('messages');
   const welcomeScreen = document.getElementById('welcomeScreen');
   const sendButton = document.getElementById('sendButton');
+  const attachButton = document.getElementById('attachButton');
+  const fileInput = document.getElementById('fileInput');
+  const attachmentTray = document.getElementById('attachmentTray');
   const modelBadge = document.getElementById('modelBadge');
   const topBar = document.getElementById('topBar');
   let typingIndicator = null;
   const fallbackModel = 'llama-3.3-70b-versatile';
   let pendingQuestion = null;
+  const MAX_ATTACHMENTS = 5;
+  const MAX_ATTACHMENT_BYTES = 3 * 1024 * 1024;
+  const MAX_TEXT_CHARS = 12000;
+  const pendingAttachments = [];
 
   function apiUrl(path) {
     const rawBase = localStorage.getItem('mm_api_base') || '';
@@ -97,6 +107,119 @@
     const text = (prompt || '').trim();
     if (!text) return 'Tell me what you are learning, and I will help you with a simple explanation.';
     return `Demo mode: Let's break down ${subject || 'this topic'} step by step. ${text.slice(0, 120)}. Start by identifying the main idea, then try one worked example, and finally explain it back in your own words.`;
+  }
+
+  function bytesToLabel(size) {
+    const bytes = Number(size || 0);
+    if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  function renderAttachmentTray() {
+    if (!attachmentTray) return;
+    if (!pendingAttachments.length) {
+      attachmentTray.innerHTML = '';
+      attachmentTray.style.display = 'none';
+      return;
+    }
+
+    attachmentTray.style.display = 'flex';
+    attachmentTray.innerHTML = pendingAttachments
+      .map((attachment, index) => `
+        <div class="attachment-chip">
+          <span class="attachment-chip-label" title="${attachment.name}">${attachment.kind === 'image' ? '🖼' : '📄'} ${attachment.name} (${bytesToLabel(attachment.size)})</span>
+          <button type="button" class="attachment-chip-remove" data-remove-index="${index}" aria-label="Remove ${attachment.name}">×</button>
+        </div>
+      `)
+      .join('');
+
+    attachmentTray.querySelectorAll('[data-remove-index]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const index = Number(button.getAttribute('data-remove-index'));
+        if (Number.isNaN(index)) return;
+        pendingAttachments.splice(index, 1);
+        renderAttachmentTray();
+      });
+    });
+  }
+
+  async function readFileAsText(file) {
+    const text = await file.text();
+    return String(text || '').slice(0, MAX_TEXT_CHARS);
+  }
+
+  async function readFileAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.onerror = () => reject(new Error('Could not read image file.'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function fileLooksTextual(file) {
+    const type = String(file.type || '').toLowerCase();
+    const name = String(file.name || '').toLowerCase();
+    if (type.startsWith('text/')) return true;
+    return ['.txt', '.md', '.csv', '.json', '.js', '.ts', '.py', '.java', '.c', '.cpp', '.html', '.css'].some((ext) => name.endsWith(ext));
+  }
+
+  async function addFiles(files) {
+    if (!files || !files.length) return;
+
+    for (const file of files) {
+      if (pendingAttachments.length >= MAX_ATTACHMENTS) break;
+      if (file.size > MAX_ATTACHMENT_BYTES) {
+        appendMessage(`Skipped ${file.name}: file is larger than 3 MB.`, 'ai', 'System');
+        continue;
+      }
+
+      try {
+        const entry = {
+          name: file.name,
+          size: file.size,
+          type: file.type || 'application/octet-stream',
+          kind: file.type && file.type.startsWith('image/') ? 'image' : 'file',
+        };
+
+        if (entry.kind === 'image') {
+          entry.imageDataUrl = await readFileAsDataUrl(file);
+        } else if (fileLooksTextual(file)) {
+          entry.textContent = await readFileAsText(file);
+        }
+
+        pendingAttachments.push(entry);
+      } catch {
+        appendMessage(`Could not read ${file.name}. Try a different file.`, 'ai', 'System');
+      }
+    }
+
+    renderAttachmentTray();
+    fileInput.value = '';
+  }
+
+  function getConversationHistory() {
+    const currentSession = getSessionId();
+    const conversations = lsGet('mm_conversations', []);
+    return conversations
+      .filter((item) => item && item.sessionId === currentSession)
+      .slice(-10)
+      .flatMap((item) => {
+        const userMessage = String(item.userMessage || '').trim();
+        const aiReply = String(item.aiReply || '').trim();
+        const rows = [];
+        if (userMessage) rows.push({ role: 'user', content: userMessage });
+        if (aiReply) rows.push({ role: 'assistant', content: aiReply });
+        return rows;
+      });
+  }
+
+  function consumeAttachments() {
+    const snapshot = pendingAttachments.splice(0, pendingAttachments.length);
+    renderAttachmentTray();
+    return snapshot;
   }
 
   function refreshTopBar() {
@@ -193,12 +316,14 @@
         ? `${liveCount} of 4 engines live — routed automatically per question`
         : `Model: ${data?.model || fallbackModel}`;
     } catch (error) {
-      modelBadge.textContent = 'Backend offline — running local demo mode';
+      modelBadge.textContent = 'Backend offline — configure API endpoint and keys';
     }
   }
 
   async function fetchAIResponse(prompt, subject, options = {}) {
     try {
+      const history = getConversationHistory();
+      const attachments = options.attachments || [];
       const response = await fetch(apiUrl('/api/chat'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -209,6 +334,8 @@
           userLevel: lsGet('mm_level', 'Newbie'),
           message: prompt,
           excludeEngine: options.excludeEngine || undefined,
+          history,
+          attachments,
         }),
       });
       const data = await response.json();
@@ -218,8 +345,8 @@
 
       if (!response.ok) {
         return {
-          reply: data.error || getDemoTutorReply(prompt, subject),
-          engine: data.error ? null : 'Demo',
+          reply: data.error || 'Could not reach the AI service. Check your hosting API route and environment variables.',
+          engine: 'System',
         };
       }
 
@@ -228,18 +355,25 @@
         engine: data.engine || null,
       };
     } catch (error) {
-      return { reply: getDemoTutorReply(prompt, subject), engine: 'Demo' };
+      return {
+        reply: 'Could not reach the AI backend. Set mm_api_base to your live API URL or host the Node server with /api/chat enabled.',
+        engine: 'System'
+      };
     }
   }
 
   async function sendMessage(overrideText, options = {}) {
     const text = (overrideText || chatInput.value || '').trim();
+    const attachments = Array.isArray(options.attachments) ? options.attachments : consumeAttachments();
     if (!text) return;
     const subject = lsGet('mm_subject', 'General');
-    appendMessage(text, 'user');
+    const attachmentNote = attachments.length
+      ? `\n\nAttached: ${attachments.map((item) => item.name).join(', ')}`
+      : '';
+    appendMessage(`${text}${attachmentNote}`, 'user');
     chatInput.value = '';
     showTyping();
-    const { reply, engine } = await fetchAIResponse(text, subject, options);
+    const { reply, engine } = await fetchAIResponse(text, subject, { ...options, attachments });
     if (typingIndicator) {
       typingIndicator.remove();
       typingIndicator = null;
@@ -265,6 +399,10 @@
   });
 
   sendButton.addEventListener('click', sendMessage);
+  attachButton?.addEventListener('click', () => fileInput?.click());
+  fileInput?.addEventListener('change', async (event) => {
+    await addFiles(Array.from(event.target.files || []));
+  });
   const params = new URLSearchParams(window.location.search);
   pendingQuestion = params.get('q');
   if (pendingQuestion) {

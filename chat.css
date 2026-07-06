@@ -208,6 +208,28 @@
   align-items: center;
 }
 
+.attach-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--surface-2);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.attach-btn:hover {
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
 .composer-row input {
   flex: 1;
   background: var(--surface);
@@ -256,6 +278,46 @@
   box-shadow: none;
 }
 
+.attachment-tray {
+  display: none;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.attachment-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  border-radius: 999px;
+  padding: 6px 10px;
+  max-width: 100%;
+}
+
+.attachment-chip-label {
+  font-size: 0.72rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 340px;
+}
+
+.attachment-chip-remove {
+  border: none;
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.attachment-chip-remove:hover {
+  color: var(--coral);
+}
+
 .composer-note {
   text-align: center;
   font-size: 0.76rem;
@@ -270,5 +332,9 @@
 
   .chat-shell {
     padding: 0 16px 16px;
+  }
+
+  .attachment-chip-label {
+    max-width: 220px;
   }
 }

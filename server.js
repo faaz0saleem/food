@@ -41,6 +41,70 @@ const anthropicClient = process.env.ANTHROPIC_API_KEY ? new Anthropic({ apiKey: 
 
 const ipLimiter = new Map();
 const visitorLimiter = new Map();
+const conversationMemory = new Map();
+
+function normalizeHistory(history) {
+  if (!Array.isArray(history)) return [];
+  return history
+    .filter((item) => item && typeof item === 'object')
+    .map((item) => ({
+      role: item.role === 'assistant' ? 'assistant' : 'user',
+      content: String(item.content || '').trim(),
+    }))
+    .filter((item) => item.content)
+    .slice(-12);
+}
+
+function normalizeAttachments(attachments) {
+  if (!Array.isArray(attachments)) return [];
+  return attachments
+    .filter((item) => item && typeof item === 'object')
+    .map((item) => ({
+      name: String(item.name || 'attachment').slice(0, 120),
+      type: String(item.type || 'application/octet-stream').slice(0, 120),
+      kind: item.kind === 'image' ? 'image' : 'file',
+      textContent: String(item.textContent || '').slice(0, 12000),
+      imageDataUrl: String(item.imageDataUrl || '').slice(0, 250000),
+      size: Number(item.size || 0),
+    }))
+    .slice(0, 5);
+}
+
+function attachmentToPromptSegment(attachment) {
+  const header = `[Attachment: ${attachment.name} | ${attachment.type} | ${Math.max(0, attachment.size)} bytes]`;
+  if (attachment.kind === 'image' && attachment.imageDataUrl) {
+    return `${header}\nImage data URL provided by student (truncated as needed):\n${attachment.imageDataUrl.slice(0, 1800)}`;
+  }
+  if (attachment.textContent) {
+    return `${header}\nFile text excerpt:\n${attachment.textContent}`;
+  }
+  return `${header}\nNo parseable text extracted.`;
+}
+
+function buildFinalUserMessage(message, attachments) {
+  const base = String(message || '').trim();
+  if (!attachments.length) return base;
+  const sections = attachments.map(attachmentToPromptSegment).join('\n\n');
+  return `${base}\n\nStudent uploaded files/images for analysis:\n${sections}`;
+}
+
+function updateConversationMemory(visitorId, userMessage, aiReply) {
+  if (!visitorId) return;
+  const existing = Array.isArray(conversationMemory.get(visitorId)) ? conversationMemory.get(visitorId) : [];
+  const next = existing.concat([
+    { role: 'user', content: String(userMessage || '').trim() },
+    { role: 'assistant', content: String(aiReply || '').trim() },
+  ]).filter((item) => item.content).slice(-16);
+  conversationMemory.set(visitorId, next);
+}
+
+function getConversationMemory(visitorId, incomingHistory) {
+  const memory = visitorId && Array.isArray(conversationMemory.get(visitorId))
+    ? conversationMemory.get(visitorId)
+    : [];
+  const merged = memory.concat(incomingHistory || []);
+  return merged.slice(-14);
+}
 
 function ensureDatabase() {
   try {
@@ -399,7 +463,7 @@ async function classifyMessage(message, subject) {
   }
 }
 
-async function callGroq(message, subject, userLevel) {
+async function callGroq(message, subject, userLevel, history = []) {
   if (!groqClient) return null;
   const response = await groqClient.chat.completions.create({
     model: GROQ_MODEL,
@@ -407,6 +471,7 @@ async function callGroq(message, subject, userLevel) {
     max_tokens: 700,
     messages: [
       { role: 'system', content: createSystemPrompt(subject, userLevel) },
+      ...history,
       { role: 'user', content: message },
     ],
   });
@@ -414,7 +479,7 @@ async function callGroq(message, subject, userLevel) {
   return reply || null;
 }
 
-async function callOpenAI(message, subject, userLevel) {
+async function callOpenAI(message, subject, userLevel, history = []) {
   if (!openaiClient) return null;
   const response = await openaiClient.chat.completions.create({
     model: OPENAI_MODEL,
@@ -422,6 +487,7 @@ async function callOpenAI(message, subject, userLevel) {
     max_tokens: 700,
     messages: [
       { role: 'system', content: createSystemPrompt(subject, userLevel) },
+      ...history,
       { role: 'user', content: message },
     ],
   });
@@ -429,14 +495,19 @@ async function callOpenAI(message, subject, userLevel) {
   return reply || null;
 }
 
-async function callAnthropic(message, subject, userLevel) {
+async function callAnthropic(message, subject, userLevel, history = []) {
   if (!anthropicClient) return null;
+  const anthropicMessages = history.map((item) => ({
+    role: item.role === 'assistant' ? 'assistant' : 'user',
+    content: item.content,
+  }));
+  anthropicMessages.push({ role: 'user', content: message });
   const response = await anthropicClient.messages.create({
     model: ANTHROPIC_MODEL,
     max_tokens: 700,
     temperature: 0.5,
     system: createSystemPrompt(subject, userLevel),
-    messages: [{ role: 'user', content: message }],
+    messages: anthropicMessages,
   });
   const reply = String(
     (response?.content || []).find((block) => block && block.type === 'text')?.text || ''
@@ -444,18 +515,18 @@ async function callAnthropic(message, subject, userLevel) {
   return reply || null;
 }
 
-async function safeEngineCall(engineName, message, subject, userLevel) {
+async function safeEngineCall(engineName, message, subject, userLevel, history = []) {
   try {
     if (engineName === 'Reasoner' || engineName === 'Solver') {
-      const reply = await callGroq(message, subject, userLevel);
+      const reply = await callGroq(message, subject, userLevel, history);
       return reply ? { engine: engineName, model: GROQ_MODEL, reply } : null;
     }
     if (engineName === 'Explorer') {
-      const reply = await callOpenAI(message, subject, userLevel);
+      const reply = await callOpenAI(message, subject, userLevel, history);
       return reply ? { engine: engineName, model: OPENAI_MODEL, reply } : null;
     }
     if (engineName === 'Storyteller') {
-      const reply = await callAnthropic(message, subject, userLevel);
+      const reply = await callAnthropic(message, subject, userLevel, history);
       return reply ? { engine: engineName, model: ANTHROPIC_MODEL, reply } : null;
     }
     return null;
@@ -468,7 +539,7 @@ function apiUnavailableReply() {
   return 'AI providers are not configured right now. Add at least one API key (GROQ_API_KEY, OPENAI_API_KEY, or ANTHROPIC_API_KEY) in the environment and restart the server.';
 }
 
-async function buildChat(message, subject, userLevel, excludeEngine) {
+async function buildChat(message, subject, userLevel, excludeEngine, history = []) {
   let category = await classifyMessage(message, subject);
 
   const categoryToEngine = {
@@ -491,8 +562,8 @@ async function buildChat(message, subject, userLevel, excludeEngine) {
   if (category === 'COMPLEX') {
     const secondary = anthropicClient ? 'Storyteller' : (openaiClient ? 'Explorer' : 'Solver');
     const [reasonerResult, secondaryResult] = await Promise.all([
-      safeEngineCall('Reasoner', message, subject, userLevel),
-      safeEngineCall(secondary, message, subject, userLevel),
+      safeEngineCall('Reasoner', message, subject, userLevel, history),
+      safeEngineCall(secondary, message, subject, userLevel, history),
     ]);
 
     const results = [reasonerResult, secondaryResult].filter(Boolean);
@@ -508,13 +579,13 @@ async function buildChat(message, subject, userLevel, excludeEngine) {
     }
   } else {
     const target = categoryToEngine[category] || 'Reasoner';
-    const primary = await safeEngineCall(target, message, subject, userLevel);
+    const primary = await safeEngineCall(target, message, subject, userLevel, history);
     if (primary) {
       return { reply: primary.reply, engine: primary.engine, model: primary.model };
     }
   }
 
-  const reasoner = await safeEngineCall('Reasoner', message, subject, userLevel);
+  const reasoner = await safeEngineCall('Reasoner', message, subject, userLevel, history);
   if (reasoner) {
     return { reply: reasoner.reply, engine: reasoner.engine, model: reasoner.model };
   }
@@ -872,6 +943,8 @@ const server = http.createServer(async (req, res) => {
         const userLevel = String(body.userLevel || 'Newbie').trim() || 'Newbie';
         const visitorId = String(body.visitorId || '').trim();
         const excludeEngine = String(body.excludeEngine || '').trim();
+        const incomingHistory = normalizeHistory(body.history);
+        const attachments = normalizeAttachments(body.attachments);
 
         if (!message) {
           sendJson(res, 400, { error: 'message is required' });
@@ -900,11 +973,14 @@ const server = http.createServer(async (req, res) => {
         }
         persistStats();
 
-        const chat = await buildChat(message, subject, userLevel || learningStyle, excludeEngine || null);
+        const mergedHistory = getConversationMemory(visitorId, incomingHistory);
+        const finalMessage = buildFinalUserMessage(message, attachments);
+        const chat = await buildChat(finalMessage, subject, userLevel || learningStyle, excludeEngine || null, mergedHistory);
+        updateConversationMemory(visitorId, finalMessage, chat.reply);
         if (visitorId) {
           dbRun(
             `INSERT INTO chats (visitor_id,subject,user_level,learning_style,engine,model,message,reply,created_at)
-             VALUES (${sqlEsc(visitorId)},${sqlEsc(subject)},${sqlEsc(userLevel)},${sqlEsc(learningStyle)},${sqlEsc(chat.engine)},${sqlEsc(chat.model)},${sqlEsc(message)},${sqlEsc(chat.reply)},datetime('now'));`
+             VALUES (${sqlEsc(visitorId)},${sqlEsc(subject)},${sqlEsc(userLevel)},${sqlEsc(learningStyle)},${sqlEsc(chat.engine)},${sqlEsc(chat.model)},${sqlEsc(finalMessage)},${sqlEsc(chat.reply)},datetime('now'));`
           );
         }
         sendJson(res, 200, {
