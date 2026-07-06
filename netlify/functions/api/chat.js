@@ -43,7 +43,15 @@ exports.handler = async function (event) {
 
     trackChat(visitorId, subject).catch((error) => console.error('Chat tracking failed:', error.message));
 
-    const { reply, engine, model } = await routeChat({ message, subject, learningStyle, userLevel });
+    const { reply, engine, model } = await routeChat({
+      message,
+      subject,
+      learningStyle,
+      userLevel,
+      excludeEngine: payload.excludeEngine || null,
+      history: Array.isArray(payload.history) ? payload.history : [],
+      attachments: Array.isArray(payload.attachments) ? payload.attachments : [],
+    });
 
     return {
       statusCode: 200,
