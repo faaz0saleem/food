@@ -1,7 +1,7 @@
 {
-  "name": "mindmesh",
+  "name": "hungter",
   "version": "0.1.0",
-  "description": "MindMesh is a multi-engine AI tutor web app for personalized learning.",
+  "description": "Hungter is a multi-engine AI tutor web app for personalized learning.",
   "license": "UNLICENSED",
   "repository": {
     "type": "git",
@@ -15,7 +15,7 @@
     "backend": "node backend.js",
     "test": "node --test",
     "db:init": "bash scripts/init-db.sh",
-    "db:reset": "rm -f database/mindmesh.db && bash scripts/init-db.sh"
+    "db:reset": "rm -f database/hungter.db && bash scripts/init-db.sh"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.110.0",

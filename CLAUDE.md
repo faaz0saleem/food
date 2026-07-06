@@ -1,17 +1,17 @@
-# MindMesh — Project Briefing for AI Assistants
+# Hungter — Project Briefing for AI Assistants
 
 > Read this first. It gets any new AI assistant (Claude Code, Copilot, etc.)
 > fully up to speed on this project instantly.
 
 ## Who's building this
 
-A student/developer building MindMesh, working solo, intermediate coding
+A student/developer building Hungter, working solo, intermediate coding
 level, using GitHub Codespaces + VS Code. No credit card — free tiers only.
 Prefers fast, direct, step-by-step answers with copy-pasteable code over
 long explanations. Never ask them to paste API keys into chat — they've had
 keys leak/expire before (Groq, Gemini).
 
-## What MindMesh is
+## What Hungter is
 
 An AI tutor web app that:
 - Combines 4 AI engines (Groq, Gemini, OpenAI GPT-4, Claude) into one smart tutor
@@ -19,7 +19,7 @@ An AI tutor web app that:
 - Has gamification (levels, XP, streaks, milestones)
 - Targets students worldwide, especially those who can't afford private tutors
 
-Name: **MindMesh**. Tagline: *"The tutor that gets you."*
+Name: **Hungter**. Tagline: *"The tutor that gets you."*
 
 Note: `README.md` in this repo currently describes a Django/Python backend —
 that is stale/aspirational and does **not** match the actual codebase, which
@@ -232,4 +232,4 @@ node server.js
 - Work step by step — give one thing at a time, not everything at once.
 - Give actual code to copy-paste, not just explanations.
 - When writing prompts for GitHub Copilot, be very specific and detailed.
-- The repo/folder may be called `food` or `food-main` — ignore the name, it's MindMesh.
+- The repo/folder may be called `food` or `food-main` — ignore the name, it's Hungter.

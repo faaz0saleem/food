@@ -372,8 +372,8 @@ function setTheme(theme) {
 }
 
 function buildNav() {
-  if (window.MindMeshUI) {
-    window.MindMeshUI.buildNav();
+  if (window.HungterUI) {
+    window.HungterUI.buildNav();
     return;
   }
   const navContainer = document.querySelector('.site-nav');
@@ -386,7 +386,7 @@ function buildNav() {
     })
     .join('');
   navContainer.innerHTML = `
-    <div class="nav-brand"><a href="/">🧠 MindMesh</a></div>
+    <div class="nav-brand"><a href="/">🧠 Hungter</a></div>
     <nav class="nav-links">${links}</nav>
     <div class="nav-right">
       <a href="/chat.html" class="chat-btn">Ask AI →</a>

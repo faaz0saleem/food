@@ -1,7 +1,7 @@
 const RAPIDPAY_BASE_URL = (process.env.RAPIDPAY_BASE_URL || 'https://secure.rapid-gateway.com').replace(/\/$/, '');
 const RAPIDPAY_ENVIRONMENT = (process.env.RAPIDPAY_ENVIRONMENT || process.env.RAPIDPAY_ENV || 'TEST').toUpperCase();
 const RAPIDPAY_CURRENCY = process.env.RAPIDPAY_CURRENCY || 'PKR';
-const RAPIDPAY_MERCHANT_NAME = process.env.RAPIDPAY_MERCHANT_NAME || 'MindMesh';
+const RAPIDPAY_MERCHANT_NAME = process.env.RAPIDPAY_MERCHANT_NAME || 'Hungter';
 
 const RAPIDPAY_CLIENT_ID = process.env.RAPIDPAY_CLIENT_ID || '';
 const RAPIDPAY_CLIENT_SECRET = process.env.RAPIDPAY_CLIENT_SECRET || '';

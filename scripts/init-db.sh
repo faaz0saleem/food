@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-DB_PATH="$ROOT_DIR/database/mindmesh.db"
+DB_PATH="$ROOT_DIR/database/hungter.db"
 SCHEMA_PATH="$ROOT_DIR/database/schema.sql"
 
 if [[ ! -f "$SCHEMA_PATH" ]]; then

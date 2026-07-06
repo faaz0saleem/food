@@ -91,7 +91,7 @@
     if (document.querySelector('.beta-banner')) return;
     const banner = document.createElement('div');
     banner.className = 'beta-banner';
-    banner.innerHTML = '<strong>Beta testing</strong> — MindMesh is in early access. Payments are still in testing; check the engine status below for which AI engines are live today.';
+    banner.innerHTML = '<strong>Beta testing</strong> — Hungter is in early access. Payments are still in testing; check the engine status below for which AI engines are live today.';
     document.body.prepend(banner);
   }
 
@@ -119,7 +119,7 @@
     }).join('');
 
     nav.innerHTML = `
-      <div class="nav-brand"><a href="${brandHref}">🧠 MindMesh</a></div>
+      <div class="nav-brand"><a href="${brandHref}">🧠 Hungter</a></div>
       <button class="nav-toggle" type="button" aria-label="Open menu" aria-expanded="false">
         <span></span><span></span><span></span>
       </button>
@@ -208,7 +208,7 @@
       <div class="container">
         <div class="footer-grid">
           <div>
-            <div class="footer-brand">🧠 MindMesh</div>
+            <div class="footer-brand">🧠 Hungter</div>
             <p class="footer-copy">Four AI engines. One tutor that adapts to how you learn. Built for students, families, and schools.</p>
           </div>
           <div class="footer-col">
@@ -238,7 +238,7 @@
           </div>
         </div>
         <div class="footer-bottom">
-          <span>© ${year} MindMesh. All rights reserved.</span>
+          <span>© ${year} Hungter. All rights reserved.</span>
           <span>Made for learners who want more than a generic chatbot.</span>
         </div>
       </div>
@@ -299,7 +299,7 @@
     }
   }
 
-  window.MindMeshUI = {
+  window.HungterUI = {
     ENGINES,
     buildBetaBanner,
     buildNav,

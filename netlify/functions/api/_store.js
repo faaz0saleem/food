@@ -9,10 +9,10 @@ const {
   checkAndRecordRateLimit,
 } = require('../../../stats-core');
 
-const STORE_NAME = 'mindmesh-stats';
+const STORE_NAME = 'hungter-stats';
 const KEY = 'stats';
-const memoryState = global.__mindmeshStatsMemory || { stats: emptyStats() };
-global.__mindmeshStatsMemory = memoryState;
+const memoryState = global.__hungterStatsMemory || { stats: emptyStats() };
+global.__hungterStatsMemory = memoryState;
 let warnedBlobUnavailable = false;
 
 function getBlobStore() {

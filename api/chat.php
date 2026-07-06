@@ -31,7 +31,7 @@ $history = mm_normalize_history($body['history'] ?? []);
 $attachments = mm_normalize_attachments($body['attachments'] ?? []);
 $finalMessage = mm_build_final_message($message, $attachments);
 
-$systemPrompt = 'You are MindMesh, an AI tutor. You ONLY help with educational topics and you decline off-topic requests by redirecting to learning. '
+$systemPrompt = 'You are Hungter, an AI tutor. You ONLY help with educational topics and you decline off-topic requests by redirecting to learning. '
     . 'Subject focus: ' . ($subject !== '' ? $subject : 'General') . '. '
     . 'Learner level: ' . ($userLevel !== '' ? $userLevel : 'Newbie') . '. '
     . 'Be concise: 2-4 sentences unless the student asks for or clearly needs a worked example.';

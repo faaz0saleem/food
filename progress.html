@@ -4,11 +4,11 @@
   <!-- BASE_URL: https://YOUR_DOMAIN_HERE -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MindMesh — Progress</title>
-  <meta name="description" content="Detailed MindMesh progress insights including XP, streaks, quiz trends, and mastery.">
+  <title>Hungter — Progress</title>
+  <meta name="description" content="Detailed Hungter progress insights including XP, streaks, quiz trends, and mastery.">
   <link rel="canonical" href="https://YOUR_DOMAIN_HERE/progress.html">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="MindMesh — Progress">
+  <meta property="og:title" content="Hungter — Progress">
   <meta property="og:description" content="See your XP growth, quiz results, and subject mastery over time.">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/brand.css">
@@ -27,7 +27,7 @@
         <div>
           <p class="eyebrow">Live Analytics</p>
           <h1>Your learning graph, not just your streak.</h1>
-          <p>MindMesh tracks how often you practice, how your quiz accuracy shifts over time, and which subjects need a closer look next.</p>
+          <p>Hungter tracks how often you practice, how your quiz accuracy shifts over time, and which subjects need a closer look next.</p>
         </div>
         <span class="progress-tag">Student Snapshot</span>
       </div>
@@ -58,7 +58,7 @@
           </div>
         </div>
         <div class="progress-meter-copy">
-          <p>Your XP is estimated from chats and quizzes, then mapped to the shared level ladder used across MindMesh.</p>
+          <p>Your XP is estimated from chats and quizzes, then mapped to the shared level ladder used across Hungter.</p>
         </div>
         <div class="summary-grid">
           <article class="summary-card">
@@ -419,7 +419,7 @@
 
     async function loadGrokInsight() {
       const aiCard = document.getElementById('ai-coach-text');
-      aiCard.textContent = 'Asking MindMesh for the next best study move...';
+      aiCard.textContent = 'Asking Hungter for the next best study move...';
       try {
         const response = await apiPost('/api/chat', {
           visitorId: getSessionId(),
@@ -427,7 +427,7 @@
           userLevel: stats.level,
           message: `I have ${stats.count} interactions, a ${quizCount}-quiz history, and an average score of ${avgScore}%. Give me three focused study instructions and one weakness to improve.`
         });
-        aiCard.textContent = response.reply || 'MindMesh could not generate guidance right now.';
+        aiCard.textContent = response.reply || 'Hungter could not generate guidance right now.';
       } catch {
         aiCard.textContent = 'Unable to connect right now. Try again later.';
       }
