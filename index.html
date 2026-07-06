@@ -116,45 +116,6 @@
     </div>
   </section>
 
-  <section class="features" id="features">
-    <div class="container">
-      <p class="eyebrow" style="text-align:center;display:block;">EVERY CORE FEATURE</p>
-      <h2 class="sec-title">Everything inside Hungter</h2>
-      <div class="features-grid">
-        <article class="feature-card">
-          <h3>AI Chat</h3>
-          <p>Ask anything in your subject, attach files, and get responses matched to your learning level.</p>
-          <a href="/chat.html" class="price-btn">Open Chat</a>
-        </article>
-        <article class="feature-card">
-          <h3>RoundChat Compare</h3>
-          <p>Preview multiple engines, then expand the exact angle you want for deeper understanding.</p>
-          <a href="/roundchat.html" class="price-btn">Open RoundChat</a>
-        </article>
-        <article class="feature-card">
-          <h3>Explain-It-Back</h3>
-          <p>Explain a concept in your own words, get instant feedback, and earn bonus XP for mastery.</p>
-          <a href="/chat.html" class="price-btn">Practice Explaining</a>
-        </article>
-        <article class="feature-card">
-          <h3>Books + Topic Actions</h3>
-          <p>Open a book, pick a chapter, and generate quizzes, flashcards, and focused support instantly.</p>
-          <a href="/books.html" class="price-btn">Browse Books</a>
-        </article>
-        <article class="feature-card">
-          <h3>Guess Papers</h3>
-          <p>Create original exam-style papers, print them, and use them as your timed practice set.</p>
-          <a href="/guess-papers.html" class="price-btn">Generate Paper</a>
-        </article>
-        <article class="feature-card">
-          <h3>Dashboard + Progress</h3>
-          <p>Track levels, XP, weak topics, mistake bank, flashcards, and share progress snapshots.</p>
-          <a href="/dashboard.html" class="price-btn">View Dashboard</a>
-        </article>
-      </div>
-    </div>
-  </section>
-
   <section class="pricing" id="pricing">
     <div class="container">
       <p class="eyebrow" style="text-align:center;display:block;">PICK YOUR PLAN</p>
@@ -231,22 +192,6 @@
       const linkEl = document.getElementById('dailyPromptLink');
       if (promptEl) promptEl.textContent = prompt;
       if (linkEl) linkEl.href = `/chat.html?q=${encodeURIComponent(prompt)}`;
-
-      document.querySelectorAll('a.btn-primary, a.btn-ghost, a.price-btn, .hero-ctas a').forEach((link) => {
-        link.addEventListener('click', (event) => {
-          const href = link.getAttribute('href') || '';
-          if (!href) return;
-          event.preventDefault();
-          if (href.startsWith('#')) {
-            const target = document.querySelector(href);
-            if (target) {
-              target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-              return;
-            }
-          }
-          window.location.href = href;
-        });
-      });
     })();
   </script>
 </body>
