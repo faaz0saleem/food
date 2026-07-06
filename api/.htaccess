@@ -1,0 +1,8 @@
+RewriteEngine On
+
+# Route clean API paths to PHP handlers on Apache/Hostinger shared hosting.
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^status$ status.php [L,QSA]
+RewriteRule ^chat$ chat.php [L,QSA]
+RewriteRule ^visit$ visit.php [L,QSA]

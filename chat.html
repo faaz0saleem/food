@@ -136,20 +136,32 @@
     return `${base}${cleanPath}`;
   }
 
+  function buildPathVariants(path) {
+    const cleanPath = String(path || '').startsWith('/') ? String(path) : `/${path}`;
+    const variants = [cleanPath];
+    if (cleanPath.startsWith('/api/')) {
+      variants.push(`${cleanPath}.php`);
+    }
+    return [...new Set(variants)];
+  }
+
   async function fetchWithApiFallback(path, fetchOptions) {
     const bases = resolveApiBases();
+    const paths = buildPathVariants(path);
     let lastError = null;
 
     for (const base of bases) {
-      const url = joinApi(base, path);
-      try {
-        const response = await fetch(url, fetchOptions);
-        if (response.ok || response.status === 429 || response.status === 400 || response.status === 401 || response.status === 403) {
-          return { response, resolvedBase: base };
+      for (const candidatePath of paths) {
+        const url = joinApi(base, candidatePath);
+        try {
+          const response = await fetch(url, fetchOptions);
+          if (response.ok || response.status === 429 || response.status === 400 || response.status === 401 || response.status === 403) {
+            return { response, resolvedBase: base };
+          }
+          lastError = new Error(`HTTP ${response.status}`);
+        } catch (error) {
+          lastError = error;
         }
-        lastError = new Error(`HTTP ${response.status}`);
-      } catch (error) {
-        lastError = error;
       }
     }
 
