@@ -33,6 +33,7 @@ const navLinks = [
   { label: 'Quiz', href: 'quiz.html' },
   { label: 'Guess Papers', href: 'guess-papers.html' },
   { label: 'Progress', href: 'progress.html' },
+  { label: 'RoundChat', href: 'roundchat.html' },
   { label: 'Chat', href: 'chat.html' }
 ];
 
@@ -166,6 +167,7 @@ function getXPBreakdown() {
   const quizScores = lsGet('mm_quiz_scores', {});
   const streak = lsGet('mm_streak', []);
   const milestones = lsGet('mm_milestones', []);
+  const explainChecks = lsGet('mm_explain_checks', []);
   const messageXP = count * 2;
   const subjectXP = Object.keys(subjectsData).length * 25;
   const allScores = Object.values(quizScores).flat();
@@ -173,7 +175,8 @@ function getXPBreakdown() {
   const quizAccuracyXP = allScores.reduce((sum, score) => sum + Math.round(score * 0.2), 0);
   const streakXP = Math.min(streak.length, 7) * 10;
   const milestoneXP = milestones.length * 5;
-  const total = messageXP + subjectXP + quizParticipationXP + quizAccuracyXP + streakXP + milestoneXP;
+  const explainBackXP = Math.min(explainChecks.length, 10) * 20;
+  const total = messageXP + subjectXP + quizParticipationXP + quizAccuracyXP + streakXP + milestoneXP + explainBackXP;
   return {
     messageXP,
     subjectXP,
@@ -181,6 +184,7 @@ function getXPBreakdown() {
     quizAccuracyXP,
     streakXP,
     milestoneXP,
+    explainBackXP,
     total,
   };
 }
@@ -272,6 +276,19 @@ function recordConversation(subject, userMessage, aiReply) {
     conversations.shift();
   }
   lsSet('mm_conversations', conversations);
+}
+
+function recordExplainCheck(concept, studentExplanation, feedback, understood) {
+  const checks = lsGet('mm_explain_checks', []);
+  checks.push({
+    concept: String(concept || '').slice(0, 200),
+    studentExplanation: String(studentExplanation || '').slice(0, 500),
+    feedback: String(feedback || '').slice(0, 500),
+    understood: Boolean(understood),
+    date: new Date().toISOString(),
+  });
+  lsSet('mm_explain_checks', checks.slice(-50));
+  updateLevel();
 }
 
 function getVitals() {
@@ -675,7 +692,7 @@ function initProfile() {
 async function initPage() {
   await hydrateProfileFromAuth();
   const publicPages = ['index', 'signup', 'onboarding', 'checkout'];
-  const appPages = ['dashboard', 'learn', 'subjects', 'quiz', 'progress', 'chat', 'profile', 'flashcards'];
+  const appPages = ['dashboard', 'learn', 'subjects', 'quiz', 'progress', 'chat', 'roundchat', 'profile', 'flashcards'];
   const hasProfile = Boolean((lsGet('mm_name', '') || '').trim());
   const hasSubscription = String(lsGet('mm_plan_status', '') || '').toLowerCase() === 'active';
 

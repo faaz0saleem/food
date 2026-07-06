@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- BASE_URL: https://YOUR_DOMAIN_HERE -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MindMesh - RoundChat</title>
+<meta name="description" content="Compare multiple AI viewpoints side by side, then expand the one you want.">
+<link rel="canonical" href="https://YOUR_DOMAIN_HERE/roundchat.html">
+<meta property="og:type" content="website">
+<meta property="og:title" content="MindMesh - RoundChat">
+<meta property="og:description" content="Get short previews from multiple engines, then expand your chosen angle.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/brand.css">
+<link rel="stylesheet" href="/nav.css">
+<link rel="stylesheet" href="/chat.css">
+<style>
+.roundchat-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.roundchat-shell {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 100px);
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: 0 24px 24px;
+}
+.roundchat-head {
+  max-width: 860px;
+  margin: 8px auto 10px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.roundchat-head p {
+  margin: 0;
+  color: var(--ink-soft);
+}
+.roundchat-grid {
+  max-width: 860px;
+  width: 100%;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+.roundcard {
+  border: 2px solid var(--border);
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+  padding: 12px;
+}
+.roundcard h3 {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-size: 1rem;
+}
+.roundcard p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+.roundcard .pick-btn {
+  margin-top: 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--ink);
+  padding: 7px 12px;
+  cursor: pointer;
+}
+.roundcard .pick-btn:hover {
+  border-color: var(--lime);
+  color: var(--lime);
+}
+.round-status {
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  color: var(--ink-faint);
+}
+@media (max-width: 760px) {
+  .roundchat-shell {
+    padding: 0 14px 18px;
+  }
+}
+</style>
+</head>
+<body data-page="roundchat" style="display:flex;flex-direction:column;min-height:100vh;">
+<div class="top-bar"><div class="top-bar-fill" id="topBar" style="width:0%"></div></div>
+<header class="site-nav"></header>
+
+<main class="roundchat-main">
+  <div class="roundchat-shell">
+    <div class="roundchat-head">
+      <div>
+        <div class="eyebrow">RoundChat</div>
+        <h1 style="margin:0 0 6px;">Compare engines before committing</h1>
+        <p>RoundChat is separate from normal Chat. It first asks multiple engines for short previews, then expands only the one you choose.</p>
+      </div>
+      <a href="/chat.html" class="chat-btn">Open normal Chat</a>
+    </div>
+
+    <div class="chat-feed" id="chatFeed">
+      <div id="welcomeScreen" class="chat-welcome">
+        <div>
+          <div class="eyebrow" style="justify-content:center;">Ask RoundChat</div>
+          <h1>Which angle do you want first?</h1>
+          <p>Send one prompt, compare previews from available engines, then pick one to expand fully.</p>
+        </div>
+      </div>
+      <div id="messages" class="chat-messages" style="display:none;"></div>
+      <div id="previewGrid" class="roundchat-grid" style="display:none;"></div>
+    </div>
+
+    <div class="chat-composer">
+      <div id="modelBadge" class="model-badge">RoundChat: loading...</div>
+      <div class="composer-row">
+        <input id="chatInput" type="text" placeholder="Ask one question to compare engines..." autocomplete="off" />
+        <button id="sendButton" class="send-btn" type="button" aria-label="Send message">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+      <p class="composer-note">RoundChat previews do not write final answers until you expand a selected engine.</p>
+    </div>
+  </div>
+</main>
+
+<script src="/api-config.js"></script>
+<script src="/script.js"></script>
+<script src="/layout.js" defer></script>
+<script>
+(function () {
+  ensureProfile();
+
+  const chatInput = document.getElementById('chatInput');
+  const messages = document.getElementById('messages');
+  const welcomeScreen = document.getElementById('welcomeScreen');
+  const sendButton = document.getElementById('sendButton');
+  const modelBadge = document.getElementById('modelBadge');
+  const topBar = document.getElementById('topBar');
+  const previewGrid = document.getElementById('previewGrid');
+  let typingIndicator = null;
+  let activePrompt = '';
+
+  function normalizeBase(rawBase) {
+    const raw = String(rawBase || '').trim();
+    if (!raw) return '';
+    return raw.replace(/\/$/, '');
+  }
+
+  function isProductionHost() {
+    const host = String(window.location.hostname || '').toLowerCase();
+    return host && host !== 'localhost' && host !== '127.0.0.1';
+  }
+
+  function baseLooksLocal(base) {
+    return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(base);
+  }
+
+  function resolveApiBases() {
+    const configuredGlobal = normalizeBase(window.HUNGTER_API_BASE || '');
+    const stored = normalizeBase(localStorage.getItem('mm_api_base'));
+    const bases = [];
+
+    if (configuredGlobal) bases.push(configuredGlobal);
+
+    if (stored && !(isProductionHost() && baseLooksLocal(stored))) {
+      bases.push(stored);
+    } else if (stored && isProductionHost() && baseLooksLocal(stored)) {
+      localStorage.removeItem('mm_api_base');
+    }
+
+    bases.push('');
+    bases.push('/.netlify/functions');
+    return [...new Set(bases)];
+  }
+
+  function joinApi(base, path) {
+    const cleanPath = String(path || '').startsWith('/') ? path : `/${path}`;
+    if (!base) return cleanPath;
+    return `${base}${cleanPath}`;
+  }
+
+  async function fetchWithApiFallback(path, options) {
+    const bases = resolveApiBases();
+    let lastError = null;
+    for (const base of bases) {
+      const url = joinApi(base, path);
+      try {
+        const response = await fetch(url, options);
+        if (response.ok || response.status === 400 || response.status === 429 || response.status === 401 || response.status === 403) {
+          return response;
+        }
+        lastError = new Error(`HTTP ${response.status}`);
+      } catch (error) {
+        lastError = error;
+      }
+    }
+    throw lastError || new Error('API request failed');
+  }
+
+  function refreshTopBar() {
+    const progress = getLevelProgress();
+    if (topBar) topBar.style.width = `${progress.pct}%`;
+  }
+
+  function appendMessage(text, sender, engine) {
+    if (!welcomeScreen.classList.contains('hidden-perm')) {
+      welcomeScreen.style.display = 'none';
+      welcomeScreen.classList.add('hidden-perm');
+    }
+    messages.style.display = 'flex';
+
+    const row = document.createElement('div');
+    row.className = `msg-row ${sender}`;
+
+    const avatar = document.createElement('div');
+    avatar.className = 'msg-avatar';
+    avatar.textContent = sender === 'ai' ? '🧠' : '🙂';
+
+    const bubble = document.createElement('div');
+    bubble.className = 'msg-bubble';
+
+    if (engine) {
+      const tag = document.createElement('div');
+      tag.className = 'engine-tag';
+      tag.textContent = engine;
+      bubble.appendChild(tag);
+    }
+
+    const body = document.createElement('div');
+    body.textContent = text;
+    bubble.appendChild(body);
+
+    row.appendChild(avatar);
+    row.appendChild(bubble);
+    messages.appendChild(row);
+    document.getElementById('chatFeed').scrollTop = document.getElementById('chatFeed').scrollHeight;
+  }
+
+  function showTyping() {
+    if (typingIndicator) return;
+    typingIndicator = document.createElement('div');
+    typingIndicator.className = 'msg-row ai';
+    typingIndicator.innerHTML = '<div class="msg-avatar">🧠</div><div class="msg-bubble"><span class="typing-dots"><span></span><span></span><span></span></span></div>';
+    messages.appendChild(typingIndicator);
+    document.getElementById('chatFeed').scrollTop = document.getElementById('chatFeed').scrollHeight;
+  }
+
+  function hideTyping() {
+    if (!typingIndicator) return;
+    typingIndicator.remove();
+    typingIndicator = null;
+  }
+
+  function clearPreviews() {
+    previewGrid.innerHTML = '';
+    previewGrid.style.display = 'none';
+  }
+
+  async function loadStatus() {
+    try {
+      const response = await fetchWithApiFallback('/api/status');
+      const data = await response.json();
+      const engines = data?.engines || {};
+      const liveCount = Object.values(engines).filter(Boolean).length;
+      modelBadge.textContent = `${liveCount} engines available in RoundChat`;
+    } catch {
+      modelBadge.textContent = 'RoundChat backend unavailable';
+    }
+  }
+
+  async function runRoundtable(prompt, subject) {
+    const response = await fetchWithApiFallback('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        visitorId: getSessionId(),
+        subject,
+        userLevel: lsGet('mm_level', 'Newbie'),
+        learningStyle: lsGet('mm_style', 'Visual'),
+        message: prompt,
+        roundtable: true
+      })
+    });
+    return response.json();
+  }
+
+  async function expandFromEngine(engineKey, subject) {
+    showTyping();
+    try {
+      const response = await fetchWithApiFallback('/api/chat-expand', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          engineKey,
+          message: activePrompt,
+          subject,
+          userLevel: lsGet('mm_level', 'Newbie')
+        })
+      });
+      const data = await response.json();
+      hideTyping();
+      appendMessage(data.reply || 'Could not expand right now.', 'ai', data.engine || engineKey);
+      lsSet('mm_roundchat_picks', Number(lsGet('mm_roundchat_picks', 0) || 0) + 1);
+      recordChat(subject);
+      recordConversation(subject, `[RoundChat] ${activePrompt}`, `[${data.engine || engineKey}] ${data.reply || ''}`);
+      refreshTopBar();
+    } catch {
+      hideTyping();
+      appendMessage('Could not expand this engine answer right now. Try again.', 'ai', 'System');
+    }
+  }
+
+  function renderPreviews(previews, subject) {
+    previewGrid.innerHTML = '';
+    if (!Array.isArray(previews) || !previews.length) {
+      previewGrid.style.display = 'none';
+      appendMessage('No preview engines are available right now. Open normal Chat as fallback.', 'ai', 'System');
+      return;
+    }
+
+    previews.forEach((item) => {
+      const card = document.createElement('article');
+      card.className = 'roundcard';
+      card.innerHTML = `
+        <h3>${item.name}</h3>
+        <p>${item.preview || ''}</p>
+        <div class="round-status">Engine key: ${item.engine}</div>
+      `;
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'pick-btn';
+      button.textContent = 'Expand this answer';
+      button.addEventListener('click', () => expandFromEngine(item.engine, subject));
+      card.appendChild(button);
+      previewGrid.appendChild(card);
+    });
+
+    previewGrid.style.display = 'grid';
+    document.getElementById('chatFeed').scrollTop = document.getElementById('chatFeed').scrollHeight;
+  }
+
+  async function submitRoundchat() {
+    const prompt = String(chatInput.value || '').trim();
+    if (!prompt) return;
+    const subject = lsGet('mm_subject', 'General');
+    activePrompt = prompt;
+    appendMessage(prompt, 'user');
+    clearPreviews();
+    chatInput.value = '';
+    showTyping();
+
+    try {
+      const data = await runRoundtable(prompt, subject);
+      hideTyping();
+      if (data?.error) {
+        appendMessage(data.error, 'ai', 'System');
+        return;
+      }
+      appendMessage('Preview set ready. Pick one engine to expand.', 'ai', 'RoundChat');
+      renderPreviews(data.previews || [], subject);
+    } catch {
+      hideTyping();
+      appendMessage('Could not reach the backend for roundchat. Check API deployment.', 'ai', 'System');
+    }
+  }
+
+  chatInput.addEventListener('keypress', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      submitRoundchat();
+    }
+  });
+
+  sendButton.addEventListener('click', submitRoundchat);
+
+  const params = new URLSearchParams(window.location.search);
+  const q = params.get('q');
+  if (q) chatInput.value = q;
+
+  loadStatus();
+  refreshTopBar();
+})();
+</script>
+</body>
+</html>

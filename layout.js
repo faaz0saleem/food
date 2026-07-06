@@ -14,6 +14,7 @@
     { label: 'Quiz', href: '/quiz.html' },
     { label: 'Guess Papers', href: '/guess-papers.html' },
     { label: 'Progress', href: '/progress.html' },
+    { label: 'RoundChat', href: '/roundchat.html' },
     { label: 'Chat', href: '/chat.html' },
   ];
 
@@ -60,6 +61,7 @@
     const quizScores = lsGet('mm_quiz_scores', {});
     const streak = lsGet('mm_streak', []);
     const milestones = lsGet('mm_milestones', []);
+    const explainChecks = lsGet('mm_explain_checks', []);
     const allScores = Object.values(quizScores || {}).flat();
     const xp = Number(
       count * 2 +
@@ -67,7 +69,8 @@
       allScores.length * 15 +
       allScores.reduce((sum, score) => sum + Math.round(Number(score || 0) * 0.2), 0) +
       Math.min(streak.length, 7) * 10 +
-      milestones.length * 5
+      milestones.length * 5 +
+      Math.min(explainChecks.length, 10) * 20
     );
     const storedLevel = lsGet('mm_level', 'Newbie');
     const levels = [
@@ -154,6 +157,7 @@
     const quizScores = lsGet('mm_quiz_scores', {});
     const streak = lsGet('mm_streak', []);
     const milestones = lsGet('mm_milestones', []);
+    const explainChecks = lsGet('mm_explain_checks', []);
     const allScores = Object.values(quizScores || {}).flat();
     return Number(
       count * 2 +
@@ -161,7 +165,8 @@
       allScores.length * 15 +
       allScores.reduce((sum, score) => sum + Math.round(Number(score || 0) * 0.2), 0) +
       Math.min(streak.length, 7) * 10 +
-      milestones.length * 5
+      milestones.length * 5 +
+      Math.min(explainChecks.length, 10) * 20
     );
   }
 

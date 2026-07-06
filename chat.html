@@ -59,7 +59,10 @@
     </div>
 
     <div class="chat-composer">
-      <div id="modelBadge" class="model-badge">Model: loading…</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+        <div id="modelBadge" class="model-badge">Model: loading…</div>
+        <a href="/roundchat.html" class="msg-action-btn" style="text-decoration:none;">Try RoundChat compare mode</a>
+      </div>
       <div class="composer-row">
         <button id="attachButton" class="attach-btn" type="button" aria-label="Attach file or image" title="Attach file or image">+</button>
         <input id="fileInput" type="file" accept="image/*,.pdf,.txt,.md,.csv,.json,.js,.ts,.py,.java,.c,.cpp,.html,.css" multiple hidden />
@@ -342,6 +345,15 @@
           sendMessage(sourcePrompt, { excludeEngine: String(engine || '').split(',')[0].trim() });
         });
         actions.appendChild(explainBtn);
+
+        const explainBackBtn = document.createElement('button');
+        explainBackBtn.type = 'button';
+        explainBackBtn.className = 'msg-action-btn';
+        explainBackBtn.textContent = 'Explain it back (+XP)';
+        explainBackBtn.addEventListener('click', () => {
+          explainItBack(sourcePrompt, text);
+        });
+        actions.appendChild(explainBackBtn);
       }
       bubble.appendChild(actions);
     }
@@ -430,6 +442,32 @@
         reply: 'Could not reach the AI backend. Your site needs a live /api/chat backend (same domain, Netlify functions, or a valid mm_api_base URL).',
         engine: 'System'
       };
+    }
+  }
+
+  async function explainItBack(concept, aiReply) {
+    const explanation = window.prompt('Explain this concept back in your own words. If your explanation is clear, you earn +20 XP bonus.');
+    if (!explanation || !String(explanation).trim()) return;
+
+    const conceptText = String(concept || aiReply || 'Concept').slice(0, 220);
+
+    try {
+      const { response } = await fetchWithApiFallback('/api/explain-check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          concept: conceptText,
+          studentExplanation: explanation,
+        }),
+      });
+      const data = await response.json();
+      const feedback = String(data?.feedback || 'Nice effort. Keep practicing your own explanation style.');
+      const understood = Boolean(data?.understood);
+      recordExplainCheck(conceptText, explanation, feedback, understood);
+      appendMessage(`Explain-check feedback: ${feedback}\nBonus XP awarded: ${understood ? '+20' : '+0'}`, 'ai', 'Coach');
+      refreshTopBar();
+    } catch {
+      appendMessage('Explain-check is unavailable right now. Try again in a moment.', 'ai', 'System');
     }
   }
 

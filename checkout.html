@@ -47,9 +47,9 @@
           <div class="form-group">
             <label>Select a subscription tier</label>
             <select id="planSelect" onchange="updateOrderSummary()">
+              <option value="free">Free - $0/month</option>
               <option value="student">Student - $5/month</option>
-              <option value="family">Family - $12/month</option>
-              <option value="school">School - $200/month</option>
+              <option value="pro">Student Pro - $12/month</option>
             </select>
           </div>
         </div>
@@ -140,9 +140,9 @@
     const apiPath = (path) => `${API_BASE}${path}`;
 
     const plans = {
-      student: { id: 'student', name: 'Student', price: 5, features: ['Unlimited messages', 'Every subject', 'Progress tracking', 'All 4 engines'] },
-      family: { id: 'family', name: 'Family', price: 12, features: ['Up to 3 kids', 'Parent dashboard', 'Progress reports', 'All 4 engines'] },
-      school: { id: 'school', name: 'School', price: 200, features: ['50 students', 'Teacher dashboard', 'Custom curriculum', 'Dedicated support'] }
+      free: { id: 'free', name: 'Free', price: 0, features: ['20 messages/day', '3 subjects', 'Progress tracking', 'Core tutor access'] },
+      student: { id: 'student', name: 'Student', price: 5, features: ['Unlimited messages', 'Every subject', 'Progress tracking', 'Core tutor access'] },
+      pro: { id: 'pro', name: 'Student Pro', price: 12, features: ['Everything in Student', 'Guess Papers', 'RoundChat compare mode', 'Priority generation queue'] }
     };
 
     let activeSessionId = '';
@@ -339,7 +339,8 @@
 
     function getInitialPlan() {
       const selected = getQueryParam('plan');
-      return ['student', 'family', 'school'].includes(selected) ? selected : 'student';
+      if (selected === 'family' || selected === 'school') return 'pro';
+      return ['free', 'student', 'pro'].includes(selected) ? selected : 'student';
     }
 
     document.addEventListener('DOMContentLoaded', () => {

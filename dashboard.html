@@ -68,6 +68,7 @@
         <div><span>Quiz Accuracy</span><strong id="xpQuizAccuracy">0</strong></div>
         <div><span>Streak</span><strong id="xpStreak">0</strong></div>
         <div><span>Milestones</span><strong id="xpMilestones">0</strong></div>
+        <div><span>Explain-it-back</span><strong id="xpExplainBack">0</strong></div>
       </div>
     </div>
     <div class="stat-card c2">
@@ -144,6 +145,11 @@
     <div id="mistakeBankArea"></div>
   </div>
 
+  <div class="card" style="margin-bottom:24px;">
+    <h3>🧪 New Features Activity</h3>
+    <div id="novelFeaturesArea"></div>
+  </div>
+
   <!-- TWO COL -->
   <div class="two-col">
     <div class="card">
@@ -194,6 +200,8 @@ const milestones = get('mm_milestones') || [];
 const streak = get('mm_streak') || [];
 const quizScores = get('mm_quiz_scores') || {};
 const wrongAnswers = get('mm_wrong_answers') || [];
+const explainChecks = get('mm_explain_checks') || [];
+const roundchatPicks = Number(get('mm_roundchat_picks') || 0);
 const todayCount = get('mm_today_count') || 0;
 const plan = get('mm_plan') || 'Free';
 const allScores = Object.values(quizScores).flat();
@@ -222,6 +230,7 @@ el('xpQuizParticipation').textContent = `${xpBreakdown.quizParticipationXP} XP`;
 el('xpQuizAccuracy').textContent = `${xpBreakdown.quizAccuracyXP} XP`;
 el('xpStreak').textContent = `${xpBreakdown.streakXP} XP`;
 el('xpMilestones').textContent = `${xpBreakdown.milestoneXP} XP`;
+el('xpExplainBack').textContent = `${xpBreakdown.explainBackXP || 0} XP`;
 
 const xpBreakdownPanel = el('xpBreakdown');
 const xpBreakdownToggle = el('toggleXpBreakdown');
@@ -255,6 +264,8 @@ if (Object.values(quizScores).flat().length >= 1) achievementBadges.push('🎯 F
 if (subjKeys.length >= 5) achievementBadges.push('🌍 5 Subjects Explored');
 if (count >= 25) achievementBadges.push('💬 25 Messages');
 if ((allScores.length && Math.round(allScores.reduce((a,b)=>a+b,0)/allScores.length) >= 80)) achievementBadges.push('📈 80% Quiz Average');
+if (explainChecks.length >= 3) achievementBadges.push('🗣 Explainer x3');
+if (roundchatPicks >= 3) achievementBadges.push('🧪 RoundChat x3');
 if (!achievementBadges.length) achievementBadges.push('🌱 First steps');
 
 const badgesEl = el('achievementBadges');
@@ -317,6 +328,27 @@ if (mistakeBankArea) {
       </article>`
     ).join('');
   }
+}
+
+const novelFeaturesArea = el('novelFeaturesArea');
+if (novelFeaturesArea) {
+  const lastExplain = explainChecks.length ? explainChecks[explainChecks.length - 1] : null;
+  novelFeaturesArea.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
+      <article style="border:1px solid var(--border);border-radius:12px;background:var(--surface-2);padding:12px;">
+        <h4 style="margin:0 0 6px;">Explain-it-back</h4>
+        <p style="margin:0;color:var(--ink-soft);font-size:0.9rem;">Checks completed: <strong>${explainChecks.length}</strong></p>
+        <p style="margin:6px 0 0;color:var(--ink-faint);font-size:0.84rem;">${lastExplain ? `Last feedback: ${String(lastExplain.feedback || '').slice(0, 110)}` : 'No explain-check attempts yet.'}</p>
+        <a href="/chat.html" class="quiz-btn" style="display:inline-flex;margin-top:10px;padding:8px 12px;">Try in Chat</a>
+      </article>
+      <article style="border:1px solid var(--border);border-radius:12px;background:var(--surface-2);padding:12px;">
+        <h4 style="margin:0 0 6px;">RoundChat Compare</h4>
+        <p style="margin:0;color:var(--ink-soft);font-size:0.9rem;">Engine picks expanded: <strong>${roundchatPicks}</strong></p>
+        <p style="margin:6px 0 0;color:var(--ink-faint);font-size:0.84rem;">Compare engine previews first, then expand your chosen answer.</p>
+        <a href="/roundchat.html" class="quiz-btn" style="display:inline-flex;margin-top:10px;padding:8px 12px;">Open RoundChat</a>
+      </article>
+    </div>
+  `;
 }
 
 el('shareProgressBtn')?.addEventListener('click', () => {

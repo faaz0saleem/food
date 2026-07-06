@@ -14,16 +14,10 @@ const PLAN_CATALOG = {
     amount: Number(process.env.RAPIDPAY_AMOUNT_STUDENT || 1500),
     currency: RAPIDPAY_CURRENCY,
   },
-  family: {
-    id: 'family',
-    name: 'Family',
-    amount: Number(process.env.RAPIDPAY_AMOUNT_FAMILY || 3500),
-    currency: RAPIDPAY_CURRENCY,
-  },
-  school: {
-    id: 'school',
-    name: 'School',
-    amount: Number(process.env.RAPIDPAY_AMOUNT_SCHOOL || 60000),
+  pro: {
+    id: 'pro',
+    name: 'Student Pro',
+    amount: Number(process.env.RAPIDPAY_AMOUNT_PRO || process.env.RAPIDPAY_AMOUNT_FAMILY || 3500),
     currency: RAPIDPAY_CURRENCY,
   },
 };
@@ -43,6 +37,9 @@ function requireRapidPayConfig() {
 
 function resolvePlan(planId) {
   const normalized = String(planId || 'student').trim().toLowerCase();
+  if (normalized === 'family' || normalized === 'school') {
+    return PLAN_CATALOG.pro;
+  }
   return PLAN_CATALOG[normalized] || null;
 }
 
@@ -106,7 +103,7 @@ async function fetchRapidPayAccessToken() {
 async function createRapidPayCheckoutSession({ planId, customerEmail, customerMobile }) {
   const plan = resolvePlan(planId);
   if (!plan) {
-    throw new Error('Invalid plan. Allowed values: student, family, school.');
+    throw new Error('Invalid plan. Allowed values: student, pro.');
   }
 
   const email = String(customerEmail || '').trim();
