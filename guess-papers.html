@@ -51,7 +51,7 @@
         <button id="generatePaper" class="btn primary" type="button">Generate paper</button>
         <button id="printPaper" class="btn" type="button">Print / Save as PDF</button>
       </div>
-      <p id="loadingMsg" style="display:none;color:var(--ink-soft);margin-top:8px;"><span class="spinner"></span>Generating with all 3 AIs - this can take 10-30 seconds...</p>
+      <p id="loadingMsg" style="display:none;color:var(--ink-soft);margin-top:8px;"><span class="spinner"></span>Generating with all 3 AIs - this can take 15-30 seconds...</p>
       <div id="paperOut" class="paper-box"></div>
     </div>
   </main>
@@ -91,6 +91,7 @@
       try {
         loadingMsg.style.display = 'block';
         paperOut.textContent = '';
+        paperOut.style.color = 'var(--ink-soft)';
         const plan = String(lsGet('mm_plan', 'free')).toLowerCase().includes('pro') ? 'pro' : 'free';
         const response = await fetch(apiPath('/api/guess-paper'), {
           method: 'POST',
@@ -98,12 +99,20 @@
           body: JSON.stringify({ plan, section, subject, chapter, paperFormat }),
         });
         const data = await response.json();
+        if (data && data.error) {
+          paperOut.style.color = 'var(--coral)';
+          paperOut.textContent = data.error;
+          return;
+        }
         if (!response.ok) {
-          throw new Error(data.error || 'Could not generate paper.');
+          paperOut.style.color = 'var(--coral)';
+          paperOut.textContent = 'Could not generate paper.';
+          return;
         }
         paperOut.textContent = data.paper || 'No paper generated.';
       } catch (error) {
-        paperOut.textContent = error.message;
+        paperOut.style.color = 'var(--coral)';
+        paperOut.textContent = error.message || 'Could not generate paper.';
       } finally {
         loadingMsg.style.display = 'none';
       }

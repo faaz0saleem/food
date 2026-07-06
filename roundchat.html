@@ -280,7 +280,7 @@
   }
 
   async function runRoundtable(prompt, subject) {
-    const response = await fetchWithApiFallback('/api/chat', {
+    const response = await fetchWithApiFallback('/api/roundtable', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -288,8 +288,7 @@
         subject,
         userLevel: lsGet('mm_level', 'Newbie'),
         learningStyle: lsGet('mm_style', 'Visual'),
-        message: prompt,
-        roundtable: true
+        message: prompt
       })
     });
     return response.json();
@@ -367,8 +366,13 @@
         appendMessage(data.error, 'ai', 'System');
         return;
       }
-      appendMessage('Preview set ready. Pick one engine to expand.', 'ai', 'RoundChat');
-      renderPreviews(data.previews || [], subject);
+      const previews = Array.isArray(data.previews) ? data.previews : [];
+      if (previews.length) {
+        appendMessage('Preview set ready. Pick one engine to expand.', 'ai', 'RoundChat');
+        renderPreviews(previews, subject);
+      } else {
+        appendMessage(data.finalAnswer || 'No preview engines are available right now. Open normal Chat as fallback.', 'ai', 'RoundChat');
+      }
     } catch {
       hideTyping();
       appendMessage('Could not reach the backend for roundchat. Check API deployment.', 'ai', 'System');

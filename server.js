@@ -136,22 +136,63 @@ async function answerSmart({ message, subject, userLevel, excludeEngine }) {
   return { reply: `Demo mode answer for ${subject || 'your topic'}: Keep practicing and review one concept at a time to master it!`, engines: ['Reasoner'] };
 }
 
-// Roundtable mode: short previews from every available engine, student picks one to expand.
-async function roundtablePreview({ message, subject, userLevel }) {
-  const availableKeys = ['reasoner', 'explorer', 'storyteller'].filter((key) => ENGINES[key].client);
-  if (!availableKeys.length) return [];
-  const systemPrompt = buildSystemPrompt(subject, userLevel) + '\nRespond in ONE short sentence only - a preview, not a full answer.';
-  const results = await Promise.all(availableKeys.map(async (key) => {
+async function runRoundtableDebate({ message, subject, userLevel }) {
+  const availableKeys = ['reasoner', 'explorer', 'storyteller'].filter((k) => ENGINES[k].client);
+  if (availableKeys.length < 2) {
+    const solo = await answerSmart({ message, subject, userLevel });
+    return { transcript: [], finalAnswer: solo.reply, engines: solo.engines };
+  }
+  const basePrompt = buildSystemPrompt(subject, userLevel);
+
+  const round1 = await Promise.all(availableKeys.map(async (key) => {
     const engine = ENGINES[key];
+    const prompt = `${message}\n\nGive your take on how to best explain this, in 2-3 sentences.`;
+    let text = null;
     try {
-      let text;
-      if (key === 'reasoner') text = await callGroq(engine.client, engine.model, systemPrompt, message);
-      else if (key === 'explorer') text = await callOpenAI(engine.client, engine.model, systemPrompt, message);
-      else text = await callAnthropic(engine.client, engine.model, systemPrompt, message);
-      return text ? { engine: key, name: engine.name, preview: text } : null;
-    } catch { return null; }
+      if (key === 'reasoner') text = await callGroq(engine.client, engine.model, basePrompt, prompt);
+      else if (key === 'explorer') text = await callOpenAI(engine.client, engine.model, basePrompt, prompt);
+      else text = await callAnthropic(engine.client, engine.model, basePrompt, prompt);
+    } catch (e) { console.error(`Round 1 (${engine.name}) failed:`, e.message); }
+    return { key, name: engine.name, text };
   }));
-  return results.filter(Boolean);
+  const round1Valid = round1.filter((r) => r.text);
+  if (!round1Valid.length) return { transcript: [], finalAnswer: `Demo mode answer for ${subject || 'your topic'}: Keep practicing!`, engines: ['Reasoner'] };
+
+  const round2 = await Promise.all(round1Valid.map(async (r) => {
+    const engine = ENGINES[r.key];
+    const others = round1Valid.filter((o) => o.key !== r.key).map((o) => `${o.name}: ${o.text}`).join('\n');
+    const prompt = `Other tutors said, about explaining "${message}":\n${others}\n\nIn 1-2 sentences, briefly agree, disagree, or add something they missed.`;
+    let text = null;
+    try {
+      if (r.key === 'reasoner') text = await callGroq(engine.client, engine.model, basePrompt, prompt);
+      else if (r.key === 'explorer') text = await callOpenAI(engine.client, engine.model, basePrompt, prompt);
+      else text = await callAnthropic(engine.client, engine.model, basePrompt, prompt);
+    } catch (e) { console.error(`Round 2 (${engine.name}) failed:`, e.message); }
+    return { key: r.key, name: r.name, text: text || '(no response)' };
+  }));
+
+  const fullTranscript = [
+    ...round1Valid.map((r) => `${r.name} (Round 1): ${r.text}`),
+    ...round2.map((r) => `${r.name} (Round 2): ${r.text}`),
+  ].join('\n');
+
+  let finalAnswer = null;
+  if (groqClient) {
+    try {
+      finalAnswer = await callGroq(groqClient, GROQ_MODEL, basePrompt, `Here is a debate between 3 AI tutors about how to answer a student's question: "${message}"\n\n${fullTranscript}\n\nWrite ONE final, clear answer for the student (2-4 sentences), combining the best of what they said.`);
+    } catch (e) { console.error('Final synthesis failed:', e.message); }
+  }
+  if (!finalAnswer) finalAnswer = round1Valid[0].text;
+
+  return {
+    transcript: [
+      ...round1Valid.map((r) => ({ round: 1, engine: r.name, text: r.text })),
+      ...round2.map((r) => ({ round: 2, engine: r.name, text: r.text })),
+    ],
+    previews: round1Valid.map((r) => ({ engine: r.key, name: r.name, preview: r.text })),
+    finalAnswer,
+    engines: round1Valid.map((r) => r.name),
+  };
 }
 
 // Guess Paper generator: 3 engines each write a portion, merged into one original practice paper.
@@ -180,8 +221,11 @@ async function generateGuessPaper({ section, subject, paperFormat, chapter }) {
   }));
   const successful = results.filter(Boolean);
   if (!successful.length) return { paper: 'Unable to generate a guess paper right now - please try again later.', generatedBy: [] };
-  return { paper: successful.map((r) => r.text).join('\n\n'), generatedBy: successful.map((r) => r.name) };
+  const paper = successful.map((r) => r.text).join('\n\n') + `\n\n---\nGenerated by AI (${successful.map((r) => r.name).join(', ')}) — original practice content, not an official exam paper.`;
+  return { paper, generatedBy: successful.map((r) => r.name) };
 }
+
+const REQUIRE_PRO_FOR_GUESS_PAPERS = false;
 
 function getEngineAvailability() {
   return { reasoner: Boolean(groqClient), solver: false, explorer: Boolean(openaiClient), storyteller: Boolean(anthropicClient) };
@@ -414,13 +458,19 @@ const server = http.createServer(async (req, res) => {
       if (!rl.allowed) return sendJson(res, 429, { error: "You're sending messages too quickly. Please wait a moment and try again.", retryAfterMs: rl.retryAfterMs });
       recordChatEvent(payload.visitorId, subject);
 
-      if (payload.roundtable === true) {
-        const previews = await roundtablePreview({ message, subject, userLevel });
-        return sendJson(res, 200, { status: 'ok', roundtable: true, previews, stats: getStatusSummary() });
-      }
-
       const { reply, engines } = await answerSmart({ message, subject, userLevel, excludeEngine: payload.excludeEngine });
       return sendJson(res, 200, { status: 'ok', reply, engine: engines.join(', '), model: MODEL_LABEL, stats: getStatusSummary() });
+    } catch (error) { return sendJson(res, 400, { error: error.message }); }
+  }
+
+  if (req.method === 'POST' && pathname === '/api/roundtable') {
+    try {
+      if (isRateLimited(getClientIp(req))) return sendJson(res, 429, { error: 'Rate limit exceeded' });
+      const payload = await parseRequestBody(req);
+      const message = (payload.message || '').trim();
+      if (!message) return sendJson(res, 400, { error: 'A message is required.' });
+      const result = await runRoundtableDebate({ message, subject: payload.subject || 'General', userLevel: payload.userLevel || 'Newbie' });
+      return sendJson(res, 200, { status: 'ok', ...result });
     } catch (error) { return sendJson(res, 400, { error: error.message }); }
   }
 
@@ -451,12 +501,17 @@ const server = http.createServer(async (req, res) => {
     try {
       if (isRateLimited(getClientIp(req))) return sendJson(res, 429, { error: 'Rate limit exceeded' });
       const payload = await parseRequestBody(req);
-      if ((payload.plan || 'free') !== 'pro') return sendJson(res, 403, { error: 'Guess Papers are a Student Pro feature.' });
+      if (REQUIRE_PRO_FOR_GUESS_PAPERS && (payload.plan || 'free') !== 'pro') {
+        return sendJson(res, 403, { error: 'Guess Papers are a Student Pro feature. Upgrade to unlock.' });
+      }
       const { section, subject, paperFormat, chapter } = payload;
       if (!section || !subject) return sendJson(res, 400, { error: 'section and subject are required.' });
       const result = await generateGuessPaper({ section, subject, paperFormat, chapter });
       return sendJson(res, 200, { status: 'ok', ...result });
-    } catch (error) { return sendJson(res, 400, { error: error.message }); }
+    } catch (error) {
+      console.error('Guess paper endpoint failed:', error.message);
+      return sendJson(res, 500, { error: 'Guess paper generation failed. Please try again.' });
+    }
   }
 
   if (req.method === 'POST' && pathname === '/api/book-flashcards') {

@@ -35,7 +35,7 @@
   <header class="site-nav"></header>
   <main class="books-main">
     <p class="eyebrow">Books</p>
-    <h1 style="margin:0 0 8px;">Starter catalog (14 real entries)</h1>
+    <h1 style="margin:0 0 8px;">Starter catalog (18 real entries)</h1>
     <p style="margin:0;color:var(--ink-soft);">Small and honest for launch. Add more real entries manually later in the same schema.</p>
     <div class="filters">
       <select id="sectionFilter"><option value="All">All sections</option></select>
@@ -62,7 +62,23 @@
       if (topBar) topBar.style.width = `${progress.pct}%`;
     }
 
-    function coverUrl(isbn) { return `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`; }
+    function createCoverElement(book) {
+      const wrap = document.createElement('div');
+      wrap.className = 'book-cover-wrap';
+      const img = document.createElement('img');
+      img.src = `https://covers.openlibrary.org/b/isbn/${book.isbn}-L.jpg`;
+      img.alt = book.title;
+      img.className = 'book-cover';
+      img.addEventListener('error', () => {
+        img.remove();
+        const placeholder = document.createElement('div');
+        placeholder.className = 'book-cover-placeholder';
+        placeholder.textContent = book.title.charAt(0);
+        wrap.appendChild(placeholder);
+      }, { once: true });
+      wrap.appendChild(img);
+      return wrap;
+    }
 
     function populateFilters() {
       const sections = Array.from(new Set(books.map((b) => b.section))).sort();
@@ -88,16 +104,23 @@
         return;
       }
 
-      booksGrid.innerHTML = filtered.map((book) => `
+      booksGrid.innerHTML = filtered.map((book, index) => `
         <article class="book-card">
-          <img src="${coverUrl(book.isbn)}" alt="${book.title}" style="width:100%;height:180px;object-fit:cover;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);">
+          <div class="book-cover-host" data-cover-index="${index}" style="margin-bottom:10px;"></div>
           <h3>${book.title}</h3>
           <p class="book-meta">${book.author}</p>
           <p class="book-desc">${book.description}</p>
           <div><span class="book-chip">${book.section}</span><span class="book-chip">${book.subject}</span><span class="book-chip">ISBN ${book.isbn}</span></div>
-          <a class="book-link" href="/book.html?id=${encodeURIComponent(book.id)}">Open book →</a>
+          <a class="book-link" href="/book.html?id=${book.id}">Open book →</a>
         </article>
       `).join('');
+
+      booksGrid.querySelectorAll('[data-cover-index]').forEach((host) => {
+        const index = Number(host.getAttribute('data-cover-index'));
+        const book = filtered[index];
+        if (!book) return;
+        host.appendChild(createCoverElement(book));
+      });
     }
 
     async function init() {
