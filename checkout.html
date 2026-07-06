@@ -135,6 +135,10 @@
   <script src="/layout.js" defer></script>
   <script src="https://secure.rapid-gateway.com/sdk/v1/rapidpay.js"></script>
   <script>
+    window.HUNGTER_API_BASE = window.HUNGTER_API_BASE || '';
+    const API_BASE = String(window.HUNGTER_API_BASE || '').replace(/\/$/, '');
+    const apiPath = (path) => `${API_BASE}${path}`;
+
     const plans = {
       student: { id: 'student', name: 'Student', price: 5, features: ['Unlimited messages', 'Every subject', 'Progress tracking', 'All 4 engines'] },
       family: { id: 'family', name: 'Family', price: 12, features: ['Up to 3 kids', 'Parent dashboard', 'Progress reports', 'All 4 engines'] },
@@ -194,7 +198,7 @@
     async function syncSubscriptionToServer(plan) {
       const token = getAuthToken();
       if (!token) return;
-      await fetch('/api/subscription', {
+      await fetch(apiPath('/api/subscription'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -210,7 +214,7 @@
     }
 
     async function createCheckoutSession(plan, email, mobile) {
-      const response = await fetch('/api/payments/checkout-session', {
+      const response = await fetch(apiPath('/api/payments/checkout-session'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -229,7 +233,7 @@
     }
 
     async function verifySession(sessionId) {
-      const response = await fetch('/api/payments/checkout-session?sessionId=' + encodeURIComponent(sessionId));
+      const response = await fetch(apiPath('/api/payments/checkout-session?sessionId=' + encodeURIComponent(sessionId)));
       const data = await response.json();
       if (!response.ok) {
         throw new Error(data.error || 'Unable to verify payment status.');

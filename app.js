@@ -45,7 +45,8 @@ function hideTyping() {
   if (typing) typing.remove();
 }
 
-const backendUrl = 'http://localhost:4000';
+window.HUNGTER_API_BASE = window.HUNGTER_API_BASE || '';
+const backendUrl = String(window.HUNGTER_API_BASE || '').replace(/\/$/, '');
 
 async function apiPost(path, payload) {
   const response = await fetch(`${backendUrl}${path}`, {

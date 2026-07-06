@@ -1,4 +1,15 @@
 const pageId = document.body.dataset.page;
+window.HUNGTER_API_BASE = window.HUNGTER_API_BASE || '';
+
+function getApiBase() {
+  return String(window.HUNGTER_API_BASE || '').replace(/\/$/, '');
+}
+
+function apiPath(path) {
+  const clean = String(path || '').startsWith('/') ? String(path) : `/${path}`;
+  return `${getApiBase()}${clean}`;
+}
+
 const subjects = [
   { name: 'Math', icon: '🔢', description: 'Numbers, equations, and problem solving.', category: 'Skills' },
   { name: 'Science', icon: '🔬', description: 'Experiment, explore, and understand the world.', category: 'Science' },
@@ -18,7 +29,9 @@ const navLinks = [
   { label: 'Dashboard', href: 'dashboard.html' },
   { label: 'Learn', href: 'learn.html' },
   { label: 'Subjects', href: 'subjects.html' },
+  { label: 'Books', href: 'books.html' },
   { label: 'Quiz', href: 'quiz.html' },
+  { label: 'Guess Papers', href: 'guess-papers.html' },
   { label: 'Progress', href: 'progress.html' },
   { label: 'Chat', href: 'chat.html' }
 ];
@@ -55,7 +68,7 @@ async function authRequest(path, method = 'GET', payload = null) {
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
-  const response = await fetch(path, {
+  const response = await fetch(apiPath(path), {
     method,
     headers,
     body: payload ? JSON.stringify(payload) : undefined,
@@ -366,7 +379,7 @@ function buildNav() {
 }
 
 function apiPost(path, payload) {
-  return fetch(path, {
+  return fetch(apiPath(path), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -662,7 +675,7 @@ function initProfile() {
 async function initPage() {
   await hydrateProfileFromAuth();
   const publicPages = ['index', 'signup', 'onboarding', 'checkout'];
-  const appPages = ['dashboard', 'learn', 'subjects', 'quiz', 'progress', 'chat', 'profile'];
+  const appPages = ['dashboard', 'learn', 'subjects', 'quiz', 'progress', 'chat', 'profile', 'flashcards'];
   const hasProfile = Boolean((lsGet('mm_name', '') || '').trim());
   const hasSubscription = String(lsGet('mm_plan_status', '') || '').toLowerCase() === 'active';
 

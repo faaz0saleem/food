@@ -102,6 +102,10 @@
 <script src="/layout.js" defer></script>
 <script>
 (function () {
+  window.HUNGTER_API_BASE = window.HUNGTER_API_BASE || '';
+  const API_BASE = String(window.HUNGTER_API_BASE || '').replace(/\/$/, '');
+  const apiPath = (path) => `${API_BASE}${path}`;
+
   const keyGate = document.getElementById('keyGate');
   const adminBody = document.getElementById('adminBody');
   const keyInput = document.getElementById('keyInput');
@@ -155,7 +159,7 @@
   }
 
   async function loadStats(key) {
-    const res = await fetch('/api/admin-stats', { headers: { 'X-Admin-Key': key } });
+    const res = await fetch(apiPath('/api/admin-stats'), { headers: { 'X-Admin-Key': key } });
     if (!res.ok) {
       throw new Error(res.status === 401 ? 'Invalid admin key.' : `Server error (${res.status}).`);
     }

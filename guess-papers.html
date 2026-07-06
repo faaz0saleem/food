@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- BASE_URL: https://YOUR_DOMAIN_HERE -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MindMesh — Guess Papers</title>
+  <meta name="description" content="Generate original AI guess papers for focused exam practice.">
+  <link rel="canonical" href="https://YOUR_DOMAIN_HERE/guess-papers.html">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="MindMesh — Guess Papers">
+  <meta property="og:description" content="Create original practice papers and print them for exam mode.">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/brand.css">
+  <link rel="stylesheet" href="/nav.css">
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    .top-bar { height: 4px; background: var(--surface-2); }
+    .top-bar-fill { height: 100%; background: linear-gradient(90deg,var(--lime),var(--blue)); width: 0%; }
+    .gp-main { max-width: var(--container); margin: 0 auto; padding: 24px 16px 44px; }
+    .gp-card { background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px; }
+    .gp-grid { display:grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap:10px; }
+    .gp-grid input, .gp-grid select { border:2px solid var(--border); background:var(--surface-2); color:var(--ink); border-radius:10px; padding:10px; }
+    .btn-row { display:flex; gap:8px; flex-wrap:wrap; margin-top: 10px; }
+    .btn { border:1px solid var(--border); background:var(--surface-2); color:var(--ink); border-radius:999px; padding:8px 12px; cursor:pointer; }
+    .btn.primary { background:var(--lime); color:var(--bg-deep); border:none; box-shadow:var(--shadow-sm); }
+    .spinner { width:14px; height:14px; border:2px solid var(--border); border-top-color: var(--lime); border-radius:50%; animation:spin 1s linear infinite; display:inline-block; vertical-align:middle; margin-right:6px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .paper-box { white-space: pre-wrap; margin-top:12px; color:var(--ink-soft); }
+    @media print {
+      body * { visibility: hidden; }
+      #paperOut, #paperOut * { visibility: visible; }
+      #paperOut { position: absolute; left: 0; top: 0; width: 100%; color:#000; }
+    }
+  </style>
+</head>
+<body data-page="guess-papers">
+  <div class="top-bar"><div class="top-bar-fill" id="topBar"></div></div>
+  <header class="site-nav"></header>
+  <main class="gp-main">
+    <div class="gp-card">
+      <p class="eyebrow">Student Pro</p>
+      <h1 style="margin:0 0 8px;">Guess Papers</h1>
+      <div class="gp-grid">
+        <input id="sectionInput" placeholder="Section e.g. O-Level">
+        <input id="subjectInput" placeholder="Subject e.g. Physics">
+        <input id="chapterInput" placeholder="Chapter/topic (optional)">
+        <input id="formatInput" placeholder="Paper format e.g. 60 minutes">
+      </div>
+      <div class="btn-row">
+        <button id="generatePaper" class="btn primary" type="button">Generate paper</button>
+        <button id="printPaper" class="btn" type="button">Print / Save as PDF</button>
+      </div>
+      <p id="loadingMsg" style="display:none;color:var(--ink-soft);margin-top:8px;"><span class="spinner"></span>Generating with all 3 AIs - this can take 10-30 seconds...</p>
+      <div id="paperOut" class="paper-box"></div>
+    </div>
+  </main>
+
+  <script src="/api-config.js"></script>
+  <script src="/script.js"></script>
+  <script src="/layout.js" defer></script>
+  <script>
+    ensureProfile();
+    window.HUNGTER_API_BASE = window.HUNGTER_API_BASE || '';
+    const API_BASE = String(window.HUNGTER_API_BASE || '').replace(/\/$/, '');
+    const apiPath = (path) => `${API_BASE}${path}`;
+
+    const topBar = document.getElementById('topBar');
+    const sectionInput = document.getElementById('sectionInput');
+    const subjectInput = document.getElementById('subjectInput');
+    const chapterInput = document.getElementById('chapterInput');
+    const formatInput = document.getElementById('formatInput');
+    const loadingMsg = document.getElementById('loadingMsg');
+    const paperOut = document.getElementById('paperOut');
+
+    function refreshTopBar() {
+      const progress = getLevelProgress();
+      if (topBar) topBar.style.width = `${progress.pct}%`;
+    }
+
+    document.getElementById('generatePaper')?.addEventListener('click', async () => {
+      const section = sectionInput.value.trim();
+      const subject = subjectInput.value.trim();
+      const chapter = chapterInput.value.trim();
+      const paperFormat = formatInput.value.trim() || '60 minutes';
+      if (!section || !subject) {
+        paperOut.textContent = 'Section and subject are required.';
+        return;
+      }
+
+      try {
+        loadingMsg.style.display = 'block';
+        paperOut.textContent = '';
+        const plan = String(lsGet('mm_plan', 'free')).toLowerCase().includes('pro') ? 'pro' : 'free';
+        const response = await fetch(apiPath('/api/guess-paper'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ plan, section, subject, chapter, paperFormat }),
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || 'Could not generate paper.');
+        }
+        paperOut.textContent = data.paper || 'No paper generated.';
+      } catch (error) {
+        paperOut.textContent = error.message;
+      } finally {
+        loadingMsg.style.display = 'none';
+      }
+    });
+
+    document.getElementById('printPaper')?.addEventListener('click', () => window.print());
+
+    refreshTopBar();
+  </script>
+</body>
+</html>

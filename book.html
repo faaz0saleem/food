@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- BASE_URL: https://YOUR_DOMAIN_HERE -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MindMesh — Book</title>
+  <meta name="description" content="Book detail with chapter-aware AI quiz, flashcards, and guess paper generation.">
+  <link rel="canonical" href="https://YOUR_DOMAIN_HERE/book.html">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="MindMesh — Book">
+  <meta property="og:description" content="Use AI actions on selected topics without reproducing source text.">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/brand.css">
+  <link rel="stylesheet" href="/nav.css">
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    .top-bar { height: 4px; background: var(--surface-2); }
+    .top-bar-fill { height: 100%; background: linear-gradient(90deg,var(--lime),var(--blue)); width: 0%; }
+    .book-main { max-width: var(--container); margin: 0 auto; padding: 22px 16px 44px; }
+    .book-layout { display: grid; grid-template-columns: 280px 1fr; gap: 18px; }
+    .book-panel { background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius-sm); box-shadow: var(--shadow-sm); padding: 14px; }
+    .topic-select { width: 100%; border: 2px solid var(--border); background: var(--surface-2); color: var(--ink); border-radius: 12px; padding: 10px; margin: 10px 0; }
+    .btn-row { display:flex; flex-wrap: wrap; gap:8px; margin-top: 8px; }
+    .btn { border:1px solid var(--border); background: var(--surface-2); color: var(--ink); border-radius: 999px; padding: 8px 12px; cursor: pointer; }
+    .btn.primary { background: var(--lime); color: var(--bg-deep); border: none; box-shadow: var(--shadow-sm); }
+    .loading { display:none; margin-top: 8px; color: var(--ink-soft); }
+    .loading.show { display:flex; align-items:center; gap:8px; }
+    .spinner { width:14px; height:14px; border-radius:50%; border:2px solid var(--border); border-top-color: var(--lime); animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .result-box { margin-top: 12px; white-space: pre-wrap; color: var(--ink-soft); }
+    .faq-item { border-top:1px solid var(--border-soft); padding-top:10px; margin-top:10px; }
+    .similar-row { display:grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap:10px; margin-top:10px; }
+    .review-form textarea, .review-form input { width:100%; border:2px solid var(--border); background:var(--surface-2); color:var(--ink); border-radius:10px; padding:8px; margin:6px 0; }
+    @media (max-width: 860px) { .book-layout { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body data-page="book">
+  <div class="top-bar"><div class="top-bar-fill" id="topBar"></div></div>
+  <header class="site-nav"></header>
+  <main class="book-main">
+    <div id="bookContent" class="book-layout"></div>
+  </main>
+
+  <script src="/api-config.js"></script>
+  <script src="/script.js"></script>
+  <script src="/layout.js" defer></script>
+  <script>
+    ensureProfile();
+    window.HUNGTER_API_BASE = window.HUNGTER_API_BASE || '';
+    const API_BASE = String(window.HUNGTER_API_BASE || '').replace(/\/$/, '');
+    const apiPath = (path) => `${API_BASE}${path}`;
+
+    const topBar = document.getElementById('topBar');
+    const content = document.getElementById('bookContent');
+
+    function refreshTopBar() {
+      const progress = getLevelProgress();
+      if (topBar) topBar.style.width = `${progress.pct}%`;
+    }
+
+    function coverUrl(isbn) { return `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`; }
+    function buyUrl(isbn) { return `https://www.amazon.com/s?k=${isbn}&tag=YOURTAG-20`; }
+
+    function getPlan() {
+      const raw = lsGet('mm_plan', 'free');
+      return String(raw || 'free').toLowerCase().includes('pro') ? 'pro' : 'free';
+    }
+
+    function getBookId() {
+      return new URLSearchParams(window.location.search).get('id');
+    }
+
+    function getSectionFaq(section) {
+      const map = {
+        'O-Level': [
+          'How should I use this with past papers?',
+          'Can I focus one topic each week?'
+        ],
+        'A-Level': [
+          'How deep should worked solutions be?',
+          'How often should I review derivations?'
+        ],
+        'SAT': [
+          'Should I do timed drills daily?',
+          'How do I split math vs reading prep?'
+        ],
+        'PSAT': [
+          'How early should I start prep?',
+          'What score goals are realistic?'
+        ],
+        'GCSE': [
+          'Should I revise by weak units first?',
+          'How many questions per session?'
+        ],
+        'High School': [
+          'How do I keep concepts from piling up?',
+          'What review pattern works best?'
+        ]
+      };
+      return map[section] || ['How should I use this book?', 'What is a good weekly routine?'];
+    }
+
+    function saveReview(bookId, review) {
+      const key = `mm_book_reviews_${bookId}`;
+      const items = lsGet(key, []);
+      items.push(review);
+      lsSet(key, items.slice(-100));
+    }
+
+    function getReviews(bookId) {
+      return lsGet(`mm_book_reviews_${bookId}`, []);
+    }
+
+    function appendGeneratedFlashcards(cards, bookTitle) {
+      const existing = lsGet('mm_flashcards', []);
+      const mapped = (cards || []).map((card) => ({
+        front: card.front,
+        back: card.back,
+        source: `Book: ${bookTitle}`,
+        nextReviewDate: new Date(Date.now() + 2 * 86400000).toISOString().slice(0, 10),
+        createdAt: new Date().toISOString(),
+      }));
+      lsSet('mm_flashcards', existing.concat(mapped).slice(-400));
+    }
+
+    async function postJson(path, payload) {
+      const response = await fetch(apiPath(path), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Request failed');
+      }
+      return data;
+    }
+
+    function renderBook(book, allBooks) {
+      const similar = allBooks.filter((b) => b.id !== book.id && b.section === book.section && b.subject === book.subject).slice(0, 3);
+      const sectionFaq = getSectionFaq(book.section);
+      const reviews = getReviews(book.id);
+
+      content.innerHTML = `
+        <aside class="book-panel">
+          <img src="${coverUrl(book.isbn)}" alt="${book.title}" style="width:100%;height:320px;object-fit:cover;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);">
+          <a href="${buyUrl(book.isbn)}" target="_blank" rel="noopener" class="btn primary" style="display:inline-flex;margin-top:10px;">Buy on Amazon</a>
+          <div class="btn-row">
+            <button class="btn" id="quizBtn">Generate Quiz</button>
+            <button class="btn" id="flashBtn">Generate Flashcards</button>
+            <button class="btn" id="paperBtn">Generate Guess Paper</button>
+          </div>
+          <div id="loadingState" class="loading"><span class="spinner"></span><span>Generating with all 3 AIs - this can take 10-30 seconds...</span></div>
+        </aside>
+        <section class="book-panel">
+          <p class="eyebrow">${book.section} · ${book.subject}</p>
+          <h1 style="margin:0 0 8px;">${book.title}</h1>
+          <p style="margin:0;color:var(--ink-faint);">${book.author} · ISBN ${book.isbn}</p>
+          <p style="margin:10px 0;color:var(--ink-soft);">${book.description}</p>
+
+          <label for="topicSelect" class="quiz-label">Chapter / topic</label>
+          <select id="topicSelect" class="topic-select">
+            <option value="">Whole subject (all topics)</option>
+            ${(book.topics || []).map((topic) => `<option value="${topic}">${topic}</option>`).join('')}
+          </select>
+
+          <div class="btn-row" style="margin-top:6px;">
+            <button class="btn" id="chapterSummaryBtn">Summarize this chapter's approach</button>
+            <button class="btn" id="studyPlanBtn">Build my study plan</button>
+            <button class="btn" id="compareBooksBtn">Compare with similar books</button>
+          </div>
+
+          <div id="resultBox" class="result-box"></div>
+
+          <div class="faq-item"><h3 style="margin:0 0 6px;">Section FAQ</h3>
+            ${sectionFaq.map((q) => `<details style="margin:6px 0;"><summary>${q}</summary><p style="color:var(--ink-soft);">Use topic-focused quizzes and flashcards, then ask AI for a compact recap before moving on.</p></details>`).join('')}
+          </div>
+
+          <div class="faq-item"><h3 style="margin:0 0 6px;">Similar books</h3>
+            <div class="similar-row">
+              ${similar.length ? similar.map((item) => `<a class="book-panel" style="padding:10px;display:block;" href="/book.html?id=${encodeURIComponent(item.id)}"><strong>${item.title}</strong><p style="margin:6px 0 0;color:var(--ink-faint);">${item.section} · ${item.subject}</p></a>`).join('') : '<p style="color:var(--ink-soft);">No close matches yet.</p>'}
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <h3 style="margin:0 0 6px;">Honest reviews</h3>
+            <form id="reviewForm" class="review-form">
+              <input id="reviewName" placeholder="Name (optional)">
+              <textarea id="reviewText" rows="3" placeholder="Write your review"></textarea>
+              <button type="submit" class="btn">Submit review</button>
+            </form>
+            <div id="reviewsList" style="margin-top:8px;">${reviews.length ? reviews.slice().reverse().map((r) => `<article style="border-top:1px solid var(--border-soft);padding-top:8px;margin-top:8px;"><strong>${r.name || 'Anonymous'}</strong><p style="margin:4px 0 0;color:var(--ink-soft);">${r.text}</p></article>`).join('') : '<p style="color:var(--ink-soft);">No reviews yet.</p>'}</div>
+          </div>
+        </section>
+      `;
+
+      const topicSelect = document.getElementById('topicSelect');
+      const resultBox = document.getElementById('resultBox');
+      const loadingState = document.getElementById('loadingState');
+      const showLoading = (flag) => loadingState.classList.toggle('show', flag);
+
+      document.getElementById('quizBtn')?.addEventListener('click', async () => {
+        try {
+          showLoading(true);
+          resultBox.textContent = '';
+          const chapter = topicSelect.value;
+          const questions = await postJson('/api/quiz', {
+            subject: book.subject,
+            chapter,
+            bookContext: book.title,
+            count: 5,
+            askedQuestions: [],
+          });
+          const list = Array.isArray(questions) ? questions : [];
+          resultBox.textContent = list.length
+            ? list.map((q, i) => `${i + 1}. ${q.question}\n${(q.options || []).join('\n')}\n`).join('\n')
+            : 'No quiz generated.';
+        } catch (error) {
+          resultBox.textContent = error.message;
+        } finally {
+          showLoading(false);
+        }
+      });
+
+      document.getElementById('flashBtn')?.addEventListener('click', async () => {
+        try {
+          showLoading(true);
+          resultBox.textContent = '';
+          const chapter = topicSelect.value;
+          const data = await postJson('/api/book-flashcards', {
+            subject: book.subject,
+            chapter,
+            bookContext: book.title,
+          });
+          const cards = data.cards || [];
+          appendGeneratedFlashcards(cards, book.title);
+          resultBox.textContent = cards.map((card, i) => `${i + 1}. ${card.front} -> ${card.back}`).join('\n\n') || 'No flashcards generated.';
+        } catch (error) {
+          resultBox.textContent = error.message;
+        } finally {
+          showLoading(false);
+        }
+      });
+
+      document.getElementById('paperBtn')?.addEventListener('click', async () => {
+        try {
+          showLoading(true);
+          resultBox.textContent = '';
+          const chapter = topicSelect.value;
+          const data = await postJson('/api/guess-paper', {
+            plan: getPlan(),
+            section: book.section,
+            subject: book.subject,
+            chapter,
+            paperFormat: '60 minutes',
+          });
+          resultBox.textContent = data.paper || 'No paper generated.';
+        } catch (error) {
+          resultBox.textContent = error.message;
+        } finally {
+          showLoading(false);
+        }
+      });
+
+      document.getElementById('chapterSummaryBtn')?.addEventListener('click', async () => {
+        try {
+          showLoading(true);
+          const chapter = topicSelect.value || book.subject;
+          const data = await postJson('/api/chat', {
+            visitorId: getSessionId(),
+            subject: book.subject,
+            message: `Summarize what the topic ${chapter} generally covers in three concise bullets. Do not quote any textbook.`
+          });
+          resultBox.textContent = data.reply || 'No summary generated.';
+        } catch (error) {
+          resultBox.textContent = error.message;
+        } finally {
+          showLoading(false);
+        }
+      });
+
+      document.getElementById('studyPlanBtn')?.addEventListener('click', () => {
+        const dateInput = prompt('Enter exam date (YYYY-MM-DD):');
+        if (!dateInput) return;
+        const examDate = new Date(dateInput);
+        if (Number.isNaN(examDate.getTime())) {
+          resultBox.textContent = 'Invalid date format.';
+          return;
+        }
+        const now = new Date();
+        const days = Math.max(1, Math.ceil((examDate - now) / 86400000));
+        const topics = (book.topics || []).length ? book.topics : [book.subject];
+        const plan = [];
+        for (let i = 0; i < days; i += 1) {
+          const day = new Date(now.getTime() + i * 86400000);
+          const topic = topics[i % topics.length];
+          plan.push({ date: day.toISOString().slice(0, 10), topic, bookId: book.id, bookTitle: book.title });
+        }
+        const existing = lsGet('mm_study_plans', []);
+        lsSet('mm_study_plans', existing.concat(plan).slice(-400));
+        resultBox.textContent = `Study plan saved with ${plan.length} day entries.`;
+      });
+
+      document.getElementById('compareBooksBtn')?.addEventListener('click', async () => {
+        try {
+          showLoading(true);
+          const compareTitles = similar.map((s) => s.title).join(', ') || 'none';
+          const data = await postJson('/api/chat', {
+            visitorId: getSessionId(),
+            subject: book.subject,
+            message: `In 3 short bullets, compare ${book.title} with these similar books: ${compareTitles}. Keep it practical for students.`
+          });
+          resultBox.textContent = data.reply || 'No comparison generated.';
+        } catch (error) {
+          resultBox.textContent = error.message;
+        } finally {
+          showLoading(false);
+        }
+      });
+
+      document.getElementById('reviewForm')?.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const name = document.getElementById('reviewName').value.trim();
+        const text = document.getElementById('reviewText').value.trim();
+        if (!text) return;
+        saveReview(book.id, { name, text, createdAt: new Date().toISOString() });
+        renderBook(book, allBooks);
+      });
+    }
+
+    async function init() {
+      const res = await fetch('/data/books.json');
+      const books = await res.json();
+      const id = getBookId();
+      const book = books.find((item) => item.id === id) || books[0];
+      if (!book) {
+        content.innerHTML = '<p>Book not found.</p>';
+        return;
+      }
+      renderBook(book, books);
+      refreshTopBar();
+    }
+
+    init().catch(() => { content.innerHTML = '<p style="color:var(--coral)">Unable to load book details right now.</p>'; });
+  </script>
+</body>
+</html>

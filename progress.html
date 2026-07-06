@@ -192,7 +192,8 @@
     </section>
   </main>
 
-  <script src="/script.js"></script>
+  <script src="/api-config.js"></script>
+<script src="/script.js"></script>
   <script src="/layout.js" defer></script>
   <script>
     ensureProfile();
@@ -215,7 +216,37 @@
       }
     }
 
-    const stats = {
+    function decodeReadonlySnapshot() {
+      const params = new URLSearchParams(window.location.search);
+      const encoded = params.get('readonly');
+      if (!encoded) return null;
+      try {
+        const json = decodeURIComponent(escape(atob(encoded)));
+        return JSON.parse(json);
+      } catch {
+        return null;
+      }
+    }
+
+    const readonlySnapshot = decodeReadonlySnapshot();
+    if (readonlySnapshot) {
+      document.getElementById('refresh-ai')?.remove();
+      document.getElementById('view-milestones')?.remove();
+      const printBtn = document.getElementById('printProgress');
+      if (printBtn) {
+        printBtn.textContent = 'Print shared snapshot';
+      }
+    }
+
+    const stats = readonlySnapshot ? {
+      count: Number(readonlySnapshot.count || 0),
+      level: String(readonlySnapshot?.progress?.level || 'Newbie'),
+      streak: Array.isArray(readonlySnapshot.streak) ? readonlySnapshot.streak : [],
+      subjects: readonlySnapshot.subjectCounts && typeof readonlySnapshot.subjectCounts === 'object' ? readonlySnapshot.subjectCounts : {},
+      quizzes: readonlySnapshot.quizScores && typeof readonlySnapshot.quizScores === 'object' ? readonlySnapshot.quizScores : {},
+      milestones: Array.isArray(readonlySnapshot.milestones) ? readonlySnapshot.milestones : [],
+      favorite: Object.keys(readonlySnapshot.subjectCounts || {})[0] || 'Science',
+    } : {
       count: lsGet('mm_count', 0),
       level: lsGet('mm_level', 'Newbie'),
       streak: lsGet('mm_streak', []),
@@ -228,7 +259,7 @@
     const scores = Object.values(stats.quizzes).flat();
     const quizCount = scores.length;
     const avgScore = quizCount ? Math.round(scores.reduce((sum, value) => sum + value, 0) / quizCount) : 0;
-    const xpValue = calculateXP();
+    const xpValue = readonlySnapshot ? Number(readonlySnapshot.totalXP || 0) : calculateXP();
     const xpTarget = 10000;
     const progressPercent = Math.min(100, Math.round((xpValue / xpTarget) * 100));
     const weakArea = getWeakArea();
@@ -402,15 +433,20 @@
       }
     }
 
-    document.getElementById('refresh-ai').addEventListener('click', loadGrokInsight);
-    document.getElementById('view-milestones').addEventListener('click', () => {
+    document.getElementById('refresh-ai')?.addEventListener('click', loadGrokInsight);
+    document.getElementById('view-milestones')?.addEventListener('click', () => {
       window.location.href = '/dashboard.html';
     });
 
     refreshTopBar();
     buildPerformanceChart(performanceData, performanceLabels);
     buildRadarChart();
-    loadGrokInsight();
+    if (!readonlySnapshot) {
+      loadGrokInsight();
+    } else {
+      const aiText = document.getElementById('ai-coach-text');
+      if (aiText) aiText.textContent = `Readonly snapshot generated on ${new Date(readonlySnapshot.generatedAt || Date.now()).toLocaleString()}.`;
+    }
   </script>
 </body>
 </html>

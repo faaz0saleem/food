@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- BASE_URL: https://YOUR_DOMAIN_HERE -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MindMesh — Flashcards</title>
+  <meta name="description" content="Review generated flashcards from your chat history and quiz mistakes.">
+  <link rel="canonical" href="https://YOUR_DOMAIN_HERE/flashcards.html">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="MindMesh — Flashcards">
+  <meta property="og:description" content="Turn mistakes and conversations into quick review cards.">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/brand.css">
+  <link rel="stylesheet" href="/nav.css">
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    .top-bar { height: 4px; background: var(--surface-2); }
+    .top-bar-fill { height: 100%; background: linear-gradient(90deg,var(--lime),var(--blue)); width: 0%; }
+    .flashcards-main { max-width: var(--container); margin: 0 auto; padding: 22px 16px 40px; }
+    .flashcards-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(260px,1fr)); gap: 14px; margin-top: 16px; }
+    .flashcard { background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius-sm); box-shadow: var(--shadow-sm); padding: 16px; }
+    .flashcard h3 { margin: 0 0 8px; font-size: 1rem; }
+    .flashcard p { margin: 0 0 8px; color: var(--ink-soft); }
+    .flash-meta { font-family: var(--font-mono); color: var(--ink-faint); font-size: 0.75rem; }
+    .flash-actions { display: flex; gap: 8px; margin-top: 10px; }
+    .btn { border: 1px solid var(--border); background: var(--surface-2); color: var(--ink); border-radius: 999px; padding: 7px 12px; cursor: pointer; }
+    .btn.primary { background: var(--lime); color: var(--bg-deep); border: none; box-shadow: var(--shadow-sm); }
+    .empty { color: var(--ink-soft); }
+  </style>
+</head>
+<body data-page="flashcards">
+  <div class="top-bar"><div class="top-bar-fill" id="topBar"></div></div>
+  <header class="site-nav"></header>
+  <main class="flashcards-main">
+    <p class="eyebrow">Review</p>
+    <h1 style="margin:0 0 8px;">Flashcards from your learning trail</h1>
+    <p style="margin:0;color:var(--ink-soft);">Built from chat conversations and wrong quiz answers. Cards are saved in localStorage as mm_flashcards.</p>
+    <div class="flash-actions">
+      <button id="generateCards" type="button" class="btn primary">Generate from my data</button>
+      <button id="clearCards" type="button" class="btn">Clear all cards</button>
+    </div>
+    <div id="cardsArea" class="flashcards-grid"></div>
+  </main>
+
+  <script src="/api-config.js"></script>
+<script src="/script.js"></script>
+  <script src="/layout.js" defer></script>
+  <script>
+    ensureProfile();
+
+    const topBar = document.getElementById('topBar');
+    const cardsArea = document.getElementById('cardsArea');
+
+    function refreshTopBar() {
+      const progress = getLevelProgress();
+      if (topBar) topBar.style.width = `${progress.pct}%`;
+    }
+
+    function loadCards() {
+      return lsGet('mm_flashcards', []);
+    }
+
+    function saveCards(cards) {
+      lsSet('mm_flashcards', cards);
+    }
+
+    function nextReviewDate(days = 2) {
+      const date = new Date();
+      date.setDate(date.getDate() + days);
+      return date.toISOString().slice(0, 10);
+    }
+
+    function buildCardsFromData() {
+      const conversations = lsGet('mm_conversations', []).slice(-20);
+      const wrongAnswers = lsGet('mm_wrong_answers', []).slice(-20);
+      const generated = [];
+
+      conversations.forEach((item) => {
+        const question = String(item.userMessage || '').trim();
+        const answer = String(item.aiReply || '').trim();
+        if (!question || !answer) return;
+        generated.push({
+          front: question,
+          back: answer.slice(0, 280),
+          source: item.subject || 'Chat',
+          nextReviewDate: nextReviewDate(2),
+          createdAt: new Date().toISOString(),
+        });
+      });
+
+      wrongAnswers.forEach((item) => {
+        generated.push({
+          front: `${item.subject || 'Quiz'}: ${item.question || 'Review this question'}`,
+          back: `Correct answer: ${item.correct || 'N/A'}${item.explanation ? `. ${item.explanation}` : ''}`,
+          source: 'Quiz Mistake',
+          nextReviewDate: nextReviewDate(1),
+          createdAt: new Date().toISOString(),
+        });
+      });
+
+      const existing = loadCards();
+      const combined = existing.concat(generated).slice(-300);
+      saveCards(combined);
+      return combined;
+    }
+
+    function renderCards() {
+      const cards = loadCards();
+      if (!cards.length) {
+        cardsArea.innerHTML = '<p class="empty">No cards yet. Generate from your recent data.</p>';
+        return;
+      }
+
+      cardsArea.innerHTML = cards.slice().reverse().map((card, index) => `
+        <article class="flashcard">
+          <h3>Front</h3>
+          <p>${card.front || ''}</p>
+          <h3>Back</h3>
+          <p>${card.back || ''}</p>
+          <div class="flash-meta">Source: ${card.source || 'Unknown'} · Next review: ${card.nextReviewDate || 'N/A'}</div>
+          <div class="flash-actions">
+            <button type="button" class="btn" data-delay="1" data-index="${index}">Review tomorrow</button>
+            <button type="button" class="btn" data-delay="3" data-index="${index}">Review in 3 days</button>
+          </div>
+        </article>
+      `).join('');
+
+      cardsArea.querySelectorAll('[data-delay]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const delay = Number(button.getAttribute('data-delay') || 2);
+          const reverseIndex = Number(button.getAttribute('data-index') || 0);
+          const cards = loadCards();
+          const index = cards.length - 1 - reverseIndex;
+          if (!cards[index]) return;
+          cards[index].nextReviewDate = nextReviewDate(delay);
+          saveCards(cards);
+          renderCards();
+        });
+      });
+    }
+
+    document.getElementById('generateCards')?.addEventListener('click', () => {
+      buildCardsFromData();
+      renderCards();
+    });
+
+    document.getElementById('clearCards')?.addEventListener('click', () => {
+      if (!confirm('Clear all flashcards?')) return;
+      saveCards([]);
+      renderCards();
+    });
+
+    refreshTopBar();
+    renderCards();
+  </script>
+</body>
+</html>

@@ -142,7 +142,8 @@
     </section>
   </main>
 
-  <script src="/script.js"></script>
+  <script src="/api-config.js"></script>
+<script src="/script.js"></script>
   <script src="/layout.js" defer></script>
   <script>
     ensureProfile();
@@ -225,6 +226,7 @@
     let currentIndex = 0;
     let score = 0;
     let currentSelection = null;
+    let wrongAnswers = [];
 
     function refreshTopBar() {
       const progress = getLevelProgress();
@@ -360,6 +362,10 @@
       const milestones = lsGet('mm_milestones', []);
       milestones.push({ event: `Completed ${selectedCount}-question quiz in ${selectedSubject}`, date: new Date().toLocaleDateString() });
       lsSet('mm_milestones', milestones);
+      if (wrongAnswers.length) {
+        const existingWrong = lsGet('mm_wrong_answers', []);
+        lsSet('mm_wrong_answers', existingWrong.concat(wrongAnswers).slice(-200));
+      }
     }
 
     async function startQuiz() {
@@ -369,6 +375,7 @@
       quizQuestions = await fetchQuizQuestions(selectedSubject, selectedCount);
       currentIndex = 0;
       score = 0;
+      wrongAnswers = [];
       showSection('quiz');
       renderQuestion();
     }
@@ -379,6 +386,7 @@
       quizQuestions = await fetchQuizQuestions(selectedSubject, selectedCount);
       currentIndex = 0;
       score = 0;
+      wrongAnswers = [];
       renderQuestion();
     }
 
@@ -425,6 +433,15 @@
       const answer = current.answer || current.correct;
       if (currentSelection === answer) {
         score += 1;
+      } else {
+        wrongAnswers.push({
+          subject: selectedSubject,
+          question: current.question,
+          selected: currentSelection,
+          correct: answer,
+          explanation: current.explanation || '',
+          date: new Date().toISOString(),
+        });
       }
       if (currentIndex + 1 < quizQuestions.length) {
         currentIndex += 1;

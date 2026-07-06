@@ -5,8 +5,6 @@ const fs = require('node:fs');
 const REQUIRED_FILES = [
   'index.html',
   'server.js',
-  'engines.js',
-  'stats-core.js',
   'layout.js',
   'brand.css',
   'netlify.toml',

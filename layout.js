@@ -1,9 +1,18 @@
 (function () {
+  window.HUNGTER_API_BASE = window.HUNGTER_API_BASE || '';
+  const API_BASE = String(window.HUNGTER_API_BASE || '').replace(/\/$/, '');
+  function apiPath(path) {
+    const clean = String(path || '').startsWith('/') ? String(path) : `/${path}`;
+    return `${API_BASE}${clean}`;
+  }
+
   const NAV_LINKS = [
     { label: 'Dashboard', href: '/dashboard.html' },
     { label: 'Learn', href: '/learn.html' },
     { label: 'Subjects', href: '/subjects.html' },
+    { label: 'Books', href: '/books.html' },
     { label: 'Quiz', href: '/quiz.html' },
+    { label: 'Guess Papers', href: '/guess-papers.html' },
     { label: 'Progress', href: '/progress.html' },
     { label: 'Chat', href: '/chat.html' },
   ];
@@ -269,7 +278,7 @@
       sticker.textContent = `${liveFallback} engine${liveFallback === 1 ? '' : 's'} live · ${4 - liveFallback} coming soon`;
     }
     try {
-      const response = await fetch('/api/status');
+      const response = await fetch(apiPath('/api/status'));
       const data = await response.json();
       if (data.engines) {
         if (container) renderEngineCards(container, data.engines);

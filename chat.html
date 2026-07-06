@@ -74,6 +74,7 @@
   </div>
 </main>
 
+<script src="/api-config.js"></script>
 <script src="/script.js"></script>
 <script src="/layout.js" defer></script>
 <script>
@@ -113,8 +114,13 @@
   }
 
   function resolveApiBases() {
+    const configuredGlobal = normalizeBase(window.HUNGTER_API_BASE || '');
     const stored = normalizeBase(localStorage.getItem('mm_api_base'));
     const bases = [];
+
+    if (configuredGlobal) {
+      bases.push(configuredGlobal);
+    }
 
     if (stored && !(isProductionHost() && baseLooksLocal(stored))) {
       bases.push(stored);

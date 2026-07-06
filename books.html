@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- BASE_URL: https://YOUR_DOMAIN_HERE -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MindMesh — Books</title>
+  <meta name="description" content="Browse the Hungter starter catalog of real study books by section and subject.">
+  <link rel="canonical" href="https://YOUR_DOMAIN_HERE/books.html">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="MindMesh — Books">
+  <meta property="og:description" content="Find trusted study books and open chapter-aware AI actions.">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/brand.css">
+  <link rel="stylesheet" href="/nav.css">
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    .top-bar { height: 4px; background: var(--surface-2); }
+    .top-bar-fill { height: 100%; background: linear-gradient(90deg,var(--lime),var(--blue)); width: 0%; }
+    .books-main { max-width: var(--container); margin: 0 auto; padding: 24px 16px 40px; }
+    .filters { display: grid; grid-template-columns: repeat(auto-fit,minmax(170px,1fr)); gap: 10px; margin: 14px 0 18px; }
+    .filters select, .filters input { border: 2px solid var(--border); background: var(--surface); color: var(--ink); border-radius: 12px; padding: 10px 12px; }
+    .books-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(250px,1fr)); gap: 14px; }
+    .book-card { background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius-sm); box-shadow: var(--shadow-sm); padding: 14px; transform: rotate(-0.5deg); }
+    .book-card:nth-child(even) { transform: rotate(0.5deg); }
+    .book-card h3 { margin: 8px 0 6px; font-size: 1.02rem; }
+    .book-meta { color: var(--ink-faint); font-size: 0.82rem; margin: 0 0 8px; }
+    .book-desc { color: var(--ink-soft); font-size: 0.9rem; min-height: 70px; }
+    .book-chip { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; padding: 4px 10px; font-size: 0.72rem; color: var(--ink-soft); margin-right: 6px; }
+    .book-link { display: inline-flex; margin-top: 10px; background: var(--lime); color: var(--bg-deep); border-radius: 999px; padding: 9px 14px; font-family: var(--font-display); box-shadow: var(--shadow-sm); }
+  </style>
+</head>
+<body data-page="books">
+  <div class="top-bar"><div class="top-bar-fill" id="topBar"></div></div>
+  <header class="site-nav"></header>
+  <main class="books-main">
+    <p class="eyebrow">Books</p>
+    <h1 style="margin:0 0 8px;">Starter catalog (14 real entries)</h1>
+    <p style="margin:0;color:var(--ink-soft);">Small and honest for launch. Add more real entries manually later in the same schema.</p>
+    <div class="filters">
+      <select id="sectionFilter"><option value="All">All sections</option></select>
+      <select id="subjectFilter"><option value="All">All subjects</option></select>
+      <input id="searchInput" type="search" placeholder="Search title or ISBN">
+    </div>
+    <section id="booksGrid" class="books-grid"></section>
+  </main>
+
+  <script src="/api-config.js"></script>
+  <script src="/script.js"></script>
+  <script src="/layout.js" defer></script>
+  <script>
+    ensureProfile();
+    const topBar = document.getElementById('topBar');
+    const sectionFilter = document.getElementById('sectionFilter');
+    const subjectFilter = document.getElementById('subjectFilter');
+    const searchInput = document.getElementById('searchInput');
+    const booksGrid = document.getElementById('booksGrid');
+    let books = [];
+
+    function refreshTopBar() {
+      const progress = getLevelProgress();
+      if (topBar) topBar.style.width = `${progress.pct}%`;
+    }
+
+    function coverUrl(isbn) { return `https://covers.openlibrary.org/b/isbn/${isbn}-L.jpg`; }
+
+    function populateFilters() {
+      const sections = Array.from(new Set(books.map((b) => b.section))).sort();
+      const subjects = Array.from(new Set(books.map((b) => b.subject))).sort();
+      sectionFilter.innerHTML = ['<option value="All">All sections</option>'].concat(sections.map((s) => `<option value="${s}">${s}</option>`)).join('');
+      subjectFilter.innerHTML = ['<option value="All">All subjects</option>'].concat(subjects.map((s) => `<option value="${s}">${s}</option>`)).join('');
+    }
+
+    function render() {
+      const q = searchInput.value.trim().toLowerCase();
+      const section = sectionFilter.value;
+      const subject = subjectFilter.value;
+      const filtered = books.filter((book) => {
+        const matchesSection = section === 'All' || book.section === section;
+        const matchesSubject = subject === 'All' || book.subject === subject;
+        const hay = `${book.title} ${book.author} ${book.isbn}`.toLowerCase();
+        const matchesQuery = !q || hay.includes(q);
+        return matchesSection && matchesSubject && matchesQuery;
+      });
+
+      if (!filtered.length) {
+        booksGrid.innerHTML = '<p style="color:var(--ink-soft)">No books matched your filter.</p>';
+        return;
+      }
+
+      booksGrid.innerHTML = filtered.map((book) => `
+        <article class="book-card">
+          <img src="${coverUrl(book.isbn)}" alt="${book.title}" style="width:100%;height:180px;object-fit:cover;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);">
+          <h3>${book.title}</h3>
+          <p class="book-meta">${book.author}</p>
+          <p class="book-desc">${book.description}</p>
+          <div><span class="book-chip">${book.section}</span><span class="book-chip">${book.subject}</span><span class="book-chip">ISBN ${book.isbn}</span></div>
+          <a class="book-link" href="/book.html?id=${encodeURIComponent(book.id)}">Open book →</a>
+        </article>
+      `).join('');
+    }
+
+    async function init() {
+      const res = await fetch('/data/books.json');
+      books = await res.json();
+      populateFilters();
+      render();
+      refreshTopBar();
+    }
+
+    sectionFilter.addEventListener('change', render);
+    subjectFilter.addEventListener('change', render);
+    searchInput.addEventListener('input', render);
+    init().catch(() => { booksGrid.innerHTML = '<p style="color:var(--coral)">Unable to load books right now.</p>'; });
+  </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- BASE_URL: https://YOUR_DOMAIN_HERE -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MindMesh — Books</title>
+  <meta name="description" content="Browse the starter book catalog by section and subject.">
+  <link rel="canonical" href="https://YOUR_DOMAIN_HERE/books.html">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="MindMesh — Books">
+  <meta property="og:description" content="Discover real study books and launch topic-specific quiz/flashcard tools.">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/brand.css">
+  <link rel="stylesheet" href="/nav.css">
+  <link rel="stylesheet" href="/styles.css">
+  <style>
+    .top-bar { height: 4px; background: var(--surface-2); }
+    .top-bar-fill { height: 100%; background: linear-gradient(90deg,var(--lime),var(--blue)); width: 0%; }
+    .books-main { max-width: var(--container); margin: 0 auto; padding: 24px 16px 36px; }
+    .books-controls { display: grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap: 10px; margin: 14px 0; }
+    .books-controls select,.books-controls input { width: 100%; border: 2px solid var(--border); background: var(--surface); color: var(--ink); border-radius: 12px; padding: 10px 12px; }
+    .books-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(240px,1fr)); gap: 14px; }
+    .book-card { background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius-sm); box-shadow: var(--shadow-sm); padding: 14px; transform: rotate(-0.4deg); }
+    .book-card:nth-child(2n) { transform: rotate(0.4deg); }
+    .book-card h3 { margin: 0 0 8px; font-size: 1.02rem; }
+    .book-meta { color: var(--ink-faint); font-size: 0.8rem; margin-bottom: 8px; }
+    .book-card p { color: var(--ink-soft); margin: 0 0 10px; }
+    .book-link { display: inline-flex; align-items: center; padding: 8px 12px; border-radius: 999px; background: var(--lime); color: var(--bg-deep); font-weight: 700; font-family: var(--font-display); }
+  </style>
+</head>
+<body data-page="books">
+  <div class="top-bar"><div class="top-bar-fill" id="topBar"></div></div>
+  <header class="site-nav"></header>
+  <main class="books-main">
+    <p class="eyebrow">Catalog</p>
+    <h1 style="margin:0 0 8px;">Starter book catalog (14 real entries)</h1>
+    <p style="margin:0;color:var(--ink-soft);">Filter by section and subject, then open a book page to generate quizzes, flashcards, and guess papers by topic.</p>
+    <div class="books-controls">
+      <input id="bookSearch" type="search" placeholder="Search title, author, ISBN">
+      <select id="sectionFilter"><option value="All">All sections</option></select>
+      <select id="subjectFilter"><option value="All">All subjects</option></select>
+    </div>
+    <section class="books-grid" id="booksGrid"></section>
+  </main>
+
+  <script src="/api-config.js"></script>
+  <script src="/script.js"></script>
+  <script src="/layout.js" defer></script>
+  <script>
+    ensureProfile();
+    const topBar = document.getElementById('topBar');
+    const booksGrid = document.getElementById('booksGrid');
+    const sectionFilter = document.getElementById('sectionFilter');
+    const subjectFilter = document.getElementById('subjectFilter');
+    const bookSearch = document.getElementById('bookSearch');
+    let books = [];
+
+    function refreshTopBar() {
+      const progress = getLevelProgress();
+      if (topBar) topBar.style.width = `${progress.pct}%`;
+    }
+
+    function buildFilters() {
+      const sections = ['All'].concat(Array.from(new Set(books.map((book) => book.section))).sort());
+      const subjects = ['All'].concat(Array.from(new Set(books.map((book) => book.subject))).sort());
+      sectionFilter.innerHTML = sections.map((value) => `<option value="${value}">${value}</option>`).join('');
+      subjectFilter.innerHTML = subjects.map((value) => `<option value="${value}">${value}</option>`).join('');
+    }
+
+    function renderBooks() {
+      const search = String(bookSearch.value || '').trim().toLowerCase();
+      const section = sectionFilter.value;
+      const subject = subjectFilter.value;
+      const filtered = books.filter((book) => {
+        const haystack = `${book.title} ${book.author} ${book.isbn}`.toLowerCase();
+        const okSearch = !search || haystack.includes(search);
+        const okSection = section === 'All' || book.section === section;
+        const okSubject = subject === 'All' || book.subject === subject;
+        return okSearch && okSection && okSubject;
+      });
+
+      if (!filtered.length) {
+        booksGrid.innerHTML = '<p style="color:var(--ink-soft)">No books match this filter.</p>';
+        return;
+      }
+
+      booksGrid.innerHTML = filtered.map((book) => `
+        <article class="book-card">
+          <h3>${book.title}</h3>
+          <div class="book-meta">${book.author} · ${book.section} · ${book.subject}</div>
+          <p>${book.description}</p>
+          <a class="book-link" href="/book.html?id=${encodeURIComponent(book.id)}">Open book →</a>
+        </article>
+      `).join('');
+    }
+
+    async function init() {
+      try {
+        const response = await fetch('/data/books.json');
+        books = await response.json();
+      } catch {
+        books = [];
+      }
+      buildFilters();
+      renderBooks();
+      refreshTopBar();
+    }
+
+    sectionFilter.addEventListener('change', renderBooks);
+    subjectFilter.addEventListener('change', renderBooks);
+    bookSearch.addEventListener('input', renderBooks);
+    init();
+  </script>
+</body>
+</html>

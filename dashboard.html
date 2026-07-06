@@ -26,6 +26,7 @@
     <h1>Welcome back, <span class="lime" id="nameEl">Explorer</span> 👋</h1>
     <p>Your learning command center — progress, streaks, and AI insights in one place.</p>
     <p class="page-subline">Plan: <span id="planName">Free</span> · <span id="engineStatusText">Reasoner engine live</span></p>
+    <button id="shareProgressBtn" type="button" class="xp-breakdown-toggle" style="margin-top:8px;">Share progress snapshot</button>
   </div>
 
   <div class="engine-pill-row">
@@ -133,6 +134,16 @@
     <a id="dailyQuestionLink" href="/chat.html" class="quiz-btn" style="display:inline-flex;margin-top:10px;">Try this in chat →</a>
   </div>
 
+  <div class="card" style="margin-bottom:24px;">
+    <h3>🧩 Weak topics</h3>
+    <div id="weakTopicsArea"></div>
+  </div>
+
+  <div class="card" style="margin-bottom:24px;">
+    <h3>🛠 Mistake Bank</h3>
+    <div id="mistakeBankArea"></div>
+  </div>
+
   <!-- TWO COL -->
   <div class="two-col">
     <div class="card">
@@ -164,6 +175,7 @@
 </div>
 </main>
 <footer class="site-footer"></footer>
+<script src="/api-config.js"></script>
 <script src="/script.js"></script>
 <script src="/layout.js" defer></script>
 <script>
@@ -181,8 +193,10 @@ const subjectCounts = get('mm_subjects') || {};
 const milestones = get('mm_milestones') || [];
 const streak = get('mm_streak') || [];
 const quizScores = get('mm_quiz_scores') || {};
+const wrongAnswers = get('mm_wrong_answers') || [];
 const todayCount = get('mm_today_count') || 0;
 const plan = get('mm_plan') || 'Free';
+const allScores = Object.values(quizScores).flat();
 
 // ---- level system (shared with server.js's prompt logic — see LEVEL_THRESHOLDS in script.js) ----
 el('nameEl').textContent = name;
@@ -265,8 +279,63 @@ if(subjKeys.length){
   setTimeout(()=>{document.querySelectorAll('.subj-fill').forEach(f=>{f.style.width=f.dataset.w+'%';});},400);
 }
 
-const allScores=Object.values(quizScores).flat();
 if(allScores.length){el('quizScore').textContent=Math.round(allScores.reduce((a,b)=>a+b,0)/allScores.length)+'%';}
+
+const weakTopicsArea = el('weakTopicsArea');
+const weakTopics = Object.entries(quizScores)
+  .map(([subject, values]) => ({
+    subject,
+    average: values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : 0,
+    count: values.length,
+  }))
+  .filter((item) => item.count > 0 && item.average < 60)
+  .sort((a, b) => a.average - b.average);
+
+if (weakTopicsArea) {
+  if (!weakTopics.length) {
+    weakTopicsArea.innerHTML = '<p style="color:var(--ink-soft)">No weak topics right now. Keep your momentum.</p>';
+  } else {
+    weakTopicsArea.innerHTML = weakTopics.map((item) =>
+      `<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--border);border-radius:12px;background:var(--surface-2);padding:12px;margin-top:10px;">
+        <div><strong>${item.subject}</strong><div style="color:var(--ink-faint);font-size:0.86rem;">Average ${item.average}% across ${item.count} quizzes</div></div>
+        <a href="/chat.html?q=${encodeURIComponent(`Help me improve in ${item.subject} with a step-by-step plan`)}" class="quiz-btn" style="padding:8px 14px;">Focus on this</a>
+      </div>`
+    ).join('');
+  }
+}
+
+const mistakeBankArea = el('mistakeBankArea');
+if (mistakeBankArea) {
+  if (!wrongAnswers.length) {
+    mistakeBankArea.innerHTML = '<p style="color:var(--ink-soft)">No mistakes captured yet. Complete a quiz to build your review bank.</p>';
+  } else {
+    const latestMistakes = wrongAnswers.slice(-12).reverse();
+    mistakeBankArea.innerHTML = latestMistakes.map((item) =>
+      `<article style="border-top:1px solid var(--border-soft);padding:10px 0;">
+        <h4 style="margin:0 0 6px;font-size:0.98rem;">${item.subject || 'General'} · ${item.question || 'Question'}</h4>
+        <p style="margin:0;color:var(--ink-soft);font-size:0.9rem;">Your answer: ${item.selected || '—'} · Correct: ${item.correct || '—'}</p>
+      </article>`
+    ).join('');
+  }
+}
+
+el('shareProgressBtn')?.addEventListener('click', () => {
+  const snapshot = {
+    name,
+    count,
+    totalXP,
+    progress,
+    streak,
+    subjectCounts,
+    quizScores,
+    milestones,
+    generatedAt: new Date().toISOString(),
+  };
+  const encoded = btoa(unescape(encodeURIComponent(JSON.stringify(snapshot))));
+  const shareUrl = `${window.location.origin}/progress.html?readonly=${encodeURIComponent(encoded)}`;
+  navigator.clipboard?.writeText(shareUrl).catch(() => undefined);
+  alert('Share link copied to clipboard. You can also paste this URL manually:\n' + shareUrl);
+});
 
 const insightsContainer = el('insightsContainer');
 let hasInsights = false;
