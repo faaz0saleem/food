@@ -97,10 +97,63 @@
   const MAX_TEXT_CHARS = 12000;
   const pendingAttachments = [];
 
-  function apiUrl(path) {
-    const rawBase = localStorage.getItem('mm_api_base') || '';
-    const base = rawBase.trim().replace(/\/$/, '');
-    return `${base}${path}`;
+  function normalizeBase(rawBase) {
+    const raw = String(rawBase || '').trim();
+    if (!raw) return '';
+    return raw.replace(/\/$/, '');
+  }
+
+  function isProductionHost() {
+    const host = String(window.location.hostname || '').toLowerCase();
+    return host && host !== 'localhost' && host !== '127.0.0.1';
+  }
+
+  function baseLooksLocal(base) {
+    return /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(base);
+  }
+
+  function resolveApiBases() {
+    const stored = normalizeBase(localStorage.getItem('mm_api_base'));
+    const bases = [];
+
+    if (stored && !(isProductionHost() && baseLooksLocal(stored))) {
+      bases.push(stored);
+    } else if (stored && isProductionHost() && baseLooksLocal(stored)) {
+      localStorage.removeItem('mm_api_base');
+    }
+
+    // Same-origin API route (works when backend is behind the same domain).
+    bases.push('');
+    // Netlify direct function path fallback.
+    bases.push('/.netlify/functions');
+
+    return [...new Set(bases)];
+  }
+
+  function joinApi(base, path) {
+    const cleanPath = String(path || '').startsWith('/') ? path : `/${path}`;
+    if (!base) return cleanPath;
+    return `${base}${cleanPath}`;
+  }
+
+  async function fetchWithApiFallback(path, fetchOptions) {
+    const bases = resolveApiBases();
+    let lastError = null;
+
+    for (const base of bases) {
+      const url = joinApi(base, path);
+      try {
+        const response = await fetch(url, fetchOptions);
+        if (response.ok || response.status === 429 || response.status === 400 || response.status === 401 || response.status === 403) {
+          return { response, resolvedBase: base };
+        }
+        lastError = new Error(`HTTP ${response.status}`);
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    throw lastError || new Error('API request failed');
   }
 
   function getDemoTutorReply(prompt, subject) {
@@ -308,7 +361,7 @@
 
   async function loadModelInfo() {
     try {
-      const response = await fetch(apiUrl('/api/status'));
+      const { response } = await fetchWithApiFallback('/api/status');
       const data = await response.json();
       const engines = data?.engines || {};
       const liveCount = Object.values(engines).filter(Boolean).length;
@@ -324,7 +377,7 @@
     try {
       const history = getConversationHistory();
       const attachments = options.attachments || [];
-      const response = await fetch(apiUrl('/api/chat'), {
+      const { response } = await fetchWithApiFallback('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -356,7 +409,7 @@
       };
     } catch (error) {
       return {
-        reply: 'Could not reach the AI backend. Set mm_api_base to your live API URL or host the Node server with /api/chat enabled.',
+        reply: 'Could not reach the AI backend. Your site needs a live /api/chat backend (same domain, Netlify functions, or a valid mm_api_base URL).',
         engine: 'System'
       };
     }
