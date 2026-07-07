@@ -50,6 +50,16 @@
     .bq-expl { margin: 10px 0 0; color: var(--ink-soft); font-size: 0.88rem; border-left: 2px solid var(--lime); padding-left: 10px; }
     .bq-result { margin-top: 14px; padding: 16px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); text-align: center; }
     .bq-score { font-family: var(--font-display); font-size: 2.2rem; color: var(--lime); margin: 0; }
+    .notes-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; margin-top: 12px; }
+    .notes-heading { font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.1em; color: var(--cyan, var(--blue)); margin: 16px 0 6px; text-transform: uppercase; }
+    .notes-list { margin: 0 0 8px; padding-left: 18px; color: var(--ink-soft); }
+    .notes-list li { margin: 4px 0; }
+    .notes-para { margin: 6px 0; color: var(--ink-soft); }
+    @media print {
+      body * { visibility: hidden; }
+      #notesPanel, #notesPanel * { visibility: visible; }
+      #notesPanel { position: absolute; left: 0; top: 0; width: 100%; color: #000; background: #fff; border: none; }
+    }
     @media (max-width: 860px) { .book-layout { grid-template-columns: 1fr; } }
   </style>
 </head>
@@ -238,6 +248,42 @@
       }
     }
 
+    function renderChapterNotes(rawNotes, engineName, topicLabel, mount) {
+      const KNOWN_HEADINGS = ['OVERVIEW', 'KEY POINTS', 'FORMULAS & DEFINITIONS', 'COMMON MISTAKES', 'EXAM TIPS'];
+      const lines = String(rawNotes || '').split('\n');
+      let html = `<div class="notes-head"><h3 style="margin:12px 0 2px;">Chapter notes: ${topicLabel}</h3>` +
+        `<p style="margin:0 0 10px;color:var(--ink-faint);font-size:0.8rem;">AI-generated original notes (${engineName}) — not copied from the book.</p></div>`;
+      let inList = false;
+      lines.forEach((line) => {
+        const trimmed = line.trim();
+        const isHeading = KNOWN_HEADINGS.some((h) => trimmed.toUpperCase().startsWith(h));
+        const isBullet = /^[-•*]\s+/.test(trimmed);
+        if (isHeading) {
+          if (inList) { html += '</ul>'; inList = false; }
+          html += `<h4 class="notes-heading">${trimmed}</h4>`;
+        } else if (isBullet) {
+          if (!inList) { html += '<ul class="notes-list">'; inList = true; }
+          html += `<li>${trimmed.replace(/^[-•*]\s+/, '')}</li>`;
+        } else if (trimmed) {
+          if (inList) { html += '</ul>'; inList = false; }
+          html += `<p class="notes-para">${trimmed}</p>`;
+        }
+      });
+      if (inList) html += '</ul>';
+      html += `<div class="btn-row" style="margin-top:12px;">
+        <button type="button" class="btn" id="notesCopyBtn">Copy notes</button>
+        <button type="button" class="btn" id="notesPrintBtn">Print / Save as PDF</button>
+      </div>`;
+      mount.innerHTML = `<div class="notes-panel" id="notesPanel">${html}</div>`;
+      mount.querySelector('#notesCopyBtn')?.addEventListener('click', () => {
+        navigator.clipboard.writeText(rawNotes).then(() => {
+          mount.querySelector('#notesCopyBtn').textContent = 'Copied ✓';
+        });
+      });
+      mount.querySelector('#notesPrintBtn')?.addEventListener('click', () => window.print());
+      mount.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
     (function () {
       const bookId = new URLSearchParams(window.location.search).get('id');
       const container = document.getElementById('book-content');
@@ -288,7 +334,7 @@
           </select>
 
           <div class="btn-row" style="margin-top:6px;">
-            <button class="btn" id="chapterSummaryBtn">Summarize this chapter's approach</button>
+            <button class="btn primary" id="chapterNotesBtn">📖 Chapter Notes — key points & formulas</button>
             <button class="btn" id="studyPlanBtn">Build my study plan</button>
             <button class="btn" id="compareBooksBtn">Compare with similar books</button>
           </div>
@@ -386,18 +432,27 @@
           }
         });
 
-        document.getElementById('chapterSummaryBtn')?.addEventListener('click', async () => {
+        document.getElementById('chapterNotesBtn')?.addEventListener('click', async () => {
+          const notesArea = document.getElementById('notesArea') || (() => {
+            const div = document.createElement('div');
+            div.id = 'notesArea';
+            resultBox.parentNode.insertBefore(div, resultBox);
+            return div;
+          })();
           try {
             showLoading(true);
-            const chapter = topicSelect.value || book.subject;
-            const data = await postJson('/api/chat', {
-              visitorId: getSessionId(),
+            notesArea.innerHTML = '';
+            resultBox.textContent = '';
+            const chapter = topicSelect.value;
+            const data = await postJson('/api/chapter-notes', {
               subject: book.subject,
-              message: `Summarize what the topic ${chapter} generally covers in three concise bullets. Do not quote any textbook.`
+              chapter,
+              bookContext: book.title,
+              userLevel: lsGet('mm_level', 'Newbie'),
             });
-            resultBox.textContent = data.reply || 'No summary generated.';
+            renderChapterNotes(data.notes, data.engine, chapter || book.subject, notesArea);
           } catch (error) {
-            resultBox.textContent = error.message;
+            notesArea.textContent = error.message;
           } finally {
             showLoading(false);
           }

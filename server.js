@@ -419,6 +419,58 @@ async function generateBookFlashcards({ subject, chapter, bookContext }) {
   if (!cards.length) return [{ front: `What is the key idea in ${topic}?`, back: 'Review this topic with the AI tutor chat for a full explanation.' }];
   return cards;
 }
+
+async function generateChapterNotes({ subject, chapter, bookContext, userLevel }) {
+  const topic = chapter || subject;
+  const systemPrompt = `You are Hungter, an AI tutor writing complete revision notes. Write entirely original explanations in your own words — do NOT quote or reproduce text from any textbook${bookContext ? ` (including "${bookContext}")` : ''}. The student is at the "${userLevel || 'Newbie'}" level; adjust depth accordingly.`;
+  const userPrompt = `Write complete revision notes for the topic "${topic}" in ${subject}. Structure them EXACTLY like this, using these headings:
+
+OVERVIEW
+2-3 sentences on what this topic is and why it matters.
+
+KEY POINTS
+6-10 bullet points covering the main ideas a student must know.
+
+FORMULAS & DEFINITIONS
+Every important formula (with each symbol explained) and key term definition. If the topic has no formulas, give the key definitions and rules instead.
+
+COMMON MISTAKES
+3-4 mistakes students typically make on this topic and how to avoid them.
+
+EXAM TIPS
+2-3 practical tips for answering exam questions on this topic.`;
+
+  // Try the strongest available engine first, fall back through the rest.
+  const order = [
+    { key: 'storyteller', call: () => anthropicClient.messages.create({ model: ANTHROPIC_MODEL, max_tokens: 1400, system: systemPrompt, messages: [{ role: 'user', content: userPrompt }] }).then((r) => r.content?.find((b) => b.type === 'text')?.text?.trim() || null) },
+    { key: 'explorer', call: () => openaiClient.chat.completions.create({ model: OPENAI_MODEL, max_tokens: 1400, messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }] }).then((r) => r.choices?.[0]?.message?.content?.trim() || null) },
+    { key: 'reasoner', call: () => groqClient.chat.completions.create({ model: GROQ_MODEL, max_tokens: 1400, temperature: 0.5, messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }] }).then((r) => r.choices?.[0]?.message?.content?.trim() || null) },
+  ];
+
+  for (const engine of order) {
+    if (!ENGINES[engine.key]?.client) continue;
+    try {
+      const notes = await engine.call();
+      if (notes) return { notes, engine: ENGINES[engine.key].name };
+    } catch (error) {
+      console.error(`Chapter notes (${ENGINES[engine.key].name}) failed:`, error.message);
+    }
+  }
+
+  return {
+    notes: [
+      `OVERVIEW`,
+      `${topic} is a core part of ${subject}. (Demo mode — connect an AI API key for full notes.)`,
+      ``,
+      `KEY POINTS`,
+      `- Ask the AI tutor in chat to explain ${topic} step by step.`,
+      `- Take a quiz on this chapter to find your weak spots.`,
+      ``,
+      `Demo notes (no AI engines connected). Set GROQ_API_KEY / OPENAI_API_KEY / ANTHROPIC_API_KEY for complete AI-generated notes.`,
+    ].join('\n'),
+    engine: 'Demo',
+  };
+}
 function parseRequestBody(req) {
   return new Promise((resolve, reject) => {
     let body = '';
@@ -540,6 +592,17 @@ const server = http.createServer(async (req, res) => {
       if (!subject) return sendJson(res, 400, { error: 'subject is required.' });
       const cards = await generateBookFlashcards({ subject, chapter, bookContext });
       return sendJson(res, 200, { status: 'ok', cards });
+    } catch (error) { return sendJson(res, 400, { error: error.message }); }
+  }
+
+  if (req.method === 'POST' && pathname === '/api/chapter-notes') {
+    try {
+      if (isRateLimited(getClientIp(req))) return sendJson(res, 429, { error: 'Rate limit exceeded' });
+      const payload = await parseRequestBody(req);
+      const { subject, chapter, bookContext, userLevel } = payload;
+      if (!subject) return sendJson(res, 400, { error: 'subject is required.' });
+      const result = await generateChapterNotes({ subject, chapter, bookContext, userLevel });
+      return sendJson(res, 200, { status: 'ok', ...result });
     } catch (error) { return sendJson(res, 400, { error: error.message }); }
   }
 
