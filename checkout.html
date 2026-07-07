@@ -1,19 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- BASE_URL: https://YOUR_DOMAIN_HERE -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Fredoka:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap">
 <title>Checkout — Hungter</title>
-<meta name="description" content="Upgrade your Hungter plan with secure RapidPay checkout.">
-<link rel="canonical" href="https://YOUR_DOMAIN_HERE/checkout.html">
+<meta name="description" content="Upgrade your Hungter plan. Free during beta — real billing connects at launch.">
+<meta name="robots" content="noindex, follow">
+<link rel="canonical" href="https://hungter.com/checkout.html">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Checkout — Hungter">
-<meta property="og:description" content="Upgrade your Hungter plan with secure RapidPay checkout.">
-<meta property="og:image" content="/favicon.svg">
+<meta property="og:description" content="Upgrade your Hungter plan. Free during beta — real billing connects at launch.">
+<meta property="og:image" content="https://hungter.com/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Checkout — Hungter">
-<meta name="twitter:description" content="Upgrade your Hungter plan with secure RapidPay checkout.">
+<meta name="twitter:description" content="Upgrade your Hungter plan. Free during beta — real billing connects at launch.">
 <meta name="twitter:image" content="/favicon.svg">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/favicon.svg">
@@ -32,7 +37,7 @@
       </div>
       <div class="checkout-head">
         <h1>Upgrade your plan</h1>
-        <p>You're in the testing phase — no real charges yet. Stripe checkout connects before public launch.</p>
+        <p>You're in the testing phase — no real charges yet. Real payment processing connects before public launch.</p>
       </div>
     <div class="checkout-grid">
       <!-- Main Form -->
@@ -44,14 +49,51 @@
         <!-- Plan Selector -->
         <div class="form-section">
           <h3>Choose Your Plan</h3>
-          <div class="form-group">
-            <label>Select a subscription tier</label>
-            <select id="planSelect" onchange="updateOrderSummary()">
-              <option value="free">Free - $0/month</option>
-              <option value="student">Student - $5/month</option>
-              <option value="pro">Student Pro - $12/month</option>
-            </select>
+          <div class="plan-card-row" id="planCardRow">
+            <button type="button" class="plan-card" data-plan="free">
+              <span class="plan-card-name">Free</span>
+              <span class="plan-card-price">$0<sub>/mo</sub></span>
+              <span class="plan-card-note">20 messages a day</span>
+            </button>
+            <button type="button" class="plan-card selected" data-plan="student">
+              <span class="plan-card-pop">MOST PICKED</span>
+              <span class="plan-card-name">Student</span>
+              <span class="plan-card-price">$5<sub>/mo</sub></span>
+              <span class="plan-card-note">Unlimited messages</span>
+            </button>
+            <button type="button" class="plan-card" data-plan="pro">
+              <span class="plan-card-name">Student Pro</span>
+              <span class="plan-card-price">$12<sub>/mo</sub></span>
+              <span class="plan-card-note">Guess Papers + RoundChat</span>
+            </button>
           </div>
+          <select id="planSelect" onchange="updateOrderSummary()" style="display:none;" aria-hidden="true">
+            <option value="free">Free - $0/month</option>
+            <option value="student" selected>Student - $5/month</option>
+            <option value="pro">Student Pro - $12/month</option>
+          </select>
+          <style>
+            .plan-card-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+            .plan-card {
+              position: relative; text-align: left; cursor: pointer;
+              background: var(--surface-2); border: 2px solid var(--border);
+              border-radius: var(--radius-sm); padding: 14px 12px;
+              display: flex; flex-direction: column; gap: 4px;
+              color: var(--ink); font-family: var(--font-body); transition: border-color 0.15s;
+            }
+            .plan-card:hover { border-color: var(--ink-faint); }
+            .plan-card.selected { border-color: var(--lime); box-shadow: var(--shadow-sm); }
+            .plan-card-pop {
+              position: absolute; top: -10px; right: 8px; background: var(--coral); color: var(--bg-deep);
+              font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.06em;
+              border-radius: 999px; padding: 2px 8px;
+            }
+            .plan-card-name { font-family: var(--font-display); font-weight: 600; }
+            .plan-card-price { font-family: var(--font-display); font-size: 1.3rem; color: var(--lime); }
+            .plan-card-price sub { font-size: 0.65rem; color: var(--ink-faint); }
+            .plan-card-note { font-size: 0.78rem; color: var(--ink-soft); }
+            @media (max-width: 560px) { .plan-card-row { grid-template-columns: 1fr; } }
+          </style>
         </div>
 
         <div class="form-section">
@@ -133,7 +175,6 @@
   <footer class="site-footer"></footer>
 
   <script src="/layout.js" defer></script>
-  <script src="https://secure.rapid-gateway.com/sdk/v1/rapidpay.js"></script>
   <script>
     window.HUNGTER_API_BASE = window.HUNGTER_API_BASE || '';
     const API_BASE = String(window.HUNGTER_API_BASE || '').replace(/\/$/, '');
@@ -144,8 +185,6 @@
       student: { id: 'student', name: 'Student', price: 5, features: ['Unlimited messages', 'Every subject', 'Progress tracking', 'Core tutor access'] },
       pro: { id: 'pro', name: 'Student Pro', price: 12, features: ['Everything in Student', 'Guess Papers', 'RoundChat compare mode', 'Priority generation queue'] }
     };
-
-    let activeSessionId = '';
 
     function updateOrderSummary() {
       const selected = document.getElementById('planSelect').value;
@@ -213,92 +252,6 @@
       });
     }
 
-    async function createCheckoutSession(plan, email, mobile) {
-      const response = await fetch(apiPath('/api/payments/checkout-session'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          plan: plan.id,
-          customerEmail: email,
-          customerMobile: mobile,
-        }),
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Unable to create checkout session.');
-      }
-
-      return data;
-    }
-
-    async function verifySession(sessionId) {
-      const response = await fetch(apiPath('/api/payments/checkout-session?sessionId=' + encodeURIComponent(sessionId)));
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Unable to verify payment status.');
-      }
-      return data.session;
-    }
-
-    async function pollForTerminalStatus(sessionId) {
-      const maxAttempts = 10;
-      for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-        const session = await verifySession(sessionId);
-        const status = String(session.status || '').toUpperCase();
-        if (status === 'SUCCEEDED') return session;
-        if (status === 'FAILED' || status === 'EXPIRED') {
-          throw new Error('Payment failed or expired. Please try again.');
-        }
-        await new Promise((resolve) => setTimeout(resolve, 2500));
-      }
-      throw new Error('Payment is still processing. Please check again in a moment.');
-    }
-
-    function mountRapidPay(data, selectedPlan) {
-      if (typeof RapidPay !== 'function') {
-        throw new Error('RapidPay SDK did not load. Please refresh and try again.');
-      }
-
-      const rp = RapidPay(data.publishableKey);
-      rp.mountCheckout('#rp-checkout', {
-        clientSecret: data.clientSecret,
-        amount: data.amount,
-        currency: data.currency,
-        merchantName: data.merchantName || 'Hungter',
-        onSuccess: async ({ sessionId }) => {
-          try {
-            setCheckoutStatus('Payment submitted. Verifying final status...');
-            const verified = await pollForTerminalStatus(sessionId || activeSessionId);
-            if (String(verified.status || '').toUpperCase() === 'SUCCEEDED') {
-              savePlanLocally(selectedPlan);
-              setCheckoutStatus('Payment successful. Redirecting to dashboard...');
-              setTimeout(() => { window.location.href = '/dashboard.html'; }, 1000);
-            }
-          } catch (error) {
-            setCheckoutStatus(error.message, true);
-          }
-        },
-        onPending: async ({ sessionId }) => {
-          try {
-            setCheckoutStatus('Payment is pending approval. Checking status...');
-            const verified = await pollForTerminalStatus(sessionId || activeSessionId);
-            if (String(verified.status || '').toUpperCase() === 'SUCCEEDED') {
-              savePlanLocally(selectedPlan);
-              setCheckoutStatus('Payment successful. Redirecting to dashboard...');
-              setTimeout(() => { window.location.href = '/dashboard.html'; }, 1000);
-            }
-          } catch (error) {
-            setCheckoutStatus(error.message, true);
-          }
-        },
-        onError: (error) => {
-          const message = error && error.message ? error.message : 'Checkout failed. Please try again.';
-          setCheckoutStatus(message, true);
-        },
-      });
-    }
-
     async function completeCheckout() {
       const planSelect = document.getElementById('planSelect').value;
       const terms = document.getElementById('terms').checked;
@@ -343,11 +296,25 @@
       return ['free', 'student', 'pro'].includes(selected) ? selected : 'student';
     }
 
+    function syncPlanCards(value) {
+      document.querySelectorAll('.plan-card').forEach((card) => {
+        card.classList.toggle('selected', card.dataset.plan === value);
+      });
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       const select = document.getElementById('planSelect');
       if (select) {
         select.value = getInitialPlan();
+        syncPlanCards(select.value);
       }
+      document.querySelectorAll('.plan-card').forEach((card) => {
+        card.addEventListener('click', () => {
+          if (select) select.value = card.dataset.plan;
+          syncPlanCards(card.dataset.plan);
+          updateOrderSummary();
+        });
+      });
       updateOrderSummary();
     });
   </script>

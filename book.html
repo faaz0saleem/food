@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- BASE_URL: https://YOUR_DOMAIN_HERE -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Fredoka:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap">
   <title>Hungter — Book</title>
   <meta name="description" content="Book detail with chapter-aware AI quiz, flashcards, and guess paper generation.">
-  <link rel="canonical" href="https://YOUR_DOMAIN_HERE/book.html">
+  <link rel="canonical" href="https://hungter.com/book.html">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Hungter — Book">
   <meta property="og:description" content="Use AI actions on selected topics without reproducing source text.">
@@ -32,6 +34,22 @@
     .faq-item { border-top:1px solid var(--border-soft); padding-top:10px; margin-top:10px; }
     .similar-row { display:grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap:10px; margin-top:10px; }
     .review-form textarea, .review-form input { width:100%; border:2px solid var(--border); background:var(--surface-2); color:var(--ink); border-radius:10px; padding:8px; margin:6px 0; }
+    .bq-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; margin-top: 10px; }
+    .bq-q { margin: 0 0 10px; font-weight: 600; }
+    .bq-opts { display: grid; gap: 8px; }
+    .bq-opt {
+      text-align: left; cursor: pointer; padding: 10px 12px;
+      background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); color: var(--ink); font-family: var(--font-body);
+      transition: border-color 0.15s;
+    }
+    .bq-opt:hover:not(:disabled) { border-color: var(--cyan, var(--blue)); }
+    .bq-opt:disabled { cursor: default; opacity: 0.85; }
+    .bq-opt.bq-correct { border-color: var(--lime); box-shadow: 0 0 10px rgba(200,255,77,0.25); }
+    .bq-opt.bq-wrong { border-color: var(--coral); opacity: 0.6; }
+    .bq-expl { margin: 10px 0 0; color: var(--ink-soft); font-size: 0.88rem; border-left: 2px solid var(--lime); padding-left: 10px; }
+    .bq-result { margin-top: 14px; padding: 16px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); text-align: center; }
+    .bq-score { font-family: var(--font-display); font-size: 2.2rem; color: var(--lime); margin: 0; }
     @media (max-width: 860px) { .book-layout { grid-template-columns: 1fr; } }
   </style>
 </head>
@@ -47,9 +65,7 @@
   <script src="/layout.js" defer></script>
   <script>
     ensureProfile();
-    window.HUNGTER_API_BASE = window.HUNGTER_API_BASE || '';
-    const API_BASE = String(window.HUNGTER_API_BASE || '').replace(/\/$/, '');
-    const apiPath = (path) => `${API_BASE}${path}`;
+    // apiPath is the global from script.js — redeclaring it here is a SyntaxError that kills the page.
 
     const topBar = document.getElementById('topBar');
 
@@ -117,6 +133,109 @@
         throw new Error(data?.error || 'Request failed');
       }
       return data;
+    }
+
+    function renderInteractiveQuiz(questions, book, chapter, mount) {
+      let answered = 0;
+      let score = 0;
+      const wrongAnswers = [];
+
+      mount.innerHTML = `
+        <div class="bq-head">
+          <h3 style="margin:12px 0 2px;">Quiz: ${chapter || book.subject}</h3>
+          <p style="margin:0 0 10px;color:var(--ink-faint);font-size:0.85rem;">Click an answer for each question. Scores count toward your real progress and XP.</p>
+        </div>
+        <div id="bqQuestions"></div>
+        <div id="bqSummary" style="display:none;"></div>
+      `;
+      const questionsWrap = mount.querySelector('#bqQuestions');
+      const summary = mount.querySelector('#bqSummary');
+
+      questions.forEach((q, qi) => {
+        const correctLetter = String(q.correct || 'A').trim().toUpperCase().charAt(0);
+        const card = document.createElement('article');
+        card.className = 'bq-card';
+        card.innerHTML = `<p class="bq-q">${qi + 1}. ${q.question}</p>`;
+        const optsWrap = document.createElement('div');
+        optsWrap.className = 'bq-opts';
+
+        (q.options || []).forEach((optionText, oi) => {
+          const letter = String.fromCharCode(65 + oi); // A, B, C, D
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'bq-opt';
+          btn.textContent = optionText;
+          btn.addEventListener('click', () => {
+            if (card.dataset.done) return;
+            card.dataset.done = 'true';
+            answered += 1;
+            const isCorrect = letter === correctLetter;
+            if (isCorrect) score += 1;
+            optsWrap.querySelectorAll('.bq-opt').forEach((b, bi) => {
+              b.disabled = true;
+              const bLetter = String.fromCharCode(65 + bi);
+              if (bLetter === correctLetter) b.classList.add('bq-correct');
+              else if (b === btn) b.classList.add('bq-wrong');
+            });
+            if (!isCorrect) {
+              wrongAnswers.push({
+                subject: book.subject,
+                question: q.question,
+                selected: optionText,
+                correct: (q.options || [])[correctLetter.charCodeAt(0) - 65] || correctLetter,
+              });
+            }
+            if (q.explanation) {
+              const expl = document.createElement('p');
+              expl.className = 'bq-expl';
+              expl.textContent = q.explanation;
+              card.appendChild(expl);
+            }
+            if (answered === questions.length) finishQuiz();
+          });
+          optsWrap.appendChild(btn);
+        });
+
+        card.appendChild(optsWrap);
+        questionsWrap.appendChild(card);
+      });
+
+      function finishQuiz() {
+        const percent = Math.round((score / questions.length) * 100);
+
+        // Identical persistence to quiz.html so progress/dashboard/XP pick it up unchanged
+        const quizHistory = lsGet('mm_quiz_scores', {});
+        quizHistory[book.subject] = [...(quizHistory[book.subject] || []), percent];
+        lsSet('mm_quiz_scores', quizHistory);
+
+        if (wrongAnswers.length) {
+          const existingWrong = lsGet('mm_wrong_answers', []);
+          lsSet('mm_wrong_answers', existingWrong.concat(wrongAnswers).slice(-200));
+        }
+
+        const milestones = lsGet('mm_milestones', []);
+        milestones.push({ event: `Scored ${percent}% on a ${book.title} quiz${chapter ? ` (${chapter})` : ''}`, date: new Date().toLocaleDateString() });
+        lsSet('mm_milestones', milestones);
+
+        updateLevel();
+        refreshTopBar();
+
+        summary.style.display = 'block';
+        summary.innerHTML = `
+          <div class="bq-result">
+            <p class="bq-score">${percent}%</p>
+            <p style="margin:0;color:var(--ink-soft);">${score} of ${questions.length} correct — saved to your progress.</p>
+            <div class="btn-row" style="margin-top:10px;">
+              <button type="button" class="btn" id="bqAgain">Try another quiz</button>
+              <a class="btn" href="/progress.html">See my progress →</a>
+            </div>
+          </div>
+        `;
+        summary.querySelector('#bqAgain')?.addEventListener('click', () => {
+          document.getElementById('quizBtn')?.click();
+        });
+        summary.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
     }
 
     (function () {
@@ -194,15 +313,21 @@
         `;
         container.appendChild(info);
 
+        const quizArea = document.createElement('div');
+        quizArea.id = 'quizArea';
+        info.appendChild(quizArea);
+
         const topicSelect = document.getElementById('topicSelect');
         const resultBox = document.getElementById('resultBox');
         const loadingState = document.getElementById('loadingState');
         const showLoading = (flag) => loadingState.classList.toggle('show', flag);
 
         document.getElementById('quizBtn')?.addEventListener('click', async () => {
+          const quizArea = document.getElementById('quizArea');
           try {
             showLoading(true);
             resultBox.textContent = '';
+            quizArea.innerHTML = '';
             const chapter = topicSelect.value;
             const questions = await postJson('/api/quiz', {
               subject: book.subject,
@@ -212,11 +337,10 @@
               askedQuestions: [],
             });
             const list = Array.isArray(questions) ? questions : [];
-            resultBox.textContent = list.length
-              ? list.map((q, i) => `${i + 1}. ${q.question}\n${(q.options || []).join('\n')}\n`).join('\n')
-              : 'No quiz generated.';
+            if (!list.length) { quizArea.textContent = 'No quiz generated.'; return; }
+            renderInteractiveQuiz(list, book, chapter, quizArea);
           } catch (error) {
-            resultBox.textContent = error.message;
+            quizArea.textContent = error.message;
           } finally {
             showLoading(false);
           }

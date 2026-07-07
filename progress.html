@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- BASE_URL: https://YOUR_DOMAIN_HERE -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hungter — Progress</title>
-  <meta name="description" content="Detailed Hungter progress insights including XP, streaks, quiz trends, and mastery.">
-  <link rel="canonical" href="https://YOUR_DOMAIN_HERE/progress.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Fredoka:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap">
+  <title>Detailed Study Analytics & Progress Report | Hungter</title>
+  <meta name="description" content="Deep-dive charts of your study activity, quiz performance by subject, and a printable progress report to share with parents or teachers.">
+  <link rel="canonical" href="https://hungter.com/progress.html">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Hungter — Progress">
   <meta property="og:description" content="See your XP growth, quiz results, and subject mastery over time.">
@@ -15,7 +17,7 @@
   <link rel="stylesheet" href="/nav.css">
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/progress.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
 </head>
 <body data-page="progress">
   <div class="top-bar"><div class="top-bar-fill" id="topBar" style="width:0%"></div></div>
@@ -255,6 +257,7 @@
       milestones: lsGet('mm_milestones', []),
       favorite: lsGet('mm_subject', 'Science')
     };
+    const hasAnyData = Number(stats.count || 0) > 0 || Object.keys(stats.subjects || {}).length > 0 || Object.keys(stats.quizzes || {}).length > 0;
 
     const scores = Object.values(stats.quizzes).flat();
     const quizCount = scores.length;
@@ -307,10 +310,27 @@
           </article>
         `).join('')
       : '<article class="timeline-item"><h3>No recent activity yet.</h3><p class="timeline-date">Take a quiz or send a chat to start building your history.</p></article>';
+    if (!hasAnyData) {
+      const emptyState = `
+      <article class="timeline-item" style="background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius-sm); box-shadow: var(--shadow-sm);">
+        <h3>No data yet</h3>
+        <p class="timeline-date">Your analytics will appear after your first study action.</p>
+        <p class="timeline-date"><a href="/chat.html" class="learn-link">Ask your first question →</a></p>
+      </article>
+      `;
+      const performanceShell = document.querySelector('#performanceChart')?.parentElement;
+      const cognitiveShell = document.querySelector('#cognitiveChart')?.parentElement;
+      if (performanceShell) performanceShell.innerHTML = emptyState;
+      if (cognitiveShell) cognitiveShell.innerHTML = emptyState;
+    }
 
     function buildPerformanceChart(data, chartLabels) {
       const chart = document.getElementById('performanceChart');
       if (!chart || !window.Chart) {
+        const shell = chart?.parentElement;
+        if (shell) {
+          shell.innerHTML = `<article class="timeline-item" style="background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius-sm); box-shadow: var(--shadow-sm);"><h3>Chart unavailable</h3><p class="timeline-date">Recent quiz trend: ${data.join('%, ')}%</p></article>`;
+        }
         return;
       }
       const ctx = chart.getContext('2d');
@@ -367,6 +387,11 @@
     function buildRadarChart() {
       const chart = document.getElementById('cognitiveChart');
       if (!chart || !window.Chart) {
+        const shell = chart?.parentElement;
+        if (shell) {
+          const pairs = labels.map((label, idx) => `${label}: ${radarValues[idx]}%`).join(' · ');
+          shell.innerHTML = `<article class="timeline-item" style="background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius-sm); box-shadow: var(--shadow-sm);"><h3>Profile summary</h3><p class="timeline-date">${pairs}</p></article>`;
+        }
         return;
       }
       const ctx = chart.getContext('2d');
@@ -439,8 +464,10 @@
     });
 
     refreshTopBar();
-    buildPerformanceChart(performanceData, performanceLabels);
-    buildRadarChart();
+    if (hasAnyData) {
+      buildPerformanceChart(performanceData, performanceLabels);
+      buildRadarChart();
+    }
     if (!readonlySnapshot) {
       loadGrokInsight();
     } else {

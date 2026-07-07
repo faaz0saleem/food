@@ -13,6 +13,7 @@
   "scripts": {
     "start": "node server.js",
     "backend": "node backend.js",
+    "build:books": "node scripts/build-book-pages.js",
     "test": "node --test",
     "db:init": "bash scripts/init-db.sh",
     "db:reset": "rm -f database/hungter.db && bash scripts/init-db.sh"

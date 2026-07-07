@@ -691,33 +691,15 @@ function initProfile() {
 
 async function initPage() {
   await hydrateProfileFromAuth();
-  const publicPages = ['index', 'signup', 'onboarding', 'checkout'];
-  const appPages = ['dashboard', 'learn', 'subjects', 'quiz', 'progress', 'chat', 'roundchat', 'profile', 'flashcards'];
+  // Free tier is real: app pages never require signup or checkout. A first-time
+  // visitor is sent through onboarding once (to set name/learning style), and
+  // paid gating happens per-feature on the server (e.g. /api/guess-paper), not
+  // by locking every page behind the checkout simulation.
+  const appPages = ['dashboard', 'learn', 'subjects', 'quiz', 'progress', 'chat', 'roundchat', 'flashcards'];
   const hasProfile = Boolean((lsGet('mm_name', '') || '').trim());
-  const hasSubscription = String(lsGet('mm_plan_status', '') || '').toLowerCase() === 'active';
-
-  if (hasProfile && hasSubscription && pageId && publicPages.includes(pageId)) {
-    window.location.href = 'dashboard.html';
-    return;
-  }
-
-  if (!hasProfile && pageId === 'checkout') {
-    window.location.href = 'signup.html';
-    return;
-  }
-
-  if (hasProfile && !hasSubscription && pageId === 'signup') {
-    window.location.href = 'checkout.html?plan=student';
-    return;
-  }
 
   if (pageId && appPages.includes(pageId) && !hasProfile) {
-    window.location.href = 'signup.html';
-    return;
-  }
-
-  if (pageId && appPages.includes(pageId) && hasProfile && !hasSubscription) {
-    window.location.href = 'checkout.html?plan=student';
+    window.location.href = 'onboarding.html';
     return;
   }
 

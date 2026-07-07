@@ -3,9 +3,9 @@
 .checkout-wrapper { padding: 48px 0 72px; }
 .beta-warning-banner {
 	margin-bottom: 18px;
-	background: var(--coral);
+	background: linear-gradient(120deg, rgba(255, 107, 74, 0.2), rgba(255, 77, 227, 0.14));
 	color: var(--bg-deep);
-	border: 2px solid var(--bg-deep);
+	border: 1px solid var(--border);
 	border-radius: var(--radius-sm);
 	font-family: var(--font-display);
 	font-size: 1.15rem;
@@ -14,7 +14,7 @@
 	box-shadow: var(--shadow-sm);
 }
 .checkout-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 40px; align-items: start; }
-.order-summary { background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius); padding: 28px; position: sticky; top: 100px; }
+.order-summary { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; position: sticky; top: 100px; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: var(--shadow-sm); }
 .order-summary h2 { font-family: var(--font-display); font-weight: 600; font-size: 1.3rem; margin-bottom: 20px; }
 .plan-preview { background: var(--surface-soft); border: 1px solid var(--border-soft); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 24px; }
 .plan-name { font-family: var(--font-display); font-weight: 600; font-size: 1.1rem; margin-bottom: 8px; }
@@ -26,16 +26,16 @@
 .price-breakdown { border-top: 1px solid var(--border); padding-top: 16px; margin-bottom: 16px; }
 .breakdown-row { display: flex; justify-content: space-between; font-size: 0.92rem; margin-bottom: 10px; color: var(--ink-soft); }
 .breakdown-row.total { color: var(--ink); font-family: var(--font-display); font-weight: 600; font-size: 1.1rem; border-top: 1px solid var(--border-soft); padding-top: 10px; }
-.form-section { background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius); padding: 28px; margin-bottom: 20px; }
+.form-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; margin-bottom: 20px; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: var(--shadow-sm); }
 .form-section h3 { font-family: var(--font-display); font-weight: 600; font-size: 1.15rem; margin-bottom: 18px; }
 .form-group { margin-bottom: 16px; }
 .form-group label { display: block; font-family: var(--font-display); font-weight: 600; font-size: 0.9rem; margin-bottom: 8px; }
-.form-group input, .form-group select { width: 100%; padding: 12px 14px; background: var(--surface-soft); border: 2px solid var(--border-soft); border-radius: var(--radius-sm); color: var(--ink); font-family: var(--font-body); font-size: 0.95rem; }
-.form-group input:focus, .form-group select:focus { outline: none; border-color: var(--lime); }
+.form-group input, .form-group select { width: 100%; padding: 12px 14px; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--ink); font-family: var(--font-body); font-size: 0.95rem; }
+.form-group input:focus, .form-group select:focus { outline: none; border-color: var(--cyan); box-shadow: var(--glow-cyan); }
 .checkbox-group { display: flex; align-items: flex-start; gap: 12px; }
 .checkbox-group input[type='checkbox'] { margin-top: 4px; width: 18px; height: 18px; accent-color: var(--lime); }
-.submit-btn { width: 100%; font-family: var(--font-display); font-weight: 600; font-size: 1rem; background: var(--lime); color: var(--bg-deep); padding: 16px 30px; border-radius: 999px; border: none; box-shadow: var(--shadow-sm); cursor: pointer; transition: transform 0.15s ease; }
-.submit-btn:hover { transform: translate(-2px, -2px); box-shadow: var(--shadow); }
+.submit-btn { width: 100%; font-family: var(--font-display); font-weight: 700; font-size: 1rem; background: var(--gradient-brand); color: var(--bg-deep); padding: 16px 30px; border-radius: 999px; border: none; box-shadow: var(--glow-lime); cursor: pointer; transition: transform 0.15s ease, box-shadow 0.2s ease; }
+.submit-btn:hover { transform: translateY(-1px); box-shadow: var(--glow-lime), var(--glow-cyan); }
 .security-badge { display: flex; align-items: center; gap: 8px; justify-content: center; margin-top: 16px; font-size: 0.85rem; color: var(--ink-soft); }
 .security-badge svg { width: 16px; height: 16px; }
 .checkout-head { margin-bottom: 28px; }

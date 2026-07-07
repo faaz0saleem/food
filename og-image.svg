@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">Hungter social card</title>
+  <desc id="desc">Hungter social preview image with tagline.</desc>
+  <rect width="1200" height="630" fill="#1A1033" />
+  <circle cx="990" cy="120" r="90" fill="#251746" />
+  <circle cx="1080" cy="510" r="120" fill="#2A1B4D" />
+  <text x="90" y="280" fill="#FFF8F0" font-family="Fredoka, Manrope, sans-serif" font-size="120" font-weight="700">🧠 Hungter</text>
+  <text x="96" y="370" fill="#C8FF4D" font-family="Manrope, sans-serif" font-size="52" font-weight="700">The AI tutor that gets you</text>
+</svg>
