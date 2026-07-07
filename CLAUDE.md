@@ -43,33 +43,49 @@ for current architecture.
 ## Design system (must follow on all pages)
 
 ```css
---bg: #1A1033;
---bg-deep: #120B26;
---surface: #2A1B4D;
---surface-2: #251746;
---border: #3D2A66;
---border-soft: rgba(255,255,255,0.06);
---lime: #C8FF4D;      /* primary accent */
---coral: #FF6B4A;     /* secondary */
---blue: #4DD8FF;      /* tertiary */
---pink: #FF4DE3;      /* quaternary */
+:root {
+--bg: #070B1A;
+--bg-deep: #04060F;
+--surface: rgba(255, 255, 255, 0.045);
+--surface-2: rgba(255, 255, 255, 0.07);
+--surface-solid: #0D1428;
+--border: rgba(255, 255, 255, 0.10);
+--border-soft: rgba(255, 255, 255, 0.06);
+--border-glow: rgba(200, 255, 77, 0.35);
+--lime: #C8FF4D;
+--cyan: #4DF0FF;
+--violet: #8B5CFF;
+--pink: #FF4DE3;
+--coral: #FF6B4A;
 --gold: #FFD14D;
---ink: #FFF8F0;       /* main text */
---ink-soft: #C9BFE0;  /* secondary text */
---ink-faint: #8B7FB0; /* muted text */
---font-display: 'Fredoka', sans-serif;
+--blue: #4DD8FF;
+--ink: #F2F5FF;
+--ink-soft: #A9B2D6;
+--ink-faint: #5F6A94;
+--font-display: 'Space Grotesk', 'Fredoka', sans-serif;
 --font-body: 'Manrope', sans-serif;
 --font-mono: 'Space Mono', monospace;
---radius: 20px;
+--radius: 18px;
 --radius-sm: 12px;
---shadow: 6px 6px 0 var(--bg-deep);      /* "sticker" shadow style */
---shadow-sm: 4px 4px 0 var(--bg-deep);
+--shadow: 0 0 24px rgba(200, 255, 77, 0.12), 0 8px 32px rgba(0, 0, 0, 0.45);
+--shadow-sm: 0 0 12px rgba(200, 255, 77, 0.10), 0 4px 16px rgba(0, 0, 0, 0.4);
+--glow-lime: 0 0 20px rgba(200, 255, 77, 0.45);
+--glow-cyan: 0 0 20px rgba(77, 240, 255, 0.40);
+--gradient-brand: linear-gradient(120deg, var(--lime), var(--cyan));
+--gradient-aurora: radial-gradient(60% 80% at 15% 0%, rgba(139, 92, 255, 0.22) 0%, transparent 60%),
+                   radial-gradient(50% 70% at 85% 10%, rgba(77, 240, 255, 0.16) 0%, transparent 55%),
+                   radial-gradient(40% 60% at 50% 100%, rgba(200, 255, 77, 0.10) 0%, transparent 60%);
+}
 ```
 
-Aesthetic: bold, playful, gamified — Duolingo meets Linear. Buttons use a
-solid offset "sticker shadow" (never a blur shadow). Cards rotate slightly.
-No gradients on buttons. Never hardcode colors — always use the CSS
-variables above, defined in `brand.css`.
+Aesthetic: neon sci-fi glass ("Neon Galaxy").
+- Body background uses `--gradient-aurora` over deep-space base.
+- Cards/panels use glass style: `background: var(--surface)`, `border: 1px solid var(--border)`, blur backdrop, soft glow shadows.
+- Primary buttons use `--gradient-brand` and glow states.
+- Secondary buttons are transparent with neon cyan hover states.
+- No sticker-offset shadows and no card rotation.
+- Top progress bar fill uses `--gradient-brand` with cyan glow.
+- Never hardcode colors — always use `brand.css` variables.
 
 ## File structure
 

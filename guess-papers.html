@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- BASE_URL: https://YOUR_DOMAIN_HERE -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hungter — Guess Papers</title>
-  <meta name="description" content="Generate original AI guess papers for focused exam practice.">
-  <link rel="canonical" href="https://YOUR_DOMAIN_HERE/guess-papers.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Fredoka:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap">
+  <title>AI Guess Paper Generator — Original Practice Exams | Hungter</title>
+  <meta name="description" content="Generate original AI practice papers in the style of O-Level, A-Level, GCSE, SAT and PSAT exams. Pick your subject and chapter, print, and practice under timed conditions.">
+  <link rel="canonical" href="https://hungter.com/guess-papers.html">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Hungter — Guess Papers">
   <meta property="og:description" content="Create original practice papers and print them for exam mode.">
@@ -22,11 +24,15 @@
     .gp-grid { display:grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap:10px; }
     .gp-grid input, .gp-grid select { border:2px solid var(--border); background:var(--surface-2); color:var(--ink); border-radius:10px; padding:10px; }
     .btn-row { display:flex; gap:8px; flex-wrap:wrap; margin-top: 10px; }
-    .btn { border:1px solid var(--border); background:var(--surface-2); color:var(--ink); border-radius:999px; padding:8px 12px; cursor:pointer; }
+    .btn { border:2px solid var(--border); background:transparent; color:var(--ink); border-radius:999px; padding:8px 12px; cursor:pointer; }
     .btn.primary { background:var(--lime); color:var(--bg-deep); border:none; box-shadow:var(--shadow-sm); }
     .spinner { width:14px; height:14px; border:2px solid var(--border); border-top-color: var(--lime); border-radius:50%; animation:spin 1s linear infinite; display:inline-block; vertical-align:middle; margin-right:6px; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .paper-box { white-space: pre-wrap; margin-top:12px; color:var(--ink-soft); }
+    .paper-box { white-space: pre-wrap; margin-top:12px; color:var(--ink-soft); background: var(--surface-solid); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; }
+    .gp-main h1 { font-family: var(--font-display); }
+    @media (max-width: 390px) {
+      .gp-grid { grid-template-columns: 1fr; }
+    }
     @media print {
       body * { visibility: hidden; }
       #paperOut, #paperOut * { visibility: visible; }
@@ -51,6 +57,7 @@
         <button id="generatePaper" class="btn primary" type="button">Generate paper</button>
         <button id="printPaper" class="btn" type="button">Print / Save as PDF</button>
       </div>
+      <p style="margin:8px 0 0;color:var(--ink-soft);">AI-generated original practice content — not official exam board material.</p>
       <p id="loadingMsg" style="display:none;color:var(--ink-soft);margin-top:8px;"><span class="spinner"></span>Generating with all 3 AIs - this can take 15-30 seconds...</p>
       <div id="paperOut" class="paper-box"></div>
     </div>
@@ -61,9 +68,7 @@
   <script src="/layout.js" defer></script>
   <script>
     ensureProfile();
-    window.HUNGTER_API_BASE = window.HUNGTER_API_BASE || '';
-    const API_BASE = String(window.HUNGTER_API_BASE || '').replace(/\/$/, '');
-    const apiPath = (path) => `${API_BASE}${path}`;
+    // apiPath is the global from script.js — redeclaring it here is a SyntaxError that kills the page.
 
     const topBar = document.getElementById('topBar');
     const sectionInput = document.getElementById('sectionInput');

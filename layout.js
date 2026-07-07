@@ -239,7 +239,7 @@
         </div>
         <div class="footer-bottom">
           <span>© ${year} Hungter. All rights reserved.</span>
-          <span>Made for learners who want more than a generic chatbot.</span>
+          <span>Built by a student, for students. Independent — not affiliated with Cambridge, Pearson, College Board, or any exam board.</span>
         </div>
       </div>
     `;

@@ -1,4 +1,7 @@
 User-agent: *
 Allow: /
-
-Sitemap: /sitemap.xml
+Disallow: /admin.html
+Disallow: /checkout.html
+Disallow: /onboarding.html
+Disallow: /profile.html
+Sitemap: https://hungter.com/sitemap.xml

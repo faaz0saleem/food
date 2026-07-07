@@ -10,7 +10,7 @@
   --accent-soft: var(--lime);
   --text: var(--ink);
   --muted: var(--ink-soft);
-  --shadow: 0 32px 80px rgba(0, 0, 0, 0.45);
+  --shadow: 0 0 24px rgba(200, 255, 77, 0.12), 0 8px 32px rgba(0, 0, 0, 0.45);
   --success: #00d084;
   --warning: #ffa500;
   --danger: #ff5566;
@@ -29,6 +29,9 @@ body {
   min-height: 100vh;
   font-family: var(--font-body);
   color: var(--text);
+  background: var(--bg);
+  background-image: var(--gradient-aurora);
+  background-attachment: fixed;
 }
 
 button,
@@ -258,7 +261,7 @@ small {
   margin-top: 24px;
 }
 
-.book-cover-wrap { width: 140px; height: 190px; border-radius: var(--radius-sm); overflow: hidden; box-shadow: var(--shadow-sm); transform: rotate(-2deg); background: var(--surface-2); }
+.book-cover-wrap { width: 140px; height: 190px; border-radius: var(--radius-sm); overflow: hidden; box-shadow: var(--shadow-sm); background: var(--surface-2); }
 .book-cover { width: 100%; height: 100%; object-fit: cover; display: block; }
 .book-cover-placeholder { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 3rem; color: var(--bg-deep); background: var(--lime); }
 
@@ -412,13 +415,13 @@ small {
 .button-primary {
   color: #03131d;
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  box-shadow: 0 18px 35px rgba(108, 231, 255, 0.18);
+  box-shadow: var(--shadow-sm);
 }
 
 .button-secondary {
   color: var(--text);
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: transparent;
+  border: 1px solid var(--border);
 }
 
 .button-danger {
@@ -641,7 +644,7 @@ input:focus,
 select:focus,
 textarea:focus {
   border-color: rgba(108, 231, 255, 0.35);
-  box-shadow: 0 0 0 3px rgba(108, 231, 255, 0.1);
+  box-shadow: var(--shadow-sm);
 }
 
 input::placeholder,
@@ -893,7 +896,7 @@ label {
   border-radius: 20px;
   background: rgba(12, 27, 48, 0.96);
   border: 1px solid rgba(108, 231, 255, 0.14);
-  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--shadow);
   color: var(--text);
 }
 
@@ -953,7 +956,7 @@ label {
 }
 
 .onboarding-step .card.selected[aria-pressed="true"] {
-  box-shadow: 0 0 0 3px rgba(200, 255, 77, 0.2);
+  box-shadow: var(--shadow-sm);
 }
 
 .fade-in {

@@ -1,16 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- BASE_URL: https://YOUR_DOMAIN_HERE -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hungter — The AI tutor that gets you</title>
-  <meta name="description" content="Hungter combines four AI engines into one adaptive tutor for any subject. Start free during beta.">
-  <link rel="canonical" href="https://YOUR_DOMAIN_HERE/">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Fredoka:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap">
+  <title>Hungter — Free AI Tutor for O-Level, A-Level, GCSE & SAT Students</title>
+  <meta name="description" content="Hungter is a free AI tutor that adapts to how you learn. Four AI engines, AI-generated practice papers, quizzes, flashcards and real progress tracking for O-Level, A-Level, GCSE, SAT and PSAT students.">
+  <link rel="canonical" href="https://hungter.com/">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Hungter — The AI tutor that gets you">
   <meta property="og:description" content="Four AI specialists. One tutor built for how you learn.">
-  <meta property="og:image" content="/favicon.svg">
+  <meta property="og:image" content="https://hungter.com/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Hungter — The AI tutor that gets you">
   <meta name="twitter:description" content="Four AI specialists. One tutor built for how you learn.">
@@ -28,7 +32,9 @@
     "name": "Hungter",
     "description": "Hungter is an adaptive AI tutor that personalizes explanations using multiple AI engines.",
     "applicationCategory": "EducationalApplication",
-    "url": "https://YOUR_DOMAIN_HERE/"
+    "url": "https://hungter.com/",
+    "operatingSystem": "Web",
+    "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}
   }
   </script>
 </head>
@@ -66,15 +72,15 @@
       <p class="path-eyebrow">YOUR LEARNING PATH</p>
       <p class="path-title">Every question moves you forward.</p>
       <div class="path-row">
-        <div class="path-stop active"><div class="badge">🌱</div><div class="label">Beginner</div></div>
+        <div class="path-stop active"><div class="badge">🌱</div><div class="label">Newbie</div></div>
+        <div class="path-line"></div>
+        <div class="path-stop"><div class="badge">📖</div><div class="label">Learner</div></div>
         <div class="path-line"></div>
         <div class="path-stop"><div class="badge">🧭</div><div class="label">Explorer</div></div>
         <div class="path-line"></div>
         <div class="path-stop"><div class="badge">📚</div><div class="label">Scholar</div></div>
         <div class="path-line"></div>
-        <div class="path-stop"><div class="badge">🧠</div><div class="label">Genius</div></div>
-        <div class="path-line"></div>
-        <div class="path-stop"><div class="badge">🏆</div><div class="label">Legend</div></div>
+        <div class="path-stop"><div class="badge">🏆</div><div class="label">Master</div></div>
       </div>
     </div>
 
@@ -116,6 +122,45 @@
     </div>
   </section>
 
+  <section class="how" id="features">
+    <div class="container">
+      <p class="eyebrow" style="text-align:center;display:block;">WHAT'S INSIDE</p>
+      <h2 class="sec-title">More than a chatbot — a full study toolkit</h2>
+      <div class="how-grid">
+        <a class="how-card" href="/books.html" style="text-decoration:none;color:inherit;display:block;">
+          <div class="how-num">📚</div>
+          <h3>Book Catalog</h3>
+          <p>Real O-Level, A-Level, GCSE, SAT and PSAT study books — with AI quizzes, flashcards, and practice papers generated per chapter.</p>
+        </a>
+        <a class="how-card" href="/guess-papers.html" style="text-decoration:none;color:inherit;display:block;">
+          <div class="how-num">📝</div>
+          <h3>Guess Papers</h3>
+          <p>Original AI-generated practice exams in the style of real papers — pick your section, subject, and chapter, then print and practice.</p>
+        </a>
+        <a class="how-card" href="/roundchat.html" style="text-decoration:none;color:inherit;display:block;">
+          <div class="how-num">🗣</div>
+          <h3>RoundChat</h3>
+          <p>Watch multiple AI tutors compare takes on your question, then get one final answer built from the best of each.</p>
+        </a>
+        <a class="how-card" href="/flashcards.html" style="text-decoration:none;color:inherit;display:block;">
+          <div class="how-num">🃏</div>
+          <h3>Smart Flashcards</h3>
+          <p>Auto-built from your chats, wrong quiz answers, and books — with review dates so the right card comes back at the right time.</p>
+        </a>
+        <a class="how-card" href="/quiz.html" style="text-decoration:none;color:inherit;display:block;">
+          <div class="how-num">🎯</div>
+          <h3>AI Quizzes</h3>
+          <p>Fresh multiple-choice questions on any subject that never repeat what you've already answered.</p>
+        </a>
+        <a class="how-card" href="/learn.html" style="text-decoration:none;color:inherit;display:block;">
+          <div class="how-num">📈</div>
+          <h3>Learning Tracks</h3>
+          <p>Your real progress, streaks, weak-topic detection, and XP — computed from what you actually do, not vanity numbers.</p>
+        </a>
+      </div>
+    </div>
+  </section>
+
   <section class="pricing" id="pricing">
     <div class="container">
       <p class="eyebrow" style="text-align:center;display:block;">PICK YOUR PLAN</p>
@@ -154,6 +199,17 @@
           </ul>
           <a href="/checkout.html?plan=pro" class="price-btn">Get Student Pro</a>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="how" id="exam-seo-copy">
+    <div class="container">
+      <p class="eyebrow" style="text-align:center;display:block;">WHY STUDENTS STAY</p>
+      <h2 class="sec-title">The free AI tutor built for real exams</h2>
+      <div class="how-card" style="max-width:900px;margin:0 auto;">
+        <p>Hungter is a free AI tutor for students preparing for O-Level, A-Level, GCSE, SAT, and PSAT. Instead of one generic response, you get personalized learning paths with explanations shaped to how you learn best, plus daily momentum through clear progress signals.</p>
+        <p>When it is time to practice, you can move from AI tutor chat into original practice papers, AI quizzes, and smart flashcards without leaving the same study flow. That means one place for understanding concepts, testing yourself, and revising weak areas before exam day.</p>
       </div>
     </div>
   </section>

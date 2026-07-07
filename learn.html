@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- BASE_URL: https://YOUR_DOMAIN_HERE -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hungter — Learn</title>
-  <meta name="description" content="Follow guided learning paths in Hungter with clear next steps and personalized study flow.">
-  <link rel="canonical" href="https://YOUR_DOMAIN_HERE/learn.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Fredoka:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap">
+  <title>Your Learning Tracks & Study Progress | Hungter</title>
+  <meta name="description" content="See your real study progress: active subjects, weak topics detected from quiz scores, streaks and XP — all computed from what you actually do.">
+  <link rel="canonical" href="https://hungter.com/learn.html">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Hungter — Learn">
   <meta property="og:description" content="Continue your lessons with guided modules and AI-powered study momentum.">
@@ -82,7 +84,7 @@
       <article class="learn-feature-card">
         <div class="learn-feature-icon">🚀</div>
         <div>
-          <p class="quiz-label">Recommended for You</p>
+          <p class="quiz-label">Popular Topic</p>
           <h2>Space Exploration</h2>
           <p>Understand rockets, satellites, and what it takes to go beyond Earth.</p>
           <a href="/subjects.html" class="learn-link">Start Module</a>
@@ -92,7 +94,7 @@
       <article class="learn-feature-card">
         <div class="learn-feature-icon">🎨</div>
         <div>
-          <p class="quiz-label">Creative Deep Dive</p>
+          <p class="quiz-label">Popular Topic</p>
           <h2>Art History: Renaissance</h2>
           <p>Trace the stories and techniques of the Italian Renaissance through short, linked lessons.</p>
           <a href="/subjects.html" class="learn-link">Browse Subjects</a>
@@ -122,18 +124,15 @@
       }
     }
 
-    favoriteSubject.textContent = getFavoriteSubject();
     learnLevelPill.textContent = lsGet('mm_level', 'Newbie');
     const subjectsData = lsGet('mm_subjects', {});
     const sessions = lsGet('mm_sessions', []);
     const quizMetrics = getQuizMetrics();
     const explored = Object.entries(subjectsData).sort((a, b) => b[1] - a[1]);
+    const favorite = explored.length ? explored[0][0] : '—';
+    favoriteSubject.textContent = favorite;
     const topTwo = explored.slice(0, 2);
-    const fallbackModules = [
-      ['Math', 20],
-      ['Science', 12]
-    ];
-    const modules = (topTwo.length ? topTwo : fallbackModules).map(([subject, count], idx) => {
+    const modules = topTwo.map(([subject, count], idx) => {
       const pct = Math.min(95, Math.max(10, Math.round((count / Math.max(1, explored[0]?.[1] || count || 1)) * 100)));
       const status = idx === 0 ? 'In Progress' : 'Resume';
       return `
@@ -154,12 +153,30 @@
       `;
     });
     if (learnModules) {
-      learnModules.innerHTML = modules.join('');
+      if (modules.length) {
+        learnModules.innerHTML = modules.join('');
+      } else {
+        learnModules.innerHTML = `
+        <article class="learn-module">
+          <div class="learn-module-head">
+            <div>
+              <p>No modules yet</p>
+              <h3>Start your first session</h3>
+            </div>
+            <span class="learn-pill">New</span>
+          </div>
+          <p>Your learning tracks appear here after your first chat or quiz — everything on this page is computed from what you actually do.</p>
+          <div class="learn-progress">
+            <div class="learn-stat-row"><span><a href="/chat.html" class="learn-link">Ask your first question →</a></span></div>
+          </div>
+        </article>
+        `;
+      }
     }
 
-    if (activeLessons) activeLessons.textContent = String(Math.max(1, explored.length));
-    if (reviewSessions) reviewSessions.textContent = String(Math.max(1, sessions.length));
-    if (skillBoosts) skillBoosts.textContent = String(Math.max(0, quizMetrics.total));
+    if (activeLessons) activeLessons.textContent = String(explored.length);
+    if (reviewSessions) reviewSessions.textContent = String(sessions.length);
+    if (skillBoosts) skillBoosts.textContent = String(quizMetrics.total);
 
     const weakArea = getWeakArea();
     const recommendedTitle = document.getElementById('recommendedTitle');

@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- BASE_URL: https://YOUR_DOMAIN_HERE -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Fredoka:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap">
 <title>Hungter — Admin</title>
 <meta name="description" content="Hungter admin dashboard for internal usage analytics and system monitoring.">
-<link rel="canonical" href="https://YOUR_DOMAIN_HERE/admin.html">
+<link rel="canonical" href="https://hungter.com/admin.html">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Hungter — Admin">
 <meta property="og:description" content="Internal Hungter analytics dashboard.">
@@ -62,7 +64,7 @@
 
   <div id="keyGate" class="key-gate">
     <div class="eyebrow" style="justify-content:center;">Admin access</div>
-    <h1 style="font-family:var(--font-display);font-size:1.6rem;margin:0 0 8px;">Enter your admin key</h1>
+    <h2 style="font-family:var(--font-display);font-size:1.6rem;margin:0 0 8px;">Enter your admin key</h2>
     <p style="color:var(--ink-soft);">This matches the <code>ADMIN_KEY</code> environment variable set on the server / Netlify site.</p>
     <input id="keyInput" type="password" placeholder="Admin key" autocomplete="off" />
     <button class="btn-primary" id="unlockBtn" style="width:100%;">Unlock dashboard →</button>
@@ -140,8 +142,8 @@
       ? subjects.map((s) => `<div class="subject-row"><span>${s.subject}</span><span>${s.count}</span></div>`).join('')
       : '<p class="empty-note">No chat activity recorded yet.</p>';
 
-    const purchases = data.purchases || { count: 0, status: 'RapidPay tracking pending first checkout' };
-    purchasePill.textContent = purchases.count > 0 ? 'LIVE' : 'READY';
+    const purchases = data.purchases || { count: 0, status: 'No payment provider connected yet' };
+    purchasePill.textContent = purchases.count > 0 ? 'LIVE' : 'NOT CONNECTED';
     purchaseNote.textContent = `${purchases.count} sessions recorded — ${purchases.status}.`;
 
     const breakdownRows = [

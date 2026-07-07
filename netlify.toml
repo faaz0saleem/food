@@ -12,7 +12,7 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://secure.rapid-gateway.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://api.groq.com https://api.openai.com https://api.anthropic.com https://secure.rapid-gateway.com https://auth.rapidpay.pk; frame-src https://secure.rapid-gateway.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://api.groq.com https://api.openai.com https://api.anthropic.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 
 # The admin dashboard is a local-only tool (run `node server.js` and open
 # localhost:3000/admin.html). These blocks keep it off the public deploy —

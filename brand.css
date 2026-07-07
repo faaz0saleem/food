@@ -1,34 +1,47 @@
-@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Fredoka:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap');
 
 :root {
-  color-scheme: dark;
-  --bg: #1a1033;
-  --bg-deep: #120b26;
-  --surface: #2a1b4d;
-  --surface-soft: #251746;
-  --surface-2: #251746;
-  --border: #3d2a66;
-  --border-soft: rgba(255, 255, 255, 0.08);
+  /* Deep-space background layers */
+  --bg: #070B1A;
+  --bg-deep: #04060F;
+  --surface: rgba(255, 255, 255, 0.045);
+  --surface-2: rgba(255, 255, 255, 0.07);
+  --surface-solid: #0D1428;
+  --border: rgba(255, 255, 255, 0.10);
+  --border-soft: rgba(255, 255, 255, 0.06);
+  --border-glow: rgba(200, 255, 77, 0.35);
 
-  --lime: #c8ff4d;
-  --coral: #ff6b4a;
-  --blue: #4dd8ff;
-  --pink: #ff4de3;
-  --gold: #ffd14d;
+  /* Neon accents (lime stays the brand anchor) */
+  --lime: #C8FF4D;
+  --cyan: #4DF0FF;
+  --violet: #8B5CFF;
+  --pink: #FF4DE3;
+  --coral: #FF6B4A;
+  --gold: #FFD14D;
+  --blue: #4DD8FF; /* legacy alias, keep so old pages don't break */
 
-  --ink: #fff8f0;
-  --ink-soft: #c9bfe0;
-  --ink-faint: #8b7fb0;
+  /* Text */
+  --ink: #F2F5FF;
+  --ink-soft: #A9B2D6;
+  --ink-faint: #5F6A94;
 
-  --font-display: 'Fredoka', sans-serif;
+  /* Type */
+  --font-display: 'Space Grotesk', 'Fredoka', sans-serif;
   --font-body: 'Manrope', sans-serif;
   --font-mono: 'Space Mono', monospace;
 
-  --radius: 20px;
+  /* Shape & depth: glows replace hard offset shadows */
+  --radius: 18px;
   --radius-sm: 12px;
-  --shadow: 6px 6px 0 var(--bg-deep);
-  --shadow-sm: 4px 4px 0 var(--bg-deep);
-  --container: 1180px;
+  --shadow: 0 0 24px rgba(200, 255, 77, 0.12), 0 8px 32px rgba(0, 0, 0, 0.45);
+  --shadow-sm: 0 0 12px rgba(200, 255, 77, 0.10), 0 4px 16px rgba(0, 0, 0, 0.4);
+  --glow-lime: 0 0 20px rgba(200, 255, 77, 0.45);
+  --glow-cyan: 0 0 20px rgba(77, 240, 255, 0.40);
+  --gradient-brand: linear-gradient(120deg, var(--lime), var(--cyan));
+  --gradient-aurora: radial-gradient(60% 80% at 15% 0%, rgba(139, 92, 255, 0.22) 0%, transparent 60%),
+                     radial-gradient(50% 70% at 85% 10%, rgba(77, 240, 255, 0.16) 0%, transparent 55%),
+                     radial-gradient(40% 60% at 50% 100%, rgba(200, 255, 77, 0.10) 0%, transparent 60%);
+  --container: 1160px;
 }
 
 *,
@@ -45,12 +58,12 @@ body {
   margin: 0;
   min-height: 100vh;
   font-family: var(--font-body);
+  font-size: 16px;
   color: var(--ink);
   line-height: 1.55;
   background: var(--bg);
-  background-image:
-    radial-gradient(circle at 15% 10%, rgba(200, 255, 77, 0.07), transparent 40%),
-    radial-gradient(circle at 85% 30%, rgba(255, 77, 227, 0.06), transparent 40%);
+  background-image: var(--gradient-aurora);
+  background-attachment: fixed;
 }
 
 a {
@@ -68,8 +81,21 @@ img {
 }
 
 :focus-visible {
-  outline: 3px solid var(--lime);
-  outline-offset: 3px;
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
+h1,
+h2 {
+  font-family: var(--font-display);
+}
+
+.hero h1,
+main h1 {
+  background: var(--gradient-brand);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .container {
@@ -85,7 +111,8 @@ img {
 
 .top-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, var(--lime), var(--blue));
+  background: var(--gradient-brand);
+  box-shadow: 0 0 10px rgba(77, 240, 255, 0.8);
   border-radius: 999px;
   transition: width 1s ease;
 }
@@ -100,10 +127,11 @@ img {
   gap: 8px;
   font-family: var(--font-mono);
   font-weight: 700;
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--lime);
+  letter-spacing: 0.14em;
+  color: var(--cyan);
   margin-bottom: 12px;
 }
 
@@ -125,42 +153,224 @@ img {
   font-weight: 600;
   font-size: 1rem;
   border-radius: 999px;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
 .btn-primary {
-  background: var(--lime);
+  background: var(--gradient-brand);
   color: var(--bg-deep);
   padding: 16px 30px;
-  box-shadow: var(--shadow-sm);
+  border: none;
+  font-weight: 700;
+  box-shadow: var(--glow-lime);
 }
 
 .btn-primary:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: var(--shadow);
+  transform: translateY(-1px);
+  box-shadow: var(--glow-lime), var(--glow-cyan);
 }
 
 .btn-ghost {
   color: var(--ink);
-  border: 2px solid var(--border);
+  border: 1px solid var(--border);
+  background: transparent;
   padding: 14px 28px;
 }
 
 .btn-ghost:hover {
-  border-color: var(--lime);
-  background: rgba(200, 255, 77, 0.06);
+  border-color: var(--cyan);
+  color: var(--cyan);
+  box-shadow: var(--glow-cyan);
 }
 
 .card-surface {
   background: var(--surface);
-  border: 2px solid var(--border);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 24px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card,
+.how-card,
+.price-card,
+.book-panel,
+.gp-card,
+.learn-module,
+.kpi-card,
+.summary-card,
+.stat-card,
+.dashboard-card,
+.roundcard,
+.book-card,
+.flashcard,
+.chart-card,
+.timeline-card,
+.mastery-card,
+.learn-side-card,
+.learn-feature-card,
+.price-card,
+.checkout-form,
+.order-summary,
+.plan-card,
+.faq-card,
+.final-card,
+.demo-card,
+.sticker,
+.feature-card,
+.subject-card,
+.subject-progress-card {
+  background: var(--surface);
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .card:hover,
+  .how-card:hover,
+  .price-card:hover,
+  .book-panel:hover,
+  .gp-card:hover,
+  .learn-module:hover,
+  .kpi-card:hover,
+  .summary-card:hover,
+  .stat-card:hover,
+  .dashboard-card:hover,
+  .roundcard:hover,
+  .book-card:hover,
+  .flashcard:hover,
+  .chart-card:hover,
+  .timeline-card:hover,
+  .mastery-card:hover,
+  .learn-side-card:hover,
+  .learn-feature-card:hover,
+  .plan-card:hover,
+  .faq-card:hover,
+  .final-card:hover,
+  .demo-card:hover,
+  .sticker:hover,
+  .feature-card:hover,
+  .subject-card:hover,
+  .subject-progress-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--border-glow) !important;
+    box-shadow: var(--shadow);
+  }
+}
+
+button,
+.btn,
+.button,
+.button-primary,
+.price-btn,
+.btn.primary,
+.chat-btn,
+.send-btn {
+  border-radius: 999px;
+}
+
+.button-primary,
+.price-card.featured .price-btn,
+.price-btn,
+.btn.primary,
+.chat-btn,
+.send-btn {
+  background: var(--gradient-brand) !important;
+  color: var(--bg-deep) !important;
+  border: none !important;
+  font-weight: 700;
+  box-shadow: var(--glow-lime);
+  transition: box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.button-primary:hover,
+.price-card.featured .price-btn:hover,
+.price-btn:hover,
+.btn.primary:hover,
+.chat-btn:hover,
+.send-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--glow-lime), var(--glow-cyan);
+}
+
+.button-secondary,
+.btn-ghost,
+.btn:not(.primary),
+.button:not(.button-primary),
+.pick-btn {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--border);
+}
+
+.button-secondary:hover,
+.btn-ghost:hover,
+.btn:not(.primary):hover,
+.button:not(.button-primary):hover,
+.pick-btn:hover {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  box-shadow: var(--glow-cyan);
+}
+
+input,
+select,
+textarea {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--ink);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--cyan);
+  box-shadow: var(--glow-cyan);
+  outline: none;
+}
+
+@supports not (backdrop-filter: blur(14px)) {
+  .card,
+  .how-card,
+  .price-card,
+  .book-panel,
+  .gp-card,
+  .learn-module,
+  .kpi-card,
+  .summary-card,
+  .stat-card,
+  .dashboard-card,
+  .roundcard,
+  .book-card,
+  .flashcard,
+  .chart-card,
+  .timeline-card,
+  .mastery-card,
+  .learn-side-card,
+  .learn-feature-card,
+  .plan-card,
+  .faq-card,
+  .final-card,
+  .demo-card,
+  .sticker,
+  .feature-card,
+  .subject-card,
+  .subject-progress-card {
+    background: var(--surface-solid);
+  }
 }
 
 .beta-banner {
-  background: linear-gradient(90deg, rgba(200, 255, 77, 0.12), rgba(77, 216, 255, 0.1));
-  border-bottom: 1px solid rgba(200, 255, 77, 0.2);
+  background: linear-gradient(90deg, rgba(200, 255, 77, 0.12), rgba(77, 240, 255, 0.1));
+  border-bottom: 1px solid var(--border);
   color: var(--ink-soft);
   font-size: 0.86rem;
   text-align: center;
@@ -179,7 +389,7 @@ img {
 
 .engine-status {
   background: var(--surface);
-  border: 2px solid var(--border);
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: 18px;
   display: grid;
@@ -210,7 +420,7 @@ img {
 
 .engine-dot.live {
   background: var(--lime);
-  box-shadow: 0 0 12px rgba(200, 255, 77, 0.55);
+  box-shadow: var(--glow-lime);
 }
 
 .engine-dot.soon {
@@ -305,8 +515,8 @@ img {
 }
 
 .test-mode-note {
-  background: rgba(77, 216, 255, 0.08);
-  border: 1px solid rgba(77, 216, 255, 0.25);
+  background: rgba(77, 240, 255, 0.08);
+  border: 1px solid rgba(77, 240, 255, 0.25);
   border-radius: var(--radius-sm);
   padding: 14px 16px;
   color: var(--ink-soft);
@@ -333,6 +543,16 @@ img {
 
   .page-wrap {
     padding: 16px 16px 48px;
+  }
+
+  .site-nav {
+    width: calc(100% - 16px);
+    border-radius: var(--radius);
+    margin: 8px auto 16px;
+  }
+
+  .container {
+    padding: 0 16px;
   }
 }
 

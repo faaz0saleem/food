@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- BASE_URL: https://YOUR_DOMAIN_HERE -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hungter - RoundChat</title>
-<meta name="description" content="Compare multiple AI viewpoints side by side, then expand the one you want.">
-<link rel="canonical" href="https://YOUR_DOMAIN_HERE/roundchat.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Fredoka:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap">
+<title>RoundChat — 3 AI Tutors Compare Answers to Your Question | Hungter</title>
+<meta name="description" content="The only study tool where multiple AI engines each take on your question, then combine into one best answer. Watch AIs compare approaches live.">
+<link rel="canonical" href="https://hungter.com/roundchat.html">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Hungter - RoundChat">
 <meta property="og:description" content="Get short previews from multiple engines, then expand your chosen angle.">
@@ -52,7 +54,7 @@
   gap: 12px;
 }
 .roundcard {
-  border: 2px solid var(--border);
+  border: 1px solid var(--border);
   background: var(--surface);
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow-sm);
@@ -73,23 +75,36 @@
   margin-top: 10px;
   border: 1px solid var(--border);
   border-radius: 999px;
-  background: var(--surface-2);
+  background: transparent;
   color: var(--ink);
   padding: 7px 12px;
   cursor: pointer;
 }
 .roundcard .pick-btn:hover {
-  border-color: var(--lime);
-  color: var(--lime);
+  border-color: var(--cyan);
+  color: var(--cyan);
+  box-shadow: var(--glow-cyan);
 }
 .round-status {
   font-family: var(--font-mono);
   font-size: 0.76rem;
   color: var(--ink-faint);
 }
+.roundchat-main h1 {
+  font-family: var(--font-display);
+}
+
+#messages .msg-row.ai:nth-of-type(3n+1) .msg-bubble { border-left: 3px solid var(--lime); }
+#messages .msg-row.ai:nth-of-type(3n+2) .msg-bubble { border-left: 3px solid var(--cyan); }
+#messages .msg-row.ai:nth-of-type(3n) .msg-bubble { border-left: 3px solid var(--violet); }
 @media (max-width: 760px) {
   .roundchat-shell {
     padding: 0 14px 18px;
+  }
+}
+@media (max-width: 390px) {
+  .roundchat-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>
@@ -113,7 +128,7 @@
       <div id="welcomeScreen" class="chat-welcome">
         <div>
           <div class="eyebrow" style="justify-content:center;">Ask RoundChat</div>
-          <h1>Which angle do you want first?</h1>
+          <h2>Which angle do you want first?</h2>
           <p>Send one prompt, compare previews from available engines, then pick one to expand fully.</p>
         </div>
       </div>

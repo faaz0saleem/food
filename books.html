@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- BASE_URL: https://YOUR_DOMAIN_HERE -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hungter — Books</title>
-  <meta name="description" content="Browse the Hungter starter catalog of real study books by section and subject.">
-  <link rel="canonical" href="https://YOUR_DOMAIN_HERE/books.html">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Fredoka:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap">
+  <title>Best Study Books for O-Level, A-Level, GCSE, SAT & PSAT | Hungter</title>
+  <meta name="description" content="Browse recommended textbooks and revision guides for Cambridge O-Level, A-Level, GCSE, SAT and PSAT — with AI-generated quizzes, flashcards and practice papers for every chapter.">
+  <link rel="canonical" href="https://hungter.com/books.html">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Hungter — Books">
   <meta property="og:description" content="Find trusted study books and open chapter-aware AI actions.">
@@ -28,12 +30,25 @@
     .book-desc { color: var(--ink-soft); font-size: 0.9rem; min-height: 70px; }
     .book-chip { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; padding: 4px 10px; font-size: 0.72rem; color: var(--ink-soft); margin-right: 6px; }
     .book-link { display: inline-flex; margin-top: 10px; background: var(--lime); color: var(--bg-deep); border-radius: 999px; padding: 9px 14px; font-family: var(--font-display); box-shadow: var(--shadow-sm); }
+    .books-main h1 { font-family: var(--font-display); }
+    .crumbs { display: flex; flex-wrap: wrap; gap: 8px; color: var(--ink-soft); margin-bottom: 10px; }
+    .crumbs a { color: var(--ink-soft); text-decoration: none; border-bottom: 1px solid var(--border); }
+    .empty-card { background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius-sm); box-shadow: var(--shadow-sm); padding: 16px; }
+    .empty-card p { margin: 0 0 8px; color: var(--ink-soft); }
+    @media (max-width: 390px) {
+      .books-grid { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body data-page="books">
   <div class="top-bar"><div class="top-bar-fill" id="topBar"></div></div>
   <header class="site-nav"></header>
   <main class="books-main">
+    <nav class="crumbs" aria-label="Breadcrumb">
+      <a href="/">Home</a>
+      <span>&gt;</span>
+      <span>Books</span>
+    </nav>
     <p class="eyebrow">Books</p>
     <h1 style="margin:0 0 8px;">Starter catalog (18 real entries)</h1>
     <p style="margin:0;color:var(--ink-soft);">Small and honest for launch. Add more real entries manually later in the same schema.</p>
@@ -68,6 +83,8 @@
       const img = document.createElement('img');
       img.src = `https://covers.openlibrary.org/b/isbn/${book.isbn}-L.jpg`;
       img.alt = book.title;
+      img.width = 180;
+      img.height = 260;
       img.className = 'book-cover';
       img.addEventListener('error', () => {
         img.remove();
@@ -100,7 +117,21 @@
       });
 
       if (!filtered.length) {
-        booksGrid.innerHTML = '<p style="color:var(--ink-soft)">No books matched your filter.</p>';
+        booksGrid.innerHTML = `
+        <article class="empty-card">
+          <div class="learn-module-head">
+            <div>
+              <p>No matches yet</p>
+              <h3>Try another filter</h3>
+            </div>
+            <span class="learn-pill">Tip</span>
+          </div>
+          <p>No books matched your current section, subject, or search term.</p>
+          <div class="learn-progress">
+            <div class="learn-stat-row"><span><a href="/chat.html" class="learn-link">Ask for a recommendation →</a></span></div>
+          </div>
+        </article>
+        `;
         return;
       }
 
@@ -111,7 +142,7 @@
           <p class="book-meta">${book.author}</p>
           <p class="book-desc">${book.description}</p>
           <div><span class="book-chip">${book.section}</span><span class="book-chip">${book.subject}</span><span class="book-chip">ISBN ${book.isbn}</span></div>
-          <a class="book-link" href="/book.html?id=${book.id}">Open book →</a>
+          <a class="book-link" href="/books/${book.id}.html">Open book →</a>
         </article>
       `).join('');
 
