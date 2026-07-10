@@ -5,4 +5,9 @@ RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^status$ status.php [L,QSA]
 RewriteRule ^chat$ chat.php [L,QSA]
+RewriteRule ^chat-expand$ chat-expand.php [L,QSA]
+RewriteRule ^roundtable$ roundtable.php [L,QSA]
 RewriteRule ^visit$ visit.php [L,QSA]
+RewriteRule ^quiz$ quiz.php [L,QSA]
+RewriteRule ^quiz-question$ quiz-question.php [L,QSA]
+RewriteRule ^admin-stats$ admin-stats.php [L,QSA]

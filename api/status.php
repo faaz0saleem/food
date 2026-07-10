@@ -23,7 +23,5 @@ mm_json_response(200, [
         'explorer' => $openaiKey !== '',
         'storyteller' => $anthropicKey !== '',
     ],
-    'stats' => [
-        'model' => $model,
-    ],
+    'stats' => mm_get_admin_summary(),
 ]);

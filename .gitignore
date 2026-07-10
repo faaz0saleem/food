@@ -8,3 +8,4 @@ yes/
 public_html/
 database/*.db
 database/users.json
+.DS_Store

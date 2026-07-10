@@ -9,5 +9,15 @@ if ($method !== 'POST') {
     exit;
 }
 
-// Keep endpoint contract for frontend; no-op storage on simple PHP hosting.
-mm_json_response(200, ['status' => 'ok']);
+$body = mm_read_json_body();
+$visitorId = trim((string) ($body['visitorId'] ?? ''));
+
+if ($visitorId !== '') {
+    try {
+        mm_track_visit($visitorId);
+    } catch (Throwable $error) {
+        // Keep endpoint resilient even when DB is unavailable.
+    }
+}
+
+mm_json_response(200, ['status' => 'ok', 'stats' => mm_get_admin_summary()]);
