@@ -25,3 +25,13 @@ Requirements for external backend:
 
 ## Recommendation
 For real production auth and user data, use a persistent backend server plus MySQL. Hostinger frontend + external backend is fully possible with the current client architecture because pages already read `window.HUNGTER_API_BASE`.
+
+## Production env baseline
+Use these minimum values in production for either deployment mode:
+
+```env
+APP_ENV=production
+AUTH_EXPOSE_DEV_CODES=false
+```
+
+This prevents verification/reset OTP values from being included in API responses.

@@ -19,8 +19,13 @@ if (!empty($user['email_verified'])) {
 $code = mm_generate_numeric_code(6);
 mm_store_auth_challenge((int) $user['id'], 'email_verify', $code, 20);
 
-mm_json_response(200, [
+ $response = [
     'status' => 'ok',
     'message' => 'Verification code generated. Configure SMTP sender in production.',
-    'devCode' => $code,
-]);
+];
+
+if (mm_should_expose_dev_codes()) {
+    $response['devCode'] = $code;
+}
+
+mm_json_response(200, $response);

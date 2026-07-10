@@ -20,7 +20,11 @@ $user = mm_find_user_by_email($email);
 if ($user) {
     $code = mm_generate_numeric_code(6);
     mm_store_auth_challenge((int) $user['id'], 'password_reset', $code, 20);
-    mm_json_response(200, ['status' => 'ok', 'message' => 'Reset code generated.', 'devCode' => $code]);
+    $response = ['status' => 'ok', 'message' => 'Reset code generated.'];
+    if (mm_should_expose_dev_codes()) {
+        $response['devCode'] = $code;
+    }
+    mm_json_response(200, $response);
     exit;
 }
 

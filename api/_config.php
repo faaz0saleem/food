@@ -44,6 +44,24 @@ function mm_env_value(string $key, string $default = ''): string {
     return $default;
 }
 
+function mm_app_env(): string {
+    $value = strtolower(trim(mm_env_value('APP_ENV', 'production')));
+    return $value === '' ? 'production' : $value;
+}
+
+function mm_is_production_env(): bool {
+    return mm_app_env() === 'production';
+}
+
+function mm_should_expose_dev_codes(): bool {
+    $override = strtolower(trim(mm_env_value('AUTH_EXPOSE_DEV_CODES', '')));
+    if ($override !== '') {
+        return in_array($override, ['1', 'true', 'yes', 'on'], true);
+    }
+
+    return !mm_is_production_env();
+}
+
 function mm_json_response(int $statusCode, array $payload): void {
     http_response_code($statusCode);
     header('Content-Type: application/json; charset=utf-8');

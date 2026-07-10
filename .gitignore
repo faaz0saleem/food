@@ -1,6 +1,8 @@
 node_modules/
 .env
 stats.json
+phpmyadmin/
+phpMyAdmin-5.2.3-all-languages/
 server.log
 *.bundle
 *.zip

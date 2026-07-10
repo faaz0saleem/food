@@ -3,11 +3,10 @@
 This project now includes:
 - PHP API backend in `/api`
 - MySQL schema in `/database/schema.mysql.sql`
-- phpMyAdmin package in `/phpMyAdmin-5.2.3-all-languages`
 
 Recommended production approach:
 - Use Hostinger's built-in phpMyAdmin from hPanel for database administration.
-- Treat the bundled phpMyAdmin package as optional, not the primary production admin surface.
+- Do not upload a bundled phpMyAdmin copy into `public_html`; keep the public web root limited to the app files only.
 
 ## 1) Upload files to Hostinger
 1. Open Hostinger hPanel.
@@ -42,6 +41,8 @@ Create/edit `.env` in `public_html` with:
 GROQ_API_KEY=your_groq_key
 GROQ_MODEL=llama-3.3-70b-versatile
 ADMIN_KEY=your_admin_key
+APP_ENV=production
+AUTH_EXPOSE_DEV_CODES=false
 
 MYSQL_HOST=localhost
 MYSQL_PORT=3306
@@ -50,25 +51,23 @@ MYSQL_USER=your_db_user
 MYSQL_PASSWORD=your_db_password
 ```
 
-## 5) Configure phpMyAdmin package in project
-File: `/phpMyAdmin-5.2.3-all-languages/config.inc.php`
-- Set a strong random value for `$cfg['blowfish_secret']`.
-- Keep auth type as `cookie`.
+Notes:
+- `APP_ENV=production` disables development behavior by default.
+- `AUTH_EXPOSE_DEV_CODES=false` ensures verification/reset OTP codes are never returned in API responses.
 
-## 6) Access URLs
+## 5) Access URLs
 - App: `https://your-domain.com/`
 - API status: `https://your-domain.com/api/status`
-- Preferred phpMyAdmin: Hostinger hPanel -> phpMyAdmin
-- Optional bundled phpMyAdmin package: `https://your-domain.com/phpMyAdmin-5.2.3-all-languages/`
+- Database admin: Hostinger hPanel -> phpMyAdmin
 
-## 7) Test checklist
+## 6) Test checklist
 1. Open `/api/status` -> expect JSON with `status: ok`.
 2. Open `/api/quiz` via app page and confirm quiz loads.
 3. Open `/api/chat` via app page and confirm AI reply.
-4. Open phpMyAdmin URL and sign in with Hostinger MySQL username/password.
+4. Open Hostinger hPanel -> phpMyAdmin and confirm you can sign in with the Hostinger MySQL username/password.
 
-## 8) Security recommendations
-1. Rename phpMyAdmin folder after upload (example: `/db-panel-9f3x/`).
-2. Keep `setup/` blocked (already blocked with `.htaccess`).
-3. Use a strong unique MySQL password.
-4. Never commit production `.env`.
+## 7) Security recommendations
+1. Keep `.env`, `.git`, `/database`, and any admin-only tooling out of public download paths.
+2. Use a strong unique MySQL password.
+3. Never commit production `.env`.
+4. Keep `AUTH_EXPOSE_DEV_CODES=false` in production.
