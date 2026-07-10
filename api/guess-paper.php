@@ -1,0 +1,24 @@
+<?php
+require_once __DIR__ . '/_config.php';
+
+mm_handle_options();
+
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+    mm_json_response(405, ['error' => 'Method not allowed']);
+    exit;
+}
+
+$body = mm_read_json_body();
+mm_require_rate_limit(mm_rate_limit_key($body), 10, 60);
+
+$section = trim((string) ($body['section'] ?? ''));
+$subject = trim((string) ($body['subject'] ?? ''));
+$paperFormat = trim((string) ($body['paperFormat'] ?? ''));
+$chapter = trim((string) ($body['chapter'] ?? ''));
+
+if ($section === '' || $subject === '') {
+    mm_json_response(400, ['error' => 'section and subject are required.']);
+    exit;
+}
+
+mm_json_response(200, ['status' => 'ok'] + mm_generate_guess_paper($section, $subject, $paperFormat, $chapter));

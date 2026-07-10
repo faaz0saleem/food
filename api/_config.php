@@ -175,6 +175,37 @@ function mm_db(): ?PDO {
     return $pdo;
 }
 
+function mm_ensure_runtime_tables(): void {
+    static $initialized = false;
+    if ($initialized) {
+        return;
+    }
+
+    $db = mm_db();
+    if ($db === null) {
+        return;
+    }
+
+    $db->exec('CREATE TABLE IF NOT EXISTS auth_sessions (
+        token VARCHAR(128) NOT NULL PRIMARY KEY,
+        user_id BIGINT UNSIGNED NOT NULL,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        last_seen DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        expires_at DATETIME NOT NULL,
+        KEY idx_auth_sessions_user_id (user_id),
+        KEY idx_auth_sessions_expires_at (expires_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci');
+
+    $db->exec('CREATE TABLE IF NOT EXISTS api_rate_limits (
+        limiter_key VARCHAR(160) NOT NULL PRIMARY KEY,
+        window_start DATETIME NOT NULL,
+        request_count INT NOT NULL DEFAULT 0,
+        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci');
+
+    $initialized = true;
+}
+
 function mm_client_ip(): string {
     $forwarded = trim((string) ($_SERVER['HTTP_X_FORWARDED_FOR'] ?? ''));
     if ($forwarded !== '') {
@@ -191,6 +222,53 @@ function mm_client_ip(): string {
     }
 
     return 'unknown';
+}
+
+function mm_rate_limit_key(array $body = []): string {
+    $visitorId = trim((string) ($body['visitorId'] ?? ''));
+    if ($visitorId !== '') {
+        return 'visitor:' . substr($visitorId, 0, 120);
+    }
+
+    return 'ip:' . mm_client_ip();
+}
+
+function mm_check_rate_limit(string $key, int $windowSeconds = 60, int $maxRequests = 20): array {
+    $db = mm_db();
+    if ($db === null) {
+        return ['allowed' => true, 'retryAfterMs' => 0];
+    }
+
+    mm_ensure_runtime_tables();
+
+    $select = $db->prepare('SELECT limiter_key, window_start, request_count FROM api_rate_limits WHERE limiter_key = :limiter_key');
+    $select->execute([':limiter_key' => $key]);
+    $row = $select->fetch();
+    $now = time();
+
+    if (!$row) {
+        $insert = $db->prepare('INSERT INTO api_rate_limits (limiter_key, window_start, request_count) VALUES (:limiter_key, UTC_TIMESTAMP(), 1)');
+        $insert->execute([':limiter_key' => $key]);
+        return ['allowed' => true, 'retryAfterMs' => 0];
+    }
+
+    $windowStart = strtotime((string) ($row['window_start'] ?? 'now')) ?: $now;
+    $count = (int) ($row['request_count'] ?? 0);
+
+    if (($now - $windowStart) >= $windowSeconds) {
+        $reset = $db->prepare('UPDATE api_rate_limits SET window_start = UTC_TIMESTAMP(), request_count = 1 WHERE limiter_key = :limiter_key');
+        $reset->execute([':limiter_key' => $key]);
+        return ['allowed' => true, 'retryAfterMs' => 0];
+    }
+
+    if ($count >= $maxRequests) {
+        $retryMs = max(1000, ($windowSeconds - ($now - $windowStart)) * 1000);
+        return ['allowed' => false, 'retryAfterMs' => $retryMs];
+    }
+
+    $update = $db->prepare('UPDATE api_rate_limits SET request_count = request_count + 1 WHERE limiter_key = :limiter_key');
+    $update->execute([':limiter_key' => $key]);
+    return ['allowed' => true, 'retryAfterMs' => 0];
 }
 
 function mm_track_visit(string $visitorId): void {
@@ -220,6 +298,8 @@ function mm_record_chat(array $payload, string $reply, string $engine, string $m
         return;
     }
 
+    mm_ensure_runtime_tables();
+
     $stmt = $db->prepare('INSERT INTO chats (visitor_id, subject, user_level, learning_style, engine, model, message, reply, created_at)
                           VALUES (:visitor_id, :subject, :user_level, :learning_style, :engine, :model, :message, :reply, UTC_TIMESTAMP())');
     $stmt->execute([
@@ -232,6 +312,127 @@ function mm_record_chat(array $payload, string $reply, string $engine, string $m
         ':message' => substr((string) ($payload['message'] ?? ''), 0, 24000),
         ':reply' => substr($reply, 0, 32000),
     ]);
+}
+
+function mm_find_user_by_email(string $email): ?array {
+    $db = mm_db();
+    if ($db === null) {
+        return null;
+    }
+
+    $stmt = $db->prepare('SELECT * FROM users WHERE email = :email LIMIT 1');
+    $stmt->execute([':email' => strtolower(trim($email))]);
+    $row = $stmt->fetch();
+    return is_array($row) ? $row : null;
+}
+
+function mm_find_user_by_id(int $id): ?array {
+    $db = mm_db();
+    if ($db === null) {
+        return null;
+    }
+
+    $stmt = $db->prepare('SELECT * FROM users WHERE id = :id LIMIT 1');
+    $stmt->execute([':id' => $id]);
+    $row = $stmt->fetch();
+    return is_array($row) ? $row : null;
+}
+
+function mm_public_user(array $user): array {
+    return [
+        'visitorId' => (string) ($user['visitor_id'] ?? ''),
+        'name' => (string) ($user['name'] ?? ''),
+        'email' => (string) ($user['email'] ?? ''),
+        'learningStyle' => (string) ($user['learning_style'] ?? 'Visual'),
+        'level' => (string) ($user['level'] ?? 'Newbie'),
+        'xp' => (int) ($user['xp'] ?? 0),
+        'planName' => (string) ($user['plan_name'] ?? ''),
+        'planPrice' => (float) ($user['plan_price'] ?? 0),
+        'planStatus' => (string) ($user['plan_status'] ?? 'inactive'),
+        'planStarted' => (string) ($user['plan_started'] ?? ''),
+    ];
+}
+
+function mm_generate_visitor_id(): string {
+    return 'user-' . time() . '-' . bin2hex(random_bytes(4));
+}
+
+function mm_hash_password(string $password): string {
+    return password_hash($password, PASSWORD_DEFAULT);
+}
+
+function mm_verify_password(string $password, string $hash): bool {
+    return $hash !== '' && password_verify($password, $hash);
+}
+
+function mm_create_session(int $userId, int $ttlDays = 30): string {
+    $db = mm_db();
+    if ($db === null) {
+        throw new RuntimeException('Database not configured.');
+    }
+
+    mm_ensure_runtime_tables();
+
+    $token = bin2hex(random_bytes(32));
+    $stmt = $db->prepare('INSERT INTO auth_sessions (token, user_id, created_at, last_seen, expires_at)
+                          VALUES (:token, :user_id, UTC_TIMESTAMP(), UTC_TIMESTAMP(), DATE_ADD(UTC_TIMESTAMP(), INTERVAL :ttl DAY))');
+    $stmt->bindValue(':token', $token);
+    $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+    $stmt->bindValue(':ttl', $ttlDays, PDO::PARAM_INT);
+    $stmt->execute();
+    return $token;
+}
+
+function mm_read_bearer_token(): string {
+    $header = trim((string) ($_SERVER['HTTP_AUTHORIZATION'] ?? ''));
+    if ($header === '' && function_exists('getallheaders')) {
+        $headers = getallheaders();
+        $header = trim((string) ($headers['Authorization'] ?? $headers['authorization'] ?? ''));
+    }
+
+    if (str_starts_with($header, 'Bearer ')) {
+        return trim(substr($header, 7));
+    }
+
+    return '';
+}
+
+function mm_current_user(): ?array {
+    $token = mm_read_bearer_token();
+    if ($token === '') {
+        return null;
+    }
+
+    $db = mm_db();
+    if ($db === null) {
+        return null;
+    }
+
+    mm_ensure_runtime_tables();
+
+    $stmt = $db->prepare('SELECT u.*
+                          FROM auth_sessions s
+                          INNER JOIN users u ON u.id = s.user_id
+                          WHERE s.token = :token AND s.expires_at > UTC_TIMESTAMP()
+                          LIMIT 1');
+    $stmt->execute([':token' => $token]);
+    $user = $stmt->fetch();
+    if (!is_array($user)) {
+        return null;
+    }
+
+    $touch = $db->prepare('UPDATE auth_sessions SET last_seen = UTC_TIMESTAMP() WHERE token = :token');
+    $touch->execute([':token' => $token]);
+    return $user;
+}
+
+function mm_require_auth_user(): array {
+    $user = mm_current_user();
+    if ($user === null) {
+        mm_json_response(401, ['error' => 'Not authenticated.']);
+        exit;
+    }
+    return $user;
 }
 
 function mm_get_admin_summary(): array {
@@ -297,6 +498,29 @@ function mm_build_system_prompt(string $subject, string $userLevel, string $extr
         . 'Learner level: ' . $levelValue . '. '
         . 'Be concise: 2-4 sentences unless the student asks for or clearly needs a worked example. '
         . trim($extra);
+}
+
+function mm_parse_json_loose(string $text): mixed {
+    $parsed = json_decode($text, true);
+    if ($parsed !== null || trim($text) === 'null') {
+        return $parsed;
+    }
+
+    if (preg_match('/(\[.*\])/s', $text, $matches) === 1) {
+        $parsed = json_decode($matches[1], true);
+        if ($parsed !== null) {
+            return $parsed;
+        }
+    }
+
+    return null;
+}
+
+function mm_ai_text(string $systemPrompt, string $userPrompt, float $temperature = 0.5, int $maxTokens = 800): array {
+    return mm_call_groq([
+        ['role' => 'system', 'content' => $systemPrompt],
+        ['role' => 'user', 'content' => $userPrompt],
+    ], $temperature, $maxTokens);
 }
 
 function mm_call_groq(array $messages, float $temperature = 0.5, int $maxTokens = 700): array {
@@ -410,4 +634,87 @@ function mm_generate_quiz_question(string $subject): array {
         ];
     }
     return $items[0];
+}
+
+function mm_generate_book_flashcards(string $subject, string $chapter, string $bookContext): array {
+    $topic = trim($chapter) !== '' ? trim($chapter) : trim($subject);
+    $prompt = 'Create 6 original flashcards for the topic "' . $topic . '"'
+        . ($bookContext !== '' ? ' studied from a book like "' . $bookContext . '"' : '')
+        . '. Return ONLY valid JSON like [{"front":"...","back":"..."}].';
+    $result = mm_ai_text('You generate concise educational flashcards. Only return valid JSON.', $prompt, 0.4, 900);
+    if (!($result['ok'] ?? false)) {
+        return [['front' => 'What is the key idea in ' . $topic . '?', 'back' => 'Review this topic with the AI tutor for a full explanation.']];
+    }
+
+    $parsed = mm_parse_json_loose((string) ($result['reply'] ?? ''));
+    if (!is_array($parsed)) {
+        return [['front' => 'What is the key idea in ' . $topic . '?', 'back' => 'Review this topic with the AI tutor for a full explanation.']];
+    }
+
+    $cards = [];
+    foreach ($parsed as $item) {
+        if (!is_array($item)) {
+            continue;
+        }
+        $front = trim((string) ($item['front'] ?? ''));
+        $back = trim((string) ($item['back'] ?? ''));
+        if ($front === '' || $back === '') {
+            continue;
+        }
+        $cards[] = ['front' => $front, 'back' => $back];
+    }
+
+    return count($cards) ? array_slice($cards, 0, 12) : [['front' => 'What is the key idea in ' . $topic . '?', 'back' => 'Review this topic with the AI tutor for a full explanation.']];
+}
+
+function mm_generate_chapter_notes(string $subject, string $chapter, string $bookContext, string $userLevel): array {
+    $topic = trim($chapter) !== '' ? trim($chapter) : trim($subject);
+    $systemPrompt = mm_build_system_prompt($subject, $userLevel, 'Write complete original revision notes in a structured format.');
+    $userPrompt = 'Write original revision notes for the topic "' . $topic . '"'
+        . ($bookContext !== '' ? ' from a book like "' . $bookContext . '"' : '')
+        . '. Use these exact headings: OVERVIEW, KEY POINTS, FORMULAS & DEFINITIONS, COMMON MISTAKES, EXAM TIPS.';
+    $result = mm_ai_text($systemPrompt, $userPrompt, 0.45, 1300);
+    if (!($result['ok'] ?? false) || trim((string) ($result['reply'] ?? '')) === '') {
+        return [
+            'notes' => "OVERVIEW\n" . $topic . " is a core part of " . $subject . ".\n\nKEY POINTS\n- Review this topic with the AI tutor.\n- Practice quiz questions on this chapter.\n\nFORMULAS & DEFINITIONS\n- Add key terms here once AI is connected.\n\nCOMMON MISTAKES\n- Rushing without checking definitions.\n\nEXAM TIPS\n- Show your working and define key terms clearly.",
+            'engine' => 'Demo',
+        ];
+    }
+
+    return [
+        'notes' => trim((string) $result['reply']),
+        'engine' => 'Reasoner',
+    ];
+}
+
+function mm_generate_guess_paper(string $section, string $subject, string $paperFormat, string $chapter): array {
+    $topic = trim($chapter) !== '' ? trim($chapter) : trim($subject);
+    $prompt = 'Create an ORIGINAL practice paper for ' . trim($section) . ' ' . trim($subject)
+        . ' focused on "' . $topic . '". Format: ' . ($paperFormat !== '' ? $paperFormat : '60 minutes')
+        . '. Include 6 questions and a separate Answer Key. Do not copy any official exam paper.';
+    $result = mm_ai_text('You generate original practice exam papers for students.', $prompt, 0.55, 1500);
+    if (!($result['ok'] ?? false) || trim((string) ($result['reply'] ?? '')) === '') {
+        return [
+            'paper' => trim($section . ' ' . $subject) . " — Practice Paper\n\n1. Define the key idea of " . $topic . ".\n2. Give one worked example.\n3. Explain one common mistake students make.\n\nAnswer Key\n1-3: Open-ended demo paper.",
+            'generatedBy' => ['Demo'],
+        ];
+    }
+
+    return [
+        'paper' => trim((string) $result['reply']),
+        'generatedBy' => ['Reasoner'],
+    ];
+}
+
+function mm_generate_explain_check(string $concept, string $studentExplanation): array {
+    $result = mm_call_groq([
+        ['role' => 'system', 'content' => 'You are a supportive tutor grading a student explanation briefly.'],
+        ['role' => 'user', 'content' => 'Concept: ' . $concept . "\nStudent explanation: " . $studentExplanation . "\n\nIn one short sentence, say whether they show understanding and give a brief correction or encouragement."],
+    ], 0.3, 120);
+
+    if ($result['ok'] && trim((string) ($result['reply'] ?? '')) !== '') {
+        return ['understood' => true, 'feedback' => (string) $result['reply']];
+    }
+
+    return ['understood' => true, 'feedback' => 'Good effort. Tighten the definition and include one concrete example.'];
 }

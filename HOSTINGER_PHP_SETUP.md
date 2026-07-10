@@ -5,6 +5,10 @@ This project now includes:
 - MySQL schema in `/database/schema.mysql.sql`
 - phpMyAdmin package in `/phpMyAdmin-5.2.3-all-languages`
 
+Recommended production approach:
+- Use Hostinger's built-in phpMyAdmin from hPanel for database administration.
+- Treat the bundled phpMyAdmin package as optional, not the primary production admin surface.
+
 ## 1) Upload files to Hostinger
 1. Open Hostinger hPanel.
 2. Go to **Files -> File Manager**.
@@ -54,7 +58,8 @@ File: `/phpMyAdmin-5.2.3-all-languages/config.inc.php`
 ## 6) Access URLs
 - App: `https://your-domain.com/`
 - API status: `https://your-domain.com/api/status`
-- phpMyAdmin package: `https://your-domain.com/phpMyAdmin-5.2.3-all-languages/`
+- Preferred phpMyAdmin: Hostinger hPanel -> phpMyAdmin
+- Optional bundled phpMyAdmin package: `https://your-domain.com/phpMyAdmin-5.2.3-all-languages/`
 
 ## 7) Test checklist
 1. Open `/api/status` -> expect JSON with `status: ok`.

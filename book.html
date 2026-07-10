@@ -122,12 +122,25 @@
     function saveReview(bookId, review) {
       const key = `mm_book_reviews_${bookId}`;
       const items = lsGet(key, []);
-      items.push(review);
+      items.push({
+        name: String(review?.name || '').slice(0, 120),
+        text: String(review?.text || '').slice(0, 2000),
+        createdAt: String(review?.createdAt || new Date().toISOString()),
+      });
       lsSet(key, items.slice(-100));
     }
 
     function getReviews(bookId) {
       return lsGet(`mm_book_reviews_${bookId}`, []);
+    }
+
+    function escapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
     }
 
     function appendGeneratedFlashcards(cards, bookTitle) {
@@ -364,7 +377,7 @@
               <textarea id="reviewText" rows="3" placeholder="Write your review"></textarea>
               <button type="submit" class="btn">Submit review</button>
             </form>
-            <div id="reviewsList" style="margin-top:8px;">${reviews.length ? reviews.slice().reverse().map((r) => `<article style="border-top:1px solid var(--border-soft);padding-top:8px;margin-top:8px;"><strong>${r.name || 'Anonymous'}</strong><p style="margin:4px 0 0;color:var(--ink-soft);">${r.text}</p></article>`).join('') : '<p style="color:var(--ink-soft);">No reviews yet.</p>'}</div>
+            <div id="reviewsList" style="margin-top:8px;">${reviews.length ? reviews.slice().reverse().map((r) => `<article style="border-top:1px solid var(--border-soft);padding-top:8px;margin-top:8px;"><strong>${escapeHtml(r.name || 'Anonymous')}</strong><p style="margin:4px 0 0;color:var(--ink-soft);">${escapeHtml(r.text || '')}</p></article>`).join('') : '<p style="color:var(--ink-soft);">No reviews yet.</p>'}</div>
           </div>
         `;
         container.appendChild(info);
