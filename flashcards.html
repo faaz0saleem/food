@@ -19,20 +19,59 @@
   <style>
     .top-bar { height: 4px; background: var(--surface-2); }
     .top-bar-fill { height: 100%; background: linear-gradient(90deg,var(--lime),var(--blue)); width: 0%; }
-    .flashcards-main { max-width: var(--container); margin: 0 auto; padding: 22px 16px 40px; }
-    .flashcards-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(260px,1fr)); gap: 14px; margin-top: 16px; }
-    .flashcard { background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius-sm); box-shadow: var(--shadow-sm); padding: 16px; }
-    .flashcard h3 { margin: 0 0 8px; font-size: 1rem; }
-    .flashcard p { margin: 0 0 8px; color: var(--ink-soft); }
-    .flash-meta { font-family: var(--font-mono); color: var(--ink-faint); font-size: 0.75rem; }
-    .flash-actions { display: flex; gap: 8px; margin-top: 10px; }
-    .btn { border: 2px solid var(--border); background: transparent; color: var(--ink); border-radius: 999px; padding: 7px 12px; cursor: pointer; }
-    .btn.primary { background: var(--lime); color: var(--bg-deep); border: none; box-shadow: var(--shadow-sm); }
+    .flashcards-main { max-width: 640px; margin: 0 auto; padding: 22px 16px 40px; }
     .flashcards-main h1 { font-family: var(--font-display); }
-    .empty-card { background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius-sm); box-shadow: var(--shadow-sm); padding: 16px; }
-    .empty-card p { margin: 0 0 8px; color: var(--ink-soft); }
-    @media (max-width: 390px) {
-      .flashcards-grid { grid-template-columns: 1fr; }
+    .flash-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+    .btn { border: 2px solid var(--border); background: transparent; color: var(--ink); border-radius: 999px; padding: 7px 14px; cursor: pointer; font-family: var(--font-body); font-size: 0.9rem; }
+    .btn:hover { border-color: var(--lime); }
+    .btn.primary { background: var(--lime); color: var(--bg-deep); border: none; box-shadow: var(--shadow-sm); font-weight: 600; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .deck-progress { margin: 18px 0 8px; display: flex; align-items: center; justify-content: space-between; }
+    .deck-progress-label { font-family: var(--font-mono); font-size: 0.78rem; color: var(--ink-faint); letter-spacing: 0.05em; }
+    .deck-progress-track { flex: 1; height: 4px; background: var(--surface-2); border-radius: 999px; margin: 0 12px; overflow: hidden; }
+    .deck-progress-fill { height: 100%; background: linear-gradient(90deg,var(--lime),var(--blue)); border-radius: 999px; transition: width 0.25s ease; }
+
+    /* --- the deck: one card visible at a time --- */
+    .deck-stage { position: relative; height: 320px; perspective: 1400px; margin-top: 8px; }
+    .flashcard {
+      position: absolute; inset: 0;
+      cursor: pointer;
+      transform-style: preserve-3d;
+      transition: transform 0.45s cubic-bezier(.2,.8,.2,1), opacity 0.3s ease, left 0.35s ease;
+    }
+    .flashcard.flipped { transform: rotateY(180deg); }
+    .flashcard.leaving { opacity: 0; left: -40px; pointer-events: none; }
+    .flashcard.entering { opacity: 0; left: 40px; }
+    .card-face {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      text-align: center; padding: 28px;
+      background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+    }
+    .card-face.back { transform: rotateY(180deg); border-color: var(--lime); }
+    .card-face-eyebrow { font-family: var(--font-mono); font-size: 0.72rem; letter-spacing: 0.1em; color: var(--ink-faint); text-transform: uppercase; margin-bottom: 12px; }
+    .card-face-text { font-size: 1.15rem; line-height: 1.5; color: var(--ink); }
+    .card-face-hint { position: absolute; bottom: 14px; font-family: var(--font-mono); font-size: 0.7rem; color: var(--ink-faint); }
+    .card-face-meta { position: absolute; top: 14px; right: 16px; font-family: var(--font-mono); font-size: 0.68rem; color: var(--ink-faint); }
+
+    .deck-controls { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 18px; }
+    .deck-nav-btn { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--border); background: transparent; color: var(--ink); cursor: pointer; font-size: 1.1rem; }
+    .deck-nav-btn:hover:not(:disabled) { border-color: var(--lime); color: var(--lime); }
+    .deck-nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    .spacing-row { display: flex; gap: 8px; justify-content: center; margin-top: 12px; }
+    .spacing-row .btn { font-size: 0.82rem; }
+
+    .empty-card { background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius-sm); box-shadow: var(--shadow-sm); padding: 20px; margin-top: 16px; text-align: center; }
+    .empty-card p { margin: 0 0 12px; color: var(--ink-soft); }
+
+    @media (max-width: 480px) {
+      .deck-stage { height: 380px; }
+      .card-face-text { font-size: 1rem; }
     }
   </style>
 </head>
@@ -42,22 +81,59 @@
   <main class="flashcards-main">
     <p class="eyebrow">Review</p>
     <h1 style="margin:0 0 8px;">Flashcards from your learning trail</h1>
-    <p style="margin:0;color:var(--ink-soft);">Built from chat conversations and wrong quiz answers. Cards are saved in localStorage as mm_flashcards.</p>
+    <p style="margin:0;color:var(--ink-soft);">Built from chat conversations, wrong quiz answers, and books. Click a card to flip it, click again to move to the next one.</p>
     <div class="flash-actions">
       <button id="generateCards" type="button" class="btn primary">Generate from my data</button>
       <button id="clearCards" type="button" class="btn">Clear all cards</button>
     </div>
-    <div id="cardsArea" class="flashcards-grid"></div>
+
+    <div id="deckWrap" style="display:none;">
+      <div class="deck-progress">
+        <span class="deck-progress-label" id="deckPosLabel">1 / 1</span>
+        <div class="deck-progress-track"><div class="deck-progress-fill" id="deckProgressFill" style="width:0%;"></div></div>
+        <span class="deck-progress-label" id="deckSourceLabel"></span>
+      </div>
+
+      <div class="deck-stage" id="deckStage"></div>
+
+      <div class="deck-controls">
+        <button type="button" class="deck-nav-btn" id="prevCardBtn" aria-label="Previous card">←</button>
+        <button type="button" class="btn" id="flipCardBtn">Flip card</button>
+        <button type="button" class="deck-nav-btn" id="nextCardBtn" aria-label="Next card">→</button>
+      </div>
+
+      <div class="spacing-row" id="spacingRow" style="visibility:hidden;">
+        <span style="color:var(--ink-faint);font-family:var(--font-mono);font-size:0.78rem;align-self:center;">Got it right?</span>
+        <button type="button" class="btn" data-delay="1">Review tomorrow</button>
+        <button type="button" class="btn" data-delay="3">Review in 3 days</button>
+        <button type="button" class="btn primary" data-delay="7">Easy — 7 days</button>
+      </div>
+    </div>
+
+    <div id="emptyState" class="empty-card" style="display:none;">
+      <h3 style="margin:0 0 6px;">No cards yet</h3>
+      <p>Your flashcards appear here after you generate from chats, quiz mistakes, or a book chapter.</p>
+      <a href="/chat.html" class="btn primary">Ask your first question →</a>
+    </div>
   </main>
 
   <script src="/api-config.js"></script>
-<script src="/script.js"></script>
+  <script src="/script.js"></script>
   <script src="/layout.js" defer></script>
   <script>
     ensureProfile();
 
     const topBar = document.getElementById('topBar');
-    const cardsArea = document.getElementById('cardsArea');
+    const deckWrap = document.getElementById('deckWrap');
+    const deckStage = document.getElementById('deckStage');
+    const emptyState = document.getElementById('emptyState');
+    const deckPosLabel = document.getElementById('deckPosLabel');
+    const deckSourceLabel = document.getElementById('deckSourceLabel');
+    const deckProgressFill = document.getElementById('deckProgressFill');
+    const prevCardBtn = document.getElementById('prevCardBtn');
+    const nextCardBtn = document.getElementById('nextCardBtn');
+    const flipCardBtn = document.getElementById('flipCardBtn');
+    const spacingRow = document.getElementById('spacingRow');
 
     function refreshTopBar() {
       const progress = getLevelProgress();
@@ -112,68 +188,141 @@
       return combined;
     }
 
-    function renderCards() {
-      const cards = loadCards();
-      if (!cards.length) {
-        cardsArea.innerHTML = `
-        <article class="empty-card">
-          <div class="learn-module-head">
-            <div>
-              <p>No cards yet</p>
-              <h3>Start your first review set</h3>
-            </div>
-            <span class="learn-pill">New</span>
-          </div>
-          <p>Your flashcards appear here after you generate from chats or quiz mistakes.</p>
-          <div class="learn-progress">
-            <div class="learn-stat-row"><span><a href="/chat.html" class="learn-link">Ask your first question →</a></span></div>
-          </div>
-        </article>
-        `;
+    // ---- deck state ----
+    let deck = [];       // cards, most-recent-first
+    let index = 0;        // current card position in `deck`
+    let flipped = false;  // is the current card showing its back?
+
+    function currentCards() {
+      return loadCards().slice().reverse();
+    }
+
+    function renderDeck() {
+      deck = currentCards();
+
+      if (!deck.length) {
+        deckWrap.style.display = 'none';
+        emptyState.style.display = 'block';
         return;
       }
+      emptyState.style.display = 'none';
+      deckWrap.style.display = 'block';
 
-      cardsArea.innerHTML = cards.slice().reverse().map((card, index) => `
-        <article class="flashcard">
-          <h3>Front</h3>
-          <p>${card.front || ''}</p>
-          <h3>Back</h3>
-          <p>${card.back || ''}</p>
-          <div class="flash-meta">Source: ${card.source || 'Unknown'} · Next review: ${card.nextReviewDate || 'N/A'}</div>
-          <div class="flash-actions">
-            <button type="button" class="btn" data-delay="1" data-index="${index}">Review tomorrow</button>
-            <button type="button" class="btn" data-delay="3" data-index="${index}">Review in 3 days</button>
-          </div>
-        </article>
-      `).join('');
-
-      cardsArea.querySelectorAll('[data-delay]').forEach((button) => {
-        button.addEventListener('click', () => {
-          const delay = Number(button.getAttribute('data-delay') || 2);
-          const reverseIndex = Number(button.getAttribute('data-index') || 0);
-          const cards = loadCards();
-          const index = cards.length - 1 - reverseIndex;
-          if (!cards[index]) return;
-          cards[index].nextReviewDate = nextReviewDate(delay);
-          saveCards(cards);
-          renderCards();
-        });
-      });
+      if (index >= deck.length) index = deck.length - 1;
+      if (index < 0) index = 0;
+      flipped = false;
+      spacingRow.style.visibility = 'hidden';
+      renderCurrentCard();
     }
+
+    function renderCurrentCard() {
+      const card = deck[index];
+      if (!card) return;
+
+      deckPosLabel.textContent = `${index + 1} / ${deck.length}`;
+      deckSourceLabel.textContent = card.source || 'Review';
+      deckProgressFill.style.width = `${Math.round(((index + 1) / deck.length) * 100)}%`;
+      prevCardBtn.disabled = index === 0;
+      nextCardBtn.disabled = index === deck.length - 1;
+
+      deckStage.innerHTML = `
+        <div class="flashcard" id="activeCard">
+          <div class="card-face front">
+            <span class="card-face-meta">Next review: ${card.nextReviewDate || 'N/A'}</span>
+            <span class="card-face-eyebrow">Question</span>
+            <p class="card-face-text">${escapeHtml(card.front || '')}</p>
+            <span class="card-face-hint">Click to flip</span>
+          </div>
+          <div class="card-face back">
+            <span class="card-face-eyebrow">Answer</span>
+            <p class="card-face-text">${escapeHtml(card.back || '')}</p>
+            <span class="card-face-hint">Click for next card</span>
+          </div>
+        </div>
+      `;
+
+      const activeCard = document.getElementById('activeCard');
+      activeCard.addEventListener('click', onCardClick);
+      spacingRow.style.visibility = 'hidden';
+    }
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function onCardClick() {
+      if (!flipped) {
+        flipped = true;
+        document.getElementById('activeCard')?.classList.add('flipped');
+        spacingRow.style.visibility = 'visible';
+      } else {
+        goToCard(index + 1);
+      }
+    }
+
+    function goToCard(newIndex) {
+      if (newIndex < 0 || newIndex >= deck.length) return;
+      const outgoing = document.getElementById('activeCard');
+      if (outgoing) {
+        outgoing.classList.add('leaving');
+        outgoing.removeEventListener('click', onCardClick);
+      }
+      index = newIndex;
+      flipped = false;
+      setTimeout(() => {
+        renderCurrentCard();
+        const incoming = document.getElementById('activeCard');
+        if (incoming) {
+          incoming.classList.add('entering');
+          // force reflow so the entering transition actually plays
+          void incoming.offsetWidth;
+          incoming.classList.remove('entering');
+        }
+      }, 180);
+    }
+
+    prevCardBtn.addEventListener('click', () => goToCard(index - 1));
+    nextCardBtn.addEventListener('click', () => goToCard(index + 1));
+    flipCardBtn.addEventListener('click', onCardClick);
+
+    document.addEventListener('keydown', (event) => {
+      if (deckWrap.style.display === 'none') return;
+      if (event.key === 'ArrowRight') goToCard(index + 1);
+      if (event.key === 'ArrowLeft') goToCard(index - 1);
+      if (event.key === ' ') { event.preventDefault(); onCardClick(); }
+    });
+
+    spacingRow.querySelectorAll('[data-delay]').forEach((button) => {
+      button.addEventListener('click', (event) => {
+        event.stopPropagation();
+        const delay = Number(button.getAttribute('data-delay') || 2);
+        const cards = loadCards();
+        // deck is reversed relative to storage — map back to the real index
+        const storageIndex = cards.length - 1 - index;
+        if (!cards[storageIndex]) return;
+        cards[storageIndex].nextReviewDate = nextReviewDate(delay);
+        saveCards(cards);
+        goToCard(index + 1 < deck.length ? index + 1 : index);
+      });
+    });
 
     document.getElementById('generateCards')?.addEventListener('click', () => {
       buildCardsFromData();
-      renderCards();
+      index = 0;
+      renderDeck();
     });
 
     document.getElementById('clearCards')?.addEventListener('click', () => {
       if (!confirm('Clear all flashcards?')) return;
       saveCards([]);
-      renderCards();
+      index = 0;
+      renderDeck();
     });
 
     refreshTopBar();
-    renderCards();
+    renderDeck();
   </script>
 </body>
 </html>

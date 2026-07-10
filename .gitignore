@@ -7,3 +7,4 @@ server.log
 yes/
 public_html/
 database/*.db
+database/users.json

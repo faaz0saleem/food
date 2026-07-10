@@ -480,6 +480,80 @@ function parseRequestBody(req) {
   });
 }
 
+// ---------- lightweight JSON-backed auth (no new npm dependency —
+// database/schema.sql + init-db.sh describe a future SQLite version, but
+// nothing wired it up yet, so /api/auth/* was 404ing and signup was broken) ----------
+const crypto = require('crypto');
+const usersFile = path.join(rootDir, 'database', 'users.json');
+
+function loadUsersDb() {
+  try {
+    const parsed = JSON.parse(fs.readFileSync(usersFile, 'utf8'));
+    if (!parsed || !Array.isArray(parsed.users)) return { users: [], tokens: {} };
+    return { users: parsed.users, tokens: parsed.tokens || {} };
+  } catch {
+    return { users: [], tokens: {} };
+  }
+}
+
+function saveUsersDb() {
+  fs.mkdir(path.dirname(usersFile), { recursive: true }, () => {
+    fs.writeFile(usersFile, JSON.stringify(usersDb, null, 2), (error) => {
+      if (error) console.error('Unable to save users db:', error.message);
+    });
+  });
+}
+
+function hashPassword(password, existingSalt) {
+  const salt = existingSalt || crypto.randomBytes(16).toString('hex');
+  const hash = crypto.scryptSync(password, salt, 64).toString('hex');
+  return { hash, salt };
+}
+
+function verifyPassword(password, salt, hash) {
+  try {
+    const check = crypto.scryptSync(password, salt, 64).toString('hex');
+    return crypto.timingSafeEqual(Buffer.from(check, 'hex'), Buffer.from(hash, 'hex'));
+  } catch {
+    return false;
+  }
+}
+
+function findUserByEmail(email) {
+  const normalized = String(email || '').trim().toLowerCase();
+  return usersDb.users.find((u) => u.email === normalized);
+}
+
+function findUserById(id) {
+  return usersDb.users.find((u) => u.id === id);
+}
+
+function publicUser(user) {
+  if (!user) return null;
+  return {
+    visitorId: user.visitorId,
+    name: user.name,
+    email: user.email,
+    learningStyle: user.learningStyle,
+    level: user.level,
+    xp: user.xp,
+    planName: user.planName,
+    planPrice: user.planPrice,
+    planStatus: user.planStatus,
+    planStarted: user.planStarted,
+  };
+}
+
+function getUserFromRequest(req) {
+  const authHeader = req.headers['authorization'] || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+  if (!token) return null;
+  const userId = usersDb.tokens[token];
+  if (userId === undefined) return null;
+  return findUserById(userId);
+}
+
+const usersDb = loadUsersDb();
 const visitorStats = loadStats();
 
 const server = http.createServer(async (req, res) => {
@@ -501,6 +575,11 @@ const server = http.createServer(async (req, res) => {
       if (!ADMIN_KEY || providedKey !== ADMIN_KEY) return sendJson(res, 401, { error: 'Unauthorized' });
       return sendJson(res, 200, { ...summarize(visitorStats), purchases: { count: 0, status: 'Stripe not connected yet' } });
     }
+    if (pathname === '/api/auth/me') {
+      const user = getUserFromRequest(req);
+      if (!user) return sendJson(res, 401, { error: 'Not authenticated.' });
+      return sendJson(res, 200, { status: 'ok', user: publicUser(user) });
+    }
   }
 
   if (req.method === 'OPTIONS') {
@@ -513,6 +592,87 @@ const server = http.createServer(async (req, res) => {
       if (isRateLimited(getClientIp(req))) return sendJson(res, 429, { error: 'Rate limit exceeded' });
       const payload = await parseRequestBody(req);
       return sendJson(res, 200, { status: 'ok', stats: registerVisitor(payload.visitorId) });
+    } catch (error) { return sendJson(res, 400, { error: error.message }); }
+  }
+
+  if (req.method === 'POST' && pathname === '/api/auth/signup') {
+    try {
+      if (isRateLimited(getClientIp(req))) return sendJson(res, 429, { error: 'Rate limit exceeded' });
+      const payload = await parseRequestBody(req);
+      const name = String(payload.name || '').trim();
+      const email = String(payload.email || '').trim().toLowerCase();
+      const password = String(payload.password || '');
+      if (!name || name.length < 2) return sendJson(res, 400, { error: 'Please enter your name.' });
+      if (!email || !email.includes('@')) return sendJson(res, 400, { error: 'Please enter a valid email.' });
+      if (password.length < 8) return sendJson(res, 400, { error: 'Password must be at least 8 characters.' });
+      if (findUserByEmail(email)) return sendJson(res, 409, { error: 'An account with this email already exists.' });
+
+      const { hash, salt } = hashPassword(password);
+      const user = {
+        id: usersDb.users.length ? Math.max(...usersDb.users.map((u) => u.id)) + 1 : 1,
+        visitorId: `user-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`,
+        name,
+        email,
+        passwordHash: hash,
+        passwordSalt: salt,
+        learningStyle: payload.learningStyle || 'Visual',
+        level: 'Newbie',
+        xp: 0,
+        planName: '',
+        planPrice: 0,
+        planStatus: 'inactive',
+        planStarted: '',
+      };
+      usersDb.users.push(user);
+      const token = crypto.randomBytes(32).toString('hex');
+      usersDb.tokens[token] = user.id;
+      saveUsersDb();
+      return sendJson(res, 200, { status: 'ok', token, user: publicUser(user) });
+    } catch (error) { return sendJson(res, 400, { error: error.message }); }
+  }
+
+  if (req.method === 'POST' && pathname === '/api/auth/login') {
+    try {
+      if (isRateLimited(getClientIp(req))) return sendJson(res, 429, { error: 'Rate limit exceeded' });
+      const payload = await parseRequestBody(req);
+      const email = String(payload.email || '').trim().toLowerCase();
+      const password = String(payload.password || '');
+      const user = findUserByEmail(email);
+      if (!user || !verifyPassword(password, user.passwordSalt, user.passwordHash)) {
+        return sendJson(res, 401, { error: 'Incorrect email or password.' });
+      }
+      const token = crypto.randomBytes(32).toString('hex');
+      usersDb.tokens[token] = user.id;
+      saveUsersDb();
+      return sendJson(res, 200, { status: 'ok', token, user: publicUser(user) });
+    } catch (error) { return sendJson(res, 400, { error: error.message }); }
+  }
+
+  if (req.method === 'POST' && pathname === '/api/profile') {
+    try {
+      const user = getUserFromRequest(req);
+      if (!user) return sendJson(res, 401, { error: 'Not authenticated.' });
+      const payload = await parseRequestBody(req);
+      if (payload.name !== undefined) user.name = String(payload.name).trim();
+      if (payload.learningStyle !== undefined) user.learningStyle = payload.learningStyle;
+      if (payload.level !== undefined) user.level = payload.level;
+      if (payload.xp !== undefined) user.xp = Number(payload.xp) || 0;
+      saveUsersDb();
+      return sendJson(res, 200, { status: 'ok', user: publicUser(user) });
+    } catch (error) { return sendJson(res, 400, { error: error.message }); }
+  }
+
+  if (req.method === 'POST' && pathname === '/api/subscription') {
+    try {
+      const user = getUserFromRequest(req);
+      if (!user) return sendJson(res, 401, { error: 'Not authenticated.' });
+      const payload = await parseRequestBody(req);
+      user.planName = payload.planName || user.planName;
+      user.planPrice = Number(payload.planPrice ?? user.planPrice) || 0;
+      user.planStatus = payload.planStatus || user.planStatus;
+      user.planStarted = payload.planStarted || user.planStarted;
+      saveUsersDb();
+      return sendJson(res, 200, { status: 'ok', user: publicUser(user) });
     } catch (error) { return sendJson(res, 400, { error: error.message }); }
   }
 
