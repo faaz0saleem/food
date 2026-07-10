@@ -203,6 +203,32 @@ function mm_ensure_runtime_tables(): void {
         updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci');
 
+    $db->exec('CREATE TABLE IF NOT EXISTS ai_usage_daily (
+        usage_date DATE NOT NULL,
+        scope_key VARCHAR(190) NOT NULL,
+        user_id BIGINT UNSIGNED NULL,
+        calls_used INT NOT NULL DEFAULT 0,
+        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (usage_date, scope_key),
+        KEY idx_ai_usage_daily_user_id (user_id),
+        KEY idx_ai_usage_daily_updated_at (updated_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci');
+
+    $db->exec('CREATE TABLE IF NOT EXISTS auth_challenges (
+        id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+        user_id BIGINT UNSIGNED NOT NULL,
+        challenge_type VARCHAR(32) NOT NULL,
+        code_hash VARCHAR(255) NOT NULL,
+        expires_at DATETIME NOT NULL,
+        consumed_at DATETIME NULL,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        KEY idx_auth_challenges_user_id (user_id),
+        KEY idx_auth_challenges_type (challenge_type),
+        KEY idx_auth_challenges_expires_at (expires_at),
+        CONSTRAINT fk_auth_challenges_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci');
+
     $initialized = true;
 }
 
@@ -231,6 +257,128 @@ function mm_rate_limit_key(array $body = []): string {
     }
 
     return 'ip:' . mm_client_ip();
+}
+
+function mm_ai_scope_key(array $body = []): string {
+    $user = mm_current_user();
+    if (is_array($user) && isset($user['id'])) {
+        return 'user:' . (int) $user['id'];
+    }
+
+    $visitorId = trim((string) ($body['visitorId'] ?? ''));
+    if ($visitorId !== '') {
+        return 'visitor:' . substr($visitorId, 0, 120);
+    }
+
+    return 'ip:' . mm_client_ip();
+}
+
+function mm_is_paid_user(?array $user): bool {
+    if (!is_array($user)) {
+        return false;
+    }
+
+    $status = strtolower(trim((string) ($user['plan_status'] ?? 'inactive')));
+    $planName = strtolower(trim((string) ($user['plan_name'] ?? '')));
+    if ($status !== 'active') {
+        return false;
+    }
+
+    return $planName !== '' && $planName !== 'free';
+}
+
+function mm_get_ai_usage_today(string $scopeKey): int {
+    $db = mm_db();
+    if ($db === null) {
+        return 0;
+    }
+
+    mm_ensure_runtime_tables();
+    $stmt = $db->prepare('SELECT calls_used FROM ai_usage_daily WHERE usage_date = UTC_DATE() AND scope_key = :scope_key LIMIT 1');
+    $stmt->execute([':scope_key' => substr($scopeKey, 0, 190)]);
+    $value = $stmt->fetchColumn();
+    return (int) ($value ?: 0);
+}
+
+function mm_get_global_ai_usage_today(): int {
+    $db = mm_db();
+    if ($db === null) {
+        return 0;
+    }
+
+    mm_ensure_runtime_tables();
+    $stmt = $db->query('SELECT COALESCE(SUM(calls_used), 0) FROM ai_usage_daily WHERE usage_date = UTC_DATE()');
+    return (int) $stmt->fetchColumn();
+}
+
+function mm_record_ai_usage(string $scopeKey, ?int $userId, int $cost = 1): void {
+    $db = mm_db();
+    if ($db === null) {
+        return;
+    }
+
+    mm_ensure_runtime_tables();
+    $scope = substr($scopeKey, 0, 190);
+    $stmt = $db->prepare('INSERT INTO ai_usage_daily (usage_date, scope_key, user_id, calls_used, updated_at)
+                          VALUES (UTC_DATE(), :scope_key, :user_id, :calls_used, UTC_TIMESTAMP())
+                          ON DUPLICATE KEY UPDATE calls_used = calls_used + VALUES(calls_used), user_id = VALUES(user_id), updated_at = UTC_TIMESTAMP()');
+    $stmt->bindValue(':scope_key', $scope, PDO::PARAM_STR);
+    if ($userId === null) {
+        $stmt->bindValue(':user_id', null, PDO::PARAM_NULL);
+    } else {
+        $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+    }
+    $stmt->bindValue(':calls_used', max(1, $cost), PDO::PARAM_INT);
+    $stmt->execute();
+}
+
+function mm_ai_budget_decision(array $body = [], int $cost = 1): array {
+    $user = mm_current_user();
+    $scopeKey = mm_ai_scope_key($body);
+    $isPaid = mm_is_paid_user($user);
+    $freeLimit = max(1, (int) mm_env_value('FREE_DAILY_MESSAGES_LIMIT', '20'));
+    $anonLimit = max(1, (int) mm_env_value('ANON_DAILY_AI_LIMIT', '3'));
+    $globalLimit = max(1, (int) mm_env_value('AI_DAILY_GLOBAL_LIMIT', '500'));
+
+    $globalUsed = mm_get_global_ai_usage_today();
+    if (($globalUsed + $cost) > $globalLimit) {
+        return [
+            'mode' => 'demo',
+            'message' => 'AI is at today\'s capacity. Hungter is temporarily in demo mode until midnight UTC.',
+            'scopeKey' => $scopeKey,
+            'user' => $user,
+        ];
+    }
+
+    $used = mm_get_ai_usage_today($scopeKey);
+    if ($user === null) {
+        if (($used + $cost) > $anonLimit) {
+            return [
+                'mode' => 'signup',
+                'message' => 'Create a free account to continue after your launch-preview messages.',
+                'scopeKey' => $scopeKey,
+                'user' => null,
+            ];
+        }
+
+        return ['mode' => 'live', 'scopeKey' => $scopeKey, 'user' => null];
+    }
+
+    if (!$isPaid && (($used + $cost) > $freeLimit)) {
+        return [
+            'mode' => 'limit',
+            'message' => 'Free plan limit reached for today. Upgrade or come back tomorrow for more AI help.',
+            'scopeKey' => $scopeKey,
+            'user' => $user,
+        ];
+    }
+
+    return ['mode' => 'live', 'scopeKey' => $scopeKey, 'user' => $user];
+}
+
+function mm_demo_chat_reply(string $subject, string $message): string {
+    $topic = trim($subject) !== '' ? $subject : 'your topic';
+    return 'Demo mode: Hungter is pacing AI usage right now. For ' . $topic . ', break the problem into smaller steps, identify the main concept, and try one worked example based on your question: "' . substr(trim($message), 0, 140) . '".';
 }
 
 function mm_check_rate_limit(string $key, int $windowSeconds = 60, int $maxRequests = 20): array {
@@ -350,7 +498,75 @@ function mm_public_user(array $user): array {
         'planPrice' => (float) ($user['plan_price'] ?? 0),
         'planStatus' => (string) ($user['plan_status'] ?? 'inactive'),
         'planStarted' => (string) ($user['plan_started'] ?? ''),
+        'emailVerified' => (bool) ($user['email_verified'] ?? false),
     ];
+}
+
+function mm_generate_numeric_code(int $length = 6): string {
+    $max = (10 ** $length) - 1;
+    $value = random_int(0, $max);
+    return str_pad((string) $value, $length, '0', STR_PAD_LEFT);
+}
+
+function mm_store_auth_challenge(int $userId, string $type, string $code, int $ttlMinutes = 20): void {
+    $db = mm_db();
+    if ($db === null) {
+        throw new RuntimeException('Database unavailable');
+    }
+    mm_ensure_runtime_tables();
+    $hash = password_hash($code, PASSWORD_DEFAULT);
+    $db->prepare('UPDATE auth_challenges SET consumed_at = UTC_TIMESTAMP() WHERE user_id = :user_id AND challenge_type = :challenge_type AND consumed_at IS NULL')
+       ->execute([':user_id' => $userId, ':challenge_type' => $type]);
+    $stmt = $db->prepare('INSERT INTO auth_challenges (user_id, challenge_type, code_hash, expires_at, created_at)
+                          VALUES (:user_id, :challenge_type, :code_hash, DATE_ADD(UTC_TIMESTAMP(), INTERVAL :ttl MINUTE), UTC_TIMESTAMP())');
+    $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+    $stmt->bindValue(':challenge_type', $type, PDO::PARAM_STR);
+    $stmt->bindValue(':code_hash', $hash, PDO::PARAM_STR);
+    $stmt->bindValue(':ttl', max(1, $ttlMinutes), PDO::PARAM_INT);
+    $stmt->execute();
+}
+
+function mm_consume_auth_challenge(int $userId, string $type, string $code): bool {
+    $db = mm_db();
+    if ($db === null) {
+        return false;
+    }
+    mm_ensure_runtime_tables();
+    $stmt = $db->prepare('SELECT id, code_hash FROM auth_challenges
+                          WHERE user_id = :user_id
+                            AND challenge_type = :challenge_type
+                            AND consumed_at IS NULL
+                            AND expires_at >= UTC_TIMESTAMP()
+                          ORDER BY id DESC LIMIT 1');
+    $stmt->execute([':user_id' => $userId, ':challenge_type' => $type]);
+    $row = $stmt->fetch();
+    if (!is_array($row)) {
+        return false;
+    }
+    if (!password_verify($code, (string) ($row['code_hash'] ?? ''))) {
+        return false;
+    }
+    $db->prepare('UPDATE auth_challenges SET consumed_at = UTC_TIMESTAMP() WHERE id = :id')->execute([':id' => (int) $row['id']]);
+    return true;
+}
+
+function mm_mark_email_verified(int $userId): bool {
+    $db = mm_db();
+    if ($db === null) {
+        return false;
+    }
+    $stmt = $db->prepare('UPDATE users SET email_verified = 1, updated_at = UTC_TIMESTAMP() WHERE id = :id');
+    return $stmt->execute([':id' => $userId]);
+}
+
+function mm_update_password(int $userId, string $newPassword): bool {
+    $db = mm_db();
+    if ($db === null) {
+        return false;
+    }
+    $hash = password_hash($newPassword, PASSWORD_DEFAULT);
+    $stmt = $db->prepare('UPDATE users SET password_hash = :password_hash, updated_at = UTC_TIMESTAMP() WHERE id = :id');
+    return $stmt->execute([':password_hash' => $hash, ':id' => $userId]);
 }
 
 function mm_generate_visitor_id(): string {

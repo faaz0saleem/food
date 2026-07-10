@@ -358,6 +358,9 @@
 
     function showResults() {
       const percent = Math.round((score / quizQuestions.length) * 100);
+      if (window.HungterTrack) {
+        window.HungterTrack.quizCompleted(selectedSubject, percent, 'quiz');
+      }
       resultScore.textContent = `${percent}%`;
       resultMessage.textContent = percent >= 85
         ? 'Excellent work. Ask AI for a stretch challenge or move to a harder subject.'

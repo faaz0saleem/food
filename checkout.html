@@ -16,19 +16,19 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Fredoka:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap">
-<title>Checkout — Hungter</title>
-<meta name="description" content="Upgrade your Hungter plan. Free during beta — real billing connects at launch.">
+<title>Launch Waitlist — Hungter</title>
+<meta name="description" content="Join the Hungter paid-plan waitlist. Billing is not live yet, so no money is charged on this page.">
 <meta name="robots" content="noindex, follow">
 <link rel="canonical" href="https://hungter.com/checkout.html">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Checkout — Hungter">
-<meta property="og:description" content="Upgrade your Hungter plan. Free during beta — real billing connects at launch.">
+<meta property="og:title" content="Launch Waitlist — Hungter">
+<meta property="og:description" content="Join the Hungter paid-plan waitlist. Billing is not live yet.">
 <meta property="og:image" content="https://hungter.com/og-image.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Checkout — Hungter">
-<meta name="twitter:description" content="Upgrade your Hungter plan. Free during beta — real billing connects at launch.">
+<meta name="twitter:title" content="Launch Waitlist — Hungter">
+<meta name="twitter:description" content="Join the Hungter paid-plan waitlist. Billing is not live yet.">
 <meta name="twitter:image" content="/favicon.svg">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/favicon.svg">
@@ -43,17 +43,17 @@
   <section class="checkout-wrapper">
     <div class="container">
       <div class="beta-warning-banner">
-        <strong>BETA TESTING MODE:</strong> No money will be charged. Checkout is in testing phase only.
+        <strong>WAITLIST ONLY:</strong> Billing is not live yet. This page records interest only and does not charge money.
       </div>
       <div class="checkout-head">
-        <h1>Upgrade your plan</h1>
-        <p>You're in the testing phase — no real charges yet. Real payment processing connects before public launch.</p>
+        <h1>Join the paid-plan waitlist</h1>
+        <p>Paid plans are not live yet. Leave your details to register interest and keep using the free product during launch access.</p>
       </div>
     <div class="checkout-grid">
       <!-- Main Form -->
       <div class="checkout-form">
         <div class="test-mode-note" style="margin-bottom:20px;">
-          <strong>Secure checkout:</strong> payment amount is locked server-side for your selected plan.
+          <strong>Waitlist capture:</strong> no payment is processed here and no charge is attempted.
         </div>
 
         <!-- Plan Selector -->
@@ -131,13 +131,13 @@
         </div>
 
         <!-- Submit Button -->
-        <button class="submit-btn" type="button" onclick="completeCheckout()">Activate beta access and continue →</button>
+        <button class="submit-btn" type="button" onclick="completeCheckout()">Join waitlist and continue →</button>
         
         <div class="security-badge">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
           </svg>
-          Beta checkout simulation enabled
+          Waitlist-only form enabled
         </div>
 
         <div id="checkoutStatus" class="test-mode-note" style="display:none; margin-top:16px;"></div>
@@ -146,7 +146,7 @@
 
       <!-- Order Summary -->
       <div class="order-summary">
-        <h2>Order Summary</h2>
+        <h2>Plan Preview</h2>
         
         <div class="plan-preview">
           <div class="plan-name" id="summaryPlanName">Student Plan</div>
@@ -169,13 +169,13 @@
             <span id="taxCost">$0.41</span>
           </div>
           <div class="breakdown-row total">
-            <span>Total due today</span>
-            <span id="totalCost">$5.41</span>
+            <span>Due today</span>
+            <span>$0.00</span>
           </div>
         </div>
 
         <div style="background: rgba(200,255,77,0.08); border-radius: var(--radius-sm); padding:12px; text-align:center; font-size:0.85rem; color: var(--ink-soft);">
-          📅 Next billing: <strong id="nextBilling">August 1, 2026</strong>
+          📅 Billing launch notice: <strong id="nextBilling">You will be contacted before billing goes live</strong>
         </div>
       </div>
     </div>
@@ -285,12 +285,9 @@
       }
 
       localStorage.setItem('mm_email', JSON.stringify(email));
-      setCheckoutStatus('Beta mode active: no payment will be charged. Enabling your subscription and redirecting to dashboard...');
-      savePlanLocally(selectedPlan);
-      try {
-        await syncSubscriptionToServer(selectedPlan);
-      } catch {
-        // local activation still allows access during beta
+      setCheckoutStatus('Waitlist confirmed. No payment was taken and your interest has been recorded locally for launch follow-up.');
+      if (window.HungterTrack) {
+        window.HungterTrack.upgradeIntent(selectedPlan.id || 'unknown');
       }
       setTimeout(() => { window.location.href = '/dashboard.html'; }, 1200);
     }

@@ -476,26 +476,21 @@
       <div class="ob-screen-header">
         <p class="ob-eyebrow">Step 2 of 4 · Your Stage</p>
         <h2 class="ob-title">Where are you in life? 🎯</h2>
-        <p class="ob-subtitle">Select your age range and current grade level. This sets your difficulty baseline.</p>
+        <p class="ob-subtitle">Select your age range and current grade level. Hungter is for learners aged 13 and up, and this sets your difficulty baseline.</p>
       </div>
 
       <div>
         <p class="ob-section-label">Age range</p>
         <div class="ob-mcq-grid cols-3" style="margin-top:14px;">
-          <button type="button" class="ob-choice" data-group="age" data-value="8-10" aria-pressed="false">
-            <div class="ob-check">✓</div>
-            <span class="ob-choice-emoji">🧒</span>
-            <span class="ob-choice-label">8 – 10</span>
-          </button>
-          <button type="button" class="ob-choice" data-group="age" data-value="11-13" aria-pressed="false">
-            <div class="ob-check">✓</div>
-            <span class="ob-choice-emoji">👦</span>
-            <span class="ob-choice-label">11 – 13</span>
-          </button>
-          <button type="button" class="ob-choice" data-group="age" data-value="14-16" aria-pressed="false">
+          <button type="button" class="ob-choice" data-group="age" data-value="13-15" aria-pressed="false">
             <div class="ob-check">✓</div>
             <span class="ob-choice-emoji">🧑</span>
-            <span class="ob-choice-label">14 – 16</span>
+            <span class="ob-choice-label">13 – 15</span>
+          </button>
+          <button type="button" class="ob-choice" data-group="age" data-value="16-17" aria-pressed="false">
+            <div class="ob-check">✓</div>
+            <span class="ob-choice-emoji">🧑</span>
+            <span class="ob-choice-label">16 – 17</span>
           </button>
           <button type="button" class="ob-choice" data-group="age" data-value="17-19" aria-pressed="false">
             <div class="ob-check">✓</div>
@@ -868,6 +863,9 @@
     lsSet('mm_today_count', 0);
     lsSet('mm_theme', 'dark');
     getSessionId();
+    if (window.HungterTrack) {
+      window.HungterTrack.signupCompleted('onboarding');
+    }
 
     // populate completion screen
     $('totalXpDisplay').innerHTML = `${state.xp} XP<span>earned this setup</span>`;

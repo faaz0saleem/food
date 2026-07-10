@@ -89,9 +89,11 @@
 
   function buildBetaBanner() {
     if (document.querySelector('.beta-banner')) return;
+    const path = window.location.pathname;
+    if (path === '/' || path.endsWith('/index.html')) return;
     const banner = document.createElement('div');
     banner.className = 'beta-banner';
-    banner.innerHTML = '<strong>Beta testing</strong> — Hungter is in early access. Payments are still in testing; check the engine status below for which AI engines are live today.';
+    banner.innerHTML = '<strong>Launch access</strong> — Hungter is in early access. Some premium features and billing are not yet live; check the engine status below for current availability.';
     document.body.prepend(banner);
   }
 

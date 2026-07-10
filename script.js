@@ -55,6 +55,58 @@ function lsSet(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
 }
 
+function hasTrackingConsent() {
+  return lsGet('mm_tracking_consent', '') === 'granted';
+}
+
+function setTrackingConsent(value) {
+  lsSet('mm_tracking_consent', value ? 'granted' : 'denied');
+}
+
+function trackEvent(name, params = {}) {
+  if (!hasTrackingConsent()) return;
+  if (typeof window.gtag === 'function') {
+    window.gtag('event', name, params);
+  }
+}
+
+function ensureConsentBanner() {
+  const decision = lsGet('mm_tracking_consent', '');
+  if (decision === 'granted' || decision === 'denied') return;
+  if (document.querySelector('.consent-banner')) return;
+
+  const banner = document.createElement('div');
+  banner.className = 'consent-banner';
+  banner.style.cssText = 'position:fixed;left:12px;right:12px;bottom:12px;z-index:9999;background:rgba(9,15,35,0.96);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:12px;display:flex;gap:10px;align-items:center;justify-content:space-between;';
+  banner.innerHTML = '<span style="color:#a9b2d6;font-size:0.88rem;">Hungter uses analytics cookies for product and campaign measurement.</span><div style="display:flex;gap:8px;"><button id="consentNo" style="padding:8px 10px;border:1px solid rgba(255,255,255,0.2);border-radius:8px;background:transparent;color:#f2f5ff;">Reject</button><button id="consentYes" style="padding:8px 10px;border:none;border-radius:8px;background:#c8ff4d;color:#04060f;">Accept</button></div>';
+  document.body.appendChild(banner);
+  banner.querySelector('#consentNo').addEventListener('click', () => { setTrackingConsent(false); banner.remove(); });
+  banner.querySelector('#consentYes').addEventListener('click', () => { setTrackingConsent(true); banner.remove(); });
+}
+
+function captureFirstTouchUtm() {
+  const existing = lsGet('mm_utm_first_touch', null);
+  if (existing) return existing;
+  const params = new URLSearchParams(window.location.search);
+  const source = params.get('utm_source');
+  const medium = params.get('utm_medium');
+  const campaign = params.get('utm_campaign');
+  const term = params.get('utm_term');
+  const content = params.get('utm_content');
+  if (!source && !medium && !campaign && !term && !content) return null;
+  const payload = {
+    source: source || '',
+    medium: medium || '',
+    campaign: campaign || '',
+    term: term || '',
+    content: content || '',
+    landing: window.location.pathname,
+    capturedAt: new Date().toISOString(),
+  };
+  lsSet('mm_utm_first_touch', payload);
+  return payload;
+}
+
 function getAuthToken() {
   return lsGet('mm_auth_token', '');
 }
@@ -127,6 +179,8 @@ function getSessionId() {
 }
 
 function ensureProfile() {
+  ensureConsentBanner();
+  captureFirstTouchUtm();
   const profile = lsGet('mm_name', '');
   if (!profile) {
     lsSet('mm_name', '');
@@ -260,6 +314,10 @@ function recordChat(subject) {
   session.subject = subject;
   session.ended = new Date().toLocaleDateString();
   lsSet('mm_sessions', sessions);
+
+  if (messageCount === 1) {
+    trackEvent('first_chat_message_sent', { subject });
+  }
 }
 
 function recordConversation(subject, userMessage, aiReply) {
@@ -289,7 +347,20 @@ function recordExplainCheck(concept, studentExplanation, feedback, understood) {
   });
   lsSet('mm_explain_checks', checks.slice(-50));
   updateLevel();
+  trackEvent('explain_check_completed', { understood: Boolean(understood) });
 }
+
+window.HungterTrack = {
+  signupCompleted(method = 'email') {
+    trackEvent('signup_completed', { method });
+  },
+  quizCompleted(subject = 'General', score = 0, source = 'quiz') {
+    trackEvent('quiz_completed', { subject, score, source });
+  },
+  upgradeIntent(plan = 'unknown') {
+    trackEvent('upgrade_button_click', { plan });
+  },
+};
 
 function getVitals() {
   return {
@@ -406,6 +477,14 @@ function apiPost(path, payload) {
 function registerVisitor() {
   apiPost('/api/visit', { visitorId: getSessionId() }).catch(() => undefined);
 }
+
+document.addEventListener('click', (event) => {
+  const target = event.target instanceof Element ? event.target.closest('a[href*="/checkout.html"]') : null;
+  if (!target) return;
+  const href = target.getAttribute('href') || '';
+  const plan = href.includes('plan=pro') ? 'pro' : href.includes('plan=student') ? 'student' : 'unknown';
+  trackEvent('upgrade_button_click', { plan });
+});
 
 function renderSubjectCards(container, category = 'All', search = '') {
   if (!container) return;
@@ -551,6 +630,9 @@ function initSignup() {
     if (authPayload?.token) {
       setAuthToken(authPayload.token);
       applyServerUser(authPayload.user);
+      if (window.HungterTrack) {
+        window.HungterTrack.signupCompleted('email');
+      }
     }
     if (!lsGet('mm_milestones', []).length) {
       lsSet('mm_milestones', [{ event: 'Created account', date: new Date().toLocaleDateString() }]);

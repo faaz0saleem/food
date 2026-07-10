@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
   name VARCHAR(160),
   email VARCHAR(190),
   password_hash VARCHAR(255),
+  email_verified TINYINT(1) NOT NULL DEFAULT 0,
   learning_style VARCHAR(60) DEFAULT 'Visual',
   level VARCHAR(60) DEFAULT 'Newbie',
   xp INT NOT NULL DEFAULT 0,
@@ -89,4 +90,30 @@ CREATE TABLE IF NOT EXISTS api_rate_limits (
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (limiter_key),
   KEY idx_api_rate_limits_updated_at (updated_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS ai_usage_daily (
+  usage_date DATE NOT NULL,
+  scope_key VARCHAR(190) NOT NULL,
+  user_id BIGINT UNSIGNED NULL,
+  calls_used INT NOT NULL DEFAULT 0,
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (usage_date, scope_key),
+  KEY idx_ai_usage_daily_user_id (user_id),
+  KEY idx_ai_usage_daily_updated_at (updated_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS auth_challenges (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id BIGINT UNSIGNED NOT NULL,
+  challenge_type VARCHAR(32) NOT NULL,
+  code_hash VARCHAR(255) NOT NULL,
+  expires_at DATETIME NOT NULL,
+  consumed_at DATETIME NULL,
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_auth_challenges_user_id (user_id),
+  KEY idx_auth_challenges_type (challenge_type),
+  KEY idx_auth_challenges_expires_at (expires_at),
+  CONSTRAINT fk_auth_challenges_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

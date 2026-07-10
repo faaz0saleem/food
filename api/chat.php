@@ -25,6 +25,27 @@ $history = mm_normalize_history($body['history'] ?? []);
 $attachments = mm_normalize_attachments($body['attachments'] ?? []);
 $finalMessage = mm_build_final_message($message, $attachments);
 
+$budget = mm_ai_budget_decision($body, 1);
+if (($budget['mode'] ?? 'live') === 'signup') {
+    mm_json_response(403, ['error' => (string) $budget['message'], 'requiresSignup' => true]);
+    exit;
+}
+if (($budget['mode'] ?? 'live') === 'limit') {
+    mm_json_response(429, ['error' => (string) $budget['message'], 'dailyLimitReached' => true]);
+    exit;
+}
+if (($budget['mode'] ?? 'live') === 'demo') {
+    $demoReply = mm_demo_chat_reply($subject, $message);
+    mm_json_response(200, [
+        'status' => 'ok',
+        'reply' => $demoReply,
+        'engine' => 'Demo',
+        'model' => $model,
+        'demoMode' => true,
+    ]);
+    exit;
+}
+
 $systemPrompt = mm_build_system_prompt($subject, $userLevel);
 
 $messages = [
@@ -49,6 +70,7 @@ if ($reply === '') {
 try {
     mm_track_visit((string) ($body['visitorId'] ?? ''));
     mm_record_chat($body, $reply, 'Reasoner', $model);
+    mm_record_ai_usage((string) ($budget['scopeKey'] ?? mm_ai_scope_key($body)), isset($budget['user']['id']) ? (int) $budget['user']['id'] : null, 1);
 } catch (Throwable $error) {
     // Do not fail chat delivery if analytics storage is unavailable.
 }
