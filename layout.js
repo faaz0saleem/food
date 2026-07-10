@@ -1,3 +1,10 @@
+// Register service worker globally
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
+
 (function () {
   window.HUNGTER_API_BASE = window.HUNGTER_API_BASE || '';
   const API_BASE = String(window.HUNGTER_API_BASE || '').replace(/\/$/, '');

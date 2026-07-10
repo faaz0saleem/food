@@ -1,16 +1,40 @@
 {
-  "name": "Hungter",
+  "name": "Hungter — AI Tutor",
   "short_name": "Hungter",
-  "description": "The AI tutor that gets you.",
-  "start_url": "/",
+  "description": "The AI tutor that gets you. Ask anything, learn your way.",
+  "start_url": "/chat.html",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#1A1033",
+  "orientation": "portrait-primary",
+  "background_color": "#04060F",
   "theme_color": "#C8FF4D",
+  "categories": ["education", "productivity"],
   "icons": [
     {
       "src": "/favicon.svg",
       "sizes": "any",
-      "type": "image/svg+xml"
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Chat with AI",
+      "short_name": "Chat",
+      "url": "/chat.html",
+      "description": "Ask a study question"
+    },
+    {
+      "name": "Take a Quiz",
+      "short_name": "Quiz",
+      "url": "/quiz.html",
+      "description": "Test your knowledge"
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "url": "/dashboard.html",
+      "description": "View your progress"
     }
   ]
 }

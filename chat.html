@@ -35,6 +35,9 @@
 <link rel="stylesheet" href="/brand.css">
 <link rel="stylesheet" href="/nav.css">
 <link rel="stylesheet" href="/chat.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/marked@4/marked.min.js"></script>
 </head>
 <body data-page="chat" style="display:flex;flex-direction:column;min-height:100vh;">
 <div class="top-bar"><div class="top-bar-fill" id="topBar" style="width:0%"></div></div>
@@ -78,6 +81,7 @@
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
           <button id="roundtableToggle" type="button" class="msg-action-btn">Roundtable: OFF</button>
           <a href="/roundchat.html" class="msg-action-btn" style="text-decoration:none;">Open RoundChat page</a>
+          <button id="pwaInstallBtn" type="button" class="msg-action-btn" style="display:none;border-color:var(--cyan);color:var(--cyan);">📲 Add to Home Screen</button>
         </div>
       </div>
       <div class="composer-row">
@@ -321,6 +325,46 @@
     if (topBar) topBar.style.width = `${progress.pct}%`;
   }
 
+  // ── Markdown + Math rendering ───────────────────────────────────────────
+  function renderMarkdownMath(text) {
+    if (!text) return '';
+    const mathMap = {};
+    let idx = 0;
+    let processed = String(text);
+
+    if (typeof katex !== 'undefined') {
+      // Display math $$...$$
+      processed = processed.replace(/\$\$([\s\S]+?)\$\$/g, (_, expr) => {
+        const key = `__MD${idx++}__`;
+        try { mathMap[key] = katex.renderToString(expr.trim(), { displayMode: true, throwOnError: false }); }
+        catch { mathMap[key] = `<code>${expr}</code>`; }
+        return key;
+      });
+      // Inline math $...$  (skip inside backtick/code spans)
+      processed = processed.replace(/(?<!`|\$)\$([^$\n]{1,200}?)\$(?!`|\$)/g, (_, expr) => {
+        const key = `__MI${idx++}__`;
+        try { mathMap[key] = katex.renderToString(expr.trim(), { displayMode: false, throwOnError: false }); }
+        catch { mathMap[key] = `<code>${expr}</code>`; }
+        return key;
+      });
+    }
+
+    let html;
+    if (typeof marked !== 'undefined') {
+      marked.use({ breaks: true, gfm: true, mangle: false, headerIds: false });
+      html = marked.parse(processed);
+    } else {
+      html = processed
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/\n/g, '<br>');
+    }
+
+    for (const [key, value] of Object.entries(mathMap)) {
+      html = html.split(key).join(value);
+    }
+    return html;
+  }
+
   function formatMessage(text, sender, engine, sourcePrompt) {
     const row = document.createElement('div');
     row.className = `msg-row ${sender}`;
@@ -336,7 +380,12 @@
       bubble.appendChild(tag);
     }
     const textNode = document.createElement('div');
-    textNode.textContent = text;
+    textNode.className = 'msg-text';
+    if (sender === 'ai') {
+      textNode.innerHTML = renderMarkdownMath(text);
+    } else {
+      textNode.textContent = text;
+    }
     bubble.appendChild(textNode);
     if (sender === 'ai') {
       const actions = document.createElement('div');
@@ -395,6 +444,92 @@
     messages.appendChild(formatMessage(text, sender, engine, sourcePrompt));
     messages.scrollTop = messages.scrollHeight;
     document.getElementById('chatFeed').scrollTop = document.getElementById('chatFeed').scrollHeight;
+  }
+
+  // Streaming (progressive character reveal) for AI responses
+  async function appendStreamingMessage(fullText, sender, engine, sourcePrompt) {
+    if (!welcomeScreen.classList.contains('hidden-perm')) {
+      welcomeScreen.style.display = 'none';
+      welcomeScreen.classList.add('hidden-perm');
+    }
+    messages.style.display = 'flex';
+    if (typingIndicator) { typingIndicator.remove(); typingIndicator = null; }
+
+    const row = document.createElement('div');
+    row.className = `msg-row ${sender}`;
+    const avatar = document.createElement('div');
+    avatar.className = 'msg-avatar';
+    avatar.textContent = sender === 'ai' ? '🧠' : '🙂';
+    const bubble = document.createElement('div');
+    bubble.className = 'msg-bubble';
+    if (sender === 'ai' && engine) {
+      const tag = document.createElement('div');
+      tag.className = 'engine-tag';
+      tag.textContent = engine;
+      bubble.appendChild(tag);
+    }
+    const textEl = document.createElement('div');
+    textEl.className = 'msg-text';
+    bubble.appendChild(textEl);
+    row.appendChild(avatar);
+    row.appendChild(bubble);
+    messages.appendChild(row);
+    const feed = document.getElementById('chatFeed');
+
+    // Reveal characters in chunks for a streaming feel
+    const CHUNK = 5;
+    const TICK = 14;
+    let i = 0;
+    while (i < fullText.length) {
+      i = Math.min(i + CHUNK, fullText.length);
+      const partial = fullText.slice(0, i);
+      if (sender === 'ai') {
+        textEl.innerHTML = renderMarkdownMath(partial) + (i < fullText.length ? '<span class="stream-cursor">▋</span>' : '');
+      } else {
+        textEl.textContent = partial;
+      }
+      messages.scrollTop = messages.scrollHeight;
+      if (feed) feed.scrollTop = feed.scrollHeight;
+      await new Promise((r) => setTimeout(r, TICK));
+    }
+
+    // Final clean render
+    if (sender === 'ai') {
+      textEl.innerHTML = renderMarkdownMath(fullText);
+      const actions = document.createElement('div');
+      actions.className = 'msg-actions';
+      const readBtn = document.createElement('button');
+      readBtn.type = 'button';
+      readBtn.className = 'msg-action-btn';
+      readBtn.textContent = '🔊 Read aloud';
+      readBtn.addEventListener('click', () => {
+        if (!('speechSynthesis' in window)) return;
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(fullText);
+        utter.rate = 0.95; utter.pitch = 1;
+        window.speechSynthesis.speak(utter);
+      });
+      actions.appendChild(readBtn);
+      if (sourcePrompt) {
+        const explainBtn = document.createElement('button');
+        explainBtn.type = 'button';
+        explainBtn.className = 'msg-action-btn';
+        explainBtn.textContent = 'Explain differently';
+        explainBtn.addEventListener('click', () => sendMessage(sourcePrompt, { excludeEngine: String(engine || '').split(',')[0].trim() }));
+        actions.appendChild(explainBtn);
+        const explainBackBtn = document.createElement('button');
+        explainBackBtn.type = 'button';
+        explainBackBtn.className = 'msg-action-btn';
+        explainBackBtn.textContent = 'Explain it back (+XP)';
+        explainBackBtn.addEventListener('click', () => explainItBack(sourcePrompt, fullText));
+        actions.appendChild(explainBackBtn);
+      }
+      bubble.appendChild(actions);
+    } else {
+      textEl.textContent = fullText;
+    }
+    messages.scrollTop = messages.scrollHeight;
+    if (feed) feed.scrollTop = feed.scrollHeight;
   }
 
   function showTyping() {
@@ -544,7 +679,7 @@
     finalBox.style.borderRadius = '12px';
     finalBox.style.padding = '10px';
     finalBox.style.whiteSpace = 'pre-wrap';
-    finalBox.innerHTML = `<strong>Final Answer</strong>\n${String(data.finalAnswer || 'No final answer generated.')}`;
+    finalBox.innerHTML = `<strong>Final Answer</strong><br>${renderMarkdownMath(String(data.finalAnswer || 'No final answer generated.'))}`;
     bubble.appendChild(finalBox);
 
     const actions = document.createElement('div');
@@ -622,7 +757,7 @@
         typingIndicator.remove();
         typingIndicator = null;
       }
-      appendMessage(reply, 'ai', engine, text);
+      await appendStreamingMessage(reply, 'ai', engine, text);
       recordConversation(subject, text, reply);
     }
     recordChat(subject);
@@ -661,7 +796,32 @@
   }
   loadModelInfo();
   refreshTopBar();
+
+  // PWA install prompt — shown as a small button when browser supports it
+  let _deferredInstall = null;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    _deferredInstall = e;
+    const btn = document.getElementById('pwaInstallBtn');
+    if (btn) btn.style.display = 'inline-flex';
+  });
+  document.getElementById('pwaInstallBtn')?.addEventListener('click', async () => {
+    if (!_deferredInstall) return;
+    _deferredInstall.prompt();
+    const { outcome } = await _deferredInstall.userChoice;
+    _deferredInstall = null;
+    if (outcome === 'accepted') document.getElementById('pwaInstallBtn').style.display = 'none';
+  });
 })();
+</script>
+
+<script>
+// Service Worker registration
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
 </script>
 </body>
 </html>

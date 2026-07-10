@@ -1,4 +1,4 @@
-# Hungter Hostinger + phpMyAdmin Setup
+ # Hungter Hostinger + phpMyAdmin Setup
 
 This project now includes:
 - PHP API backend in `/api`

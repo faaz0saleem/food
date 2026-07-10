@@ -38,39 +38,72 @@ You are helping a student at the "${userLevel || 'Newbie'}" level.
 Be encouraging, clear, and keep responses concise (2-4 sentences) unless the question needs a worked example.`;
 }
 
-async function callGroq(client, model, systemPrompt, message) {
+async function callGroq(client, model, systemPrompt, message, history = []) {
+  const messages = [{ role: 'system', content: systemPrompt }, ...history, { role: 'user', content: message }];
   const response = await client.chat.completions.create({
-    model, messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: message }],
-    max_tokens: 400, temperature: 0.7,
+    model, messages, max_tokens: 700, temperature: 0.7,
   });
   return response.choices?.[0]?.message?.content?.trim() || null;
 }
 
-async function callOpenAI(client, model, systemPrompt, message) {
+async function callOpenAI(client, model, systemPrompt, userContent, history = []) {
+  const messages = [{ role: 'system', content: systemPrompt }, ...history, { role: 'user', content: userContent }];
   const response = await client.chat.completions.create({
-    model, messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: message }],
-    max_tokens: 400,
+    model, messages, max_tokens: 700,
   });
   return response.choices?.[0]?.message?.content?.trim() || null;
 }
 
-async function callAnthropic(client, model, systemPrompt, message) {
+async function callAnthropic(client, model, systemPrompt, userContent, history = []) {
+  const messages = [...history, { role: 'user', content: userContent }];
   const response = await client.messages.create({
-    model, max_tokens: 400, system: systemPrompt, messages: [{ role: 'user', content: message }],
+    model, max_tokens: 700, system: systemPrompt, messages,
   });
   const textBlock = response.content?.find((block) => block.type === 'text');
   return textBlock?.text?.trim() || null;
 }
 
-async function callOneEngine(key, message, subject, userLevel) {
+// Build the user message content — handles text files and vision (images) per provider.
+function buildUserContent(message, attachments, provider) {
+  const images = (attachments || []).filter((a) => a.kind === 'image' && a.imageDataUrl);
+  const files = (attachments || []).filter((a) => a.kind !== 'image' && a.textContent);
+  let text = message;
+  if (files.length) {
+    text += '\n\n' + files.map((f) => `[File: ${f.name}]\n${f.textContent}`).join('\n\n');
+  }
+  if (!images.length) return text;
+  if (provider === 'openai') {
+    const content = [{ type: 'text', text }];
+    for (const img of images.slice(0, 3)) {
+      content.push({ type: 'image_url', image_url: { url: img.imageDataUrl } });
+    }
+    return content;
+  }
+  if (provider === 'anthropic') {
+    const content = [{ type: 'text', text }];
+    for (const img of images.slice(0, 3)) {
+      const match = img.imageDataUrl.match(/^data:([^;]+);base64,(.+)$/s);
+      if (!match) continue;
+      content.push({ type: 'image', source: { type: 'base64', media_type: match[1], data: match[2] } });
+    }
+    return content;
+  }
+  // Groq / Llama — no vision; embed as a text note
+  text += `\n\n[Note: The student attached ${images.length} image(s). Acknowledge this and ask them to describe the key parts in text so you can help.]`;
+  return text;
+}
+
+async function callOneEngine(key, message, subject, userLevel, history = [], attachments = []) {
   const engine = ENGINES[key];
   if (!engine.client) return { name: engine.name, reply: null };
   const systemPrompt = buildSystemPrompt(subject, userLevel);
+  const provider = key === 'explorer' ? 'openai' : key === 'storyteller' ? 'anthropic' : 'groq';
+  const userContent = buildUserContent(message, attachments, provider);
   try {
     let reply;
-    if (key === 'reasoner' || key === 'solver') reply = await callGroq(engine.client, engine.model, systemPrompt, message);
-    else if (key === 'explorer') reply = await callOpenAI(engine.client, engine.model, systemPrompt, message);
-    else reply = await callAnthropic(engine.client, engine.model, systemPrompt, message);
+    if (key === 'reasoner' || key === 'solver') reply = await callGroq(engine.client, engine.model, systemPrompt, typeof userContent === 'string' ? userContent : message, history);
+    else if (key === 'explorer') reply = await callOpenAI(engine.client, engine.model, systemPrompt, userContent, history);
+    else reply = await callAnthropic(engine.client, engine.model, systemPrompt, userContent, history);
     return { name: engine.name, reply };
   } catch (error) {
     console.error(`${engine.name} (${engine.provider}) call failed:`, error.message);
@@ -106,14 +139,24 @@ GENERAL - anything else, including simple conceptual questions` },
 
 const CATEGORY_TO_ENGINE = { MATH: 'solver', EXAMPLES: 'explorer', STORY: 'storyteller', GENERAL: 'reasoner' };
 
-async function answerSmart({ message, subject, userLevel, excludeEngine }) {
+async function answerSmart({ message, subject, userLevel, excludeEngine, history = [], attachments = [] }) {
   const category = await classifyMessage(message, subject);
+
+  // Route image-containing messages to vision-capable engines first
+  const hasImages = attachments.some((a) => a.kind === 'image' && a.imageDataUrl);
+  if (hasImages) {
+    const visionKey = ENGINES.explorer.client ? 'explorer' : ENGINES.storyteller.client ? 'storyteller' : null;
+    if (visionKey) {
+      const result = await callOneEngine(visionKey, message, subject, userLevel, history, attachments);
+      if (result.reply) return { reply: result.reply, engines: [result.name] };
+    }
+  }
 
   if (category === 'COMPLEX') {
     const secondaryKey = ENGINES.storyteller.client ? 'storyteller' : (ENGINES.explorer.client ? 'explorer' : 'solver');
     const [a, b] = await Promise.all([
-      callOneEngine('reasoner', message, subject, userLevel),
-      callOneEngine(secondaryKey, message, subject, userLevel),
+      callOneEngine('reasoner', message, subject, userLevel, history, attachments),
+      callOneEngine(secondaryKey, message, subject, userLevel, history, attachments),
     ]);
     const successful = [a, b].filter((r) => r.reply).filter((r, i, arr) => arr.findIndex((x) => x.name === r.name) === i);
     if (successful.length) {
@@ -126,11 +169,11 @@ async function answerSmart({ message, subject, userLevel, excludeEngine }) {
       const alt = ['reasoner', 'explorer', 'storyteller'].find((k) => ENGINES[k].name !== excludeEngine && ENGINES[k].client);
       if (alt) primaryKey = alt;
     }
-    const result = await callOneEngine(primaryKey, message, subject, userLevel);
+    const result = await callOneEngine(primaryKey, message, subject, userLevel, history, attachments);
     if (result.reply) return { reply: result.reply, engines: [result.name] };
   }
 
-  const fallback = await callOneEngine('reasoner', message, subject, userLevel);
+  const fallback = await callOneEngine('reasoner', message, subject, userLevel, history, attachments);
   if (fallback.reply) return { reply: fallback.reply, engines: [fallback.name] };
 
   return { reply: `Demo mode answer for ${subject || 'your topic'}: Keep practicing and review one concept at a time to master it!`, engines: ['Reasoner'] };
@@ -688,7 +731,28 @@ const server = http.createServer(async (req, res) => {
       if (!rl.allowed) return sendJson(res, 429, { error: "You're sending messages too quickly. Please wait a moment and try again.", retryAfterMs: rl.retryAfterMs });
       recordChatEvent(payload.visitorId, subject);
 
-      const { reply, engines } = await answerSmart({ message, subject, userLevel, excludeEngine: payload.excludeEngine });
+      // Normalize conversation history (max 12 turns, sanitized)
+      const rawHistory = Array.isArray(payload.history) ? payload.history : [];
+      const history = rawHistory
+        .filter((h) => h && (h.role === 'user' || h.role === 'assistant') && typeof h.content === 'string' && h.content.trim())
+        .map((h) => ({ role: h.role, content: String(h.content).slice(0, 4000) }))
+        .slice(-12);
+
+      // Normalize attachments (text files + images, max 5)
+      const rawAttachments = Array.isArray(payload.attachments) ? payload.attachments : [];
+      const attachments = rawAttachments
+        .filter((a) => a && (a.textContent || a.imageDataUrl))
+        .map((a) => ({
+          name: String(a.name || 'attachment').slice(0, 120),
+          type: String(a.type || 'application/octet-stream').slice(0, 120),
+          kind: a.kind === 'image' ? 'image' : 'file',
+          textContent: String(a.textContent || '').slice(0, 12000),
+          imageDataUrl: String(a.imageDataUrl || '').slice(0, 250000),
+          size: Number(a.size) || 0,
+        }))
+        .slice(0, 5);
+
+      const { reply, engines } = await answerSmart({ message, subject, userLevel, excludeEngine: payload.excludeEngine, history, attachments });
       return sendJson(res, 200, { status: 'ok', reply, engine: engines.join(', '), model: MODEL_LABEL, stats: getStatusSummary() });
     } catch (error) { return sendJson(res, 400, { error: error.message }); }
   }
