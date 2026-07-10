@@ -4,6 +4,31 @@ config();
 const { trackChat, checkRateLimit } = require('./_store');
 const { routeChat } = require('../../../engines');
 
+// Simple per-function rate limiter stored on the global to survive warm starts
+const RATE_WINDOW_MS = Number(process.env.RATE_WINDOW_MS || 60 * 1000);
+const RATE_MAX = Number(process.env.RATE_MAX || 20);
+const rateMap = global.__netlifyRateMap || new Map();
+global.__netlifyRateMap = rateMap;
+
+function getClientIpFromEvent(event) {
+  const headers = event.headers || {};
+  const xf = headers['x-forwarded-for'] || headers['X-Forwarded-For'];
+  if (xf) return xf.split(',')[0].trim();
+  return headers['x-nf-client-connection-ip'] || headers['client-ip'] || 'unknown';
+}
+
+function isRateLimited(ip) {
+  const now = Date.now();
+  const entry = rateMap.get(ip);
+  if (!entry || now - entry.windowStart > RATE_WINDOW_MS) {
+    rateMap.set(ip, { count: 1, windowStart: now });
+    return false;
+  }
+  entry.count += 1;
+  if (entry.count > RATE_MAX) return true;
+  return false;
+}
+
 exports.handler = async function (event) {
   if (event.httpMethod !== 'POST') {
     return {
@@ -14,6 +39,14 @@ exports.handler = async function (event) {
   }
 
   try {
+    const ip = getClientIpFromEvent(event);
+    if (isRateLimited(ip)) {
+      return {
+        statusCode: 429,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ error: 'Rate limit exceeded' }),
+      };
+    }
     const payload = JSON.parse(event.body || '{}');
     const message = (payload.message || '').trim();
     const subject = payload.subject || 'General';
