@@ -17,11 +17,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Fredoka:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap">
   <title>Hungter — Book</title>
-  <meta name="description" content="Book detail with chapter-aware AI quiz, flashcards, and guess paper generation.">
+  <meta name="description" content="Buy real study books with chapter-aware AI quizzes, flashcards, notes, and guess papers built in.">
   <link rel="canonical" href="https://hungter.com/book.html">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Hungter — Book">
-  <meta property="og:description" content="Use AI actions on selected topics without reproducing source text.">
+  <meta property="og:description" content="Study books with AI tools built around every chapter.">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/brand.css?v=20260711">
   <link rel="stylesheet" href="/nav.css?v=20260711">
@@ -29,55 +29,147 @@
   <style>
     .top-bar { height: 4px; background: var(--surface-2); }
     .top-bar-fill { height: 100%; background: linear-gradient(90deg,var(--lime),var(--blue)); width: 0%; }
-    .book-main { max-width: var(--container); margin: 0 auto; padding: 22px 16px 44px; }
-    .book-layout { display: grid; grid-template-columns: 280px 1fr; gap: 18px; }
-    .book-panel { background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius-sm); box-shadow: var(--shadow-sm); padding: 14px; }
-    .topic-select { width: 100%; border: 2px solid var(--border); background: var(--surface-2); color: var(--ink); border-radius: 12px; padding: 10px; margin: 10px 0; }
-    .btn-row { display:flex; flex-wrap: wrap; gap:8px; margin-top: 8px; }
-    .btn { border:1px solid var(--border); background: var(--surface-2); color: var(--ink); border-radius: 999px; padding: 8px 12px; cursor: pointer; }
-    .btn.primary { background: var(--lime); color: var(--bg-deep); border: none; box-shadow: var(--shadow-sm); }
-    .loading { display:none; margin-top: 8px; color: var(--ink-soft); }
-    .loading.show { display:flex; align-items:center; gap:8px; }
-    .spinner { width:14px; height:14px; border-radius:50%; border:2px solid var(--border); border-top-color: var(--lime); animation: spin 1s linear infinite; }
+    .book-main { max-width: 1180px; margin: 0 auto; padding: 22px 16px 60px; }
+    .crumb { font-size: 0.8rem; color: var(--ink-faint); margin-bottom: 14px; }
+    .crumb a { color: var(--ink-soft); }
+
+    /* Amazon-style product layout: cover | info | sticky buy box */
+    .product-grid { display: grid; grid-template-columns: 300px 1fr 300px; gap: 26px; align-items: start; }
+    .cover-col { position: sticky; top: 90px; }
+    .book-cover-wrap {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 20px; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm);
+    }
+    .book-cover { width: 100%; max-width: 240px; border-radius: 8px; box-shadow: 0 12px 30px rgba(0,0,0,0.5); }
+    .book-cover-placeholder {
+      width: 200px; height: 280px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-display); font-size: 3rem; font-weight: 700; color: var(--bg-deep);
+      background: var(--gradient-brand);
+    }
+    .thumb-row { display: flex; gap: 8px; margin-top: 12px; justify-content: center; }
+    .thumb-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
+    .thumb-dot.active { background: var(--lime); }
+
+    .info-col h1 { font-family: var(--font-display); font-size: 1.6rem; margin: 0 0 6px; line-height: 1.25; }
+    .book-author { color: var(--cyan); margin: 0 0 10px; font-size: 0.92rem; }
+    .book-author a { color: var(--cyan); }
+    .rating-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+    .stars { color: var(--gold); letter-spacing: 1px; font-size: 1rem; }
+    .rating-count { color: var(--ink-faint); font-size: 0.84rem; }
+    .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+    .prod-badge {
+      font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.05em; text-transform: uppercase;
+      padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border);
+    }
+    .prod-badge.section { color: var(--lime); border-color: rgba(200,255,77,0.3); background: rgba(200,255,77,0.06); }
+    .prod-badge.subject { color: var(--cyan); border-color: rgba(77,240,255,0.3); background: rgba(77,240,255,0.06); }
+    .book-desc { color: var(--ink-soft); line-height: 1.6; margin: 0 0 20px; }
+    .topics-heading { font-family: var(--font-display); font-size: 0.95rem; margin: 0 0 10px; }
+    .topic-pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px; }
+    .topic-pill {
+      font-size: 0.8rem; color: var(--ink-soft); background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: 999px; padding: 6px 12px;
+    }
+
+    /* Sticky buy box */
+    .buy-box {
+      position: sticky; top: 90px;
+      background: rgba(13,20,40,0.85); border: 1px solid var(--border-glow); border-radius: var(--radius);
+      padding: 20px; box-shadow: var(--shadow); backdrop-filter: blur(14px);
+    }
+    .buy-price { font-family: var(--font-display); font-size: 2rem; font-weight: 700; color: var(--lime); margin: 0; }
+    .buy-price-note { font-size: 0.78rem; color: var(--ink-faint); margin: 2px 0 14px; }
+    .buy-info-row { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--ink-soft); margin-bottom: 8px; }
+    .buy-info-row .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 8px rgba(200,255,77,0.7); }
+    .btn-buy {
+      width: 100%; text-align: center; background: var(--gradient-brand); color: var(--bg-deep); border: none;
+      border-radius: 999px; padding: 13px; font-family: var(--font-display); font-weight: 700; font-size: 0.98rem;
+      cursor: pointer; box-shadow: var(--glow-lime); margin-top: 14px; transition: all 0.15s ease;
+    }
+    .btn-buy:hover { transform: translateY(-1px); box-shadow: var(--glow-lime), var(--glow-cyan); }
+    .buy-form input { width: 100%; border: 1px solid var(--border); background: var(--surface-2); color: var(--ink); border-radius: 10px; padding: 11px 12px; margin: 10px 0; font-family: var(--font-body); }
+    .buy-form input:focus { outline: none; border-color: var(--cyan); box-shadow: var(--glow-cyan); }
+    .btn-secondary-row { display: flex; gap: 8px; margin-top: 8px; }
+    .btn-sm { flex: 1; text-align: center; border: 1px solid var(--border); background: transparent; color: var(--ink-soft); border-radius: 999px; padding: 9px; font-size: 0.85rem; cursor: pointer; }
+    .btn-sm:hover { border-color: var(--cyan); color: var(--cyan); }
+
+    /* AI tools section */
+    .ai-tools-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px;
+      margin-top: 30px;
+    }
+    .ai-tools-card h2 { font-family: var(--font-display); font-size: 1.2rem; margin: 0 0 4px; }
+    .ai-tools-sub { color: var(--ink-soft); font-size: 0.88rem; margin: 0 0 16px; }
+    .topic-select { width: 100%; max-width: 420px; border: 1px solid var(--border); background: var(--surface-2); color: var(--ink); border-radius: 10px; padding: 11px; margin-bottom: 14px; }
+    .tool-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+    .tool-btn {
+      display: flex; flex-direction: column; gap: 4px; text-align: left; border: 1px solid var(--border);
+      background: var(--surface-2); border-radius: var(--radius-sm); padding: 14px; cursor: pointer;
+      color: var(--ink); text-decoration: none; transition: all 0.15s ease;
+    }
+    .tool-btn:hover { border-color: var(--cyan); box-shadow: var(--glow-cyan); transform: translateY(-2px); }
+    .tool-btn .icon { font-size: 1.3rem; }
+    .tool-btn strong { font-family: var(--font-display); font-size: 0.92rem; }
+    .tool-btn span { font-size: 0.78rem; color: var(--ink-faint); }
+    .loading { display: none; align-items: center; gap: 8px; margin-top: 14px; color: var(--ink-soft); }
+    .loading.show { display: flex; }
+    .spinner { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--border); border-top-color: var(--lime); animation: spin 1s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .result-box { margin-top: 12px; white-space: pre-wrap; color: var(--ink-soft); }
-    .faq-item { border-top:1px solid var(--border-soft); padding-top:10px; margin-top:10px; }
-    .similar-row { display:grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap:10px; margin-top:10px; }
-    .review-form textarea, .review-form input { width:100%; border:2px solid var(--border); background:var(--surface-2); color:var(--ink); border-radius:10px; padding:8px; margin:6px 0; }
-    .bq-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; margin-top: 10px; }
+    .result-box { margin-top: 14px; white-space: pre-wrap; color: var(--ink-soft); }
+
+    /* Quiz */
+    .bq-card { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; margin-top: 10px; }
     .bq-q { margin: 0 0 10px; font-weight: 600; }
     .bq-opts { display: grid; gap: 8px; }
-    .bq-opt {
-      text-align: left; cursor: pointer; padding: 10px 12px;
-      background: var(--surface-2); border: 1px solid var(--border);
-      border-radius: var(--radius-sm); color: var(--ink); font-family: var(--font-body);
-      transition: border-color 0.15s;
-    }
-    .bq-opt:hover:not(:disabled) { border-color: var(--cyan, var(--blue)); }
+    .bq-opt { text-align: left; cursor: pointer; padding: 10px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--ink); font-family: var(--font-body); transition: border-color 0.15s; }
+    .bq-opt:hover:not(:disabled) { border-color: var(--cyan); }
     .bq-opt:disabled { cursor: default; opacity: 0.85; }
     .bq-opt.bq-correct { border-color: var(--lime); box-shadow: 0 0 10px rgba(200,255,77,0.25); }
     .bq-opt.bq-wrong { border-color: var(--coral); opacity: 0.6; }
     .bq-expl { margin: 10px 0 0; color: var(--ink-soft); font-size: 0.88rem; border-left: 2px solid var(--lime); padding-left: 10px; }
-    .bq-result { margin-top: 14px; padding: 16px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); text-align: center; }
+    .bq-result { margin-top: 14px; padding: 16px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2); text-align: center; }
     .bq-score { font-family: var(--font-display); font-size: 2.2rem; color: var(--lime); margin: 0; }
-    .notes-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; margin-top: 12px; }
-    .notes-heading { font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.1em; color: var(--cyan, var(--blue)); margin: 16px 0 6px; text-transform: uppercase; }
+
+    /* Notes */
+    .notes-panel { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; margin-top: 14px; }
+    .notes-heading { font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.1em; color: var(--cyan); margin: 16px 0 6px; text-transform: uppercase; }
     .notes-list { margin: 0 0 8px; padding-left: 18px; color: var(--ink-soft); }
     .notes-list li { margin: 4px 0; }
     .notes-para { margin: 6px 0; color: var(--ink-soft); }
+
+    /* Similar + reviews */
+    .section-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; margin-top: 20px; }
+    .section-card h2 { font-family: var(--font-display); font-size: 1.15rem; margin: 0 0 14px; }
+    .similar-row { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 12px; }
+    .similar-card { padding: 14px; display: block; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); text-decoration: none; color: var(--ink); transition: all 0.15s ease; }
+    .similar-card:hover { border-color: var(--cyan); transform: translateY(-2px); }
+    .similar-card strong { font-family: var(--font-display); font-size: 0.9rem; }
+    .review-form textarea, .review-form input { width: 100%; border: 1px solid var(--border); background: var(--surface-2); color: var(--ink); border-radius: 10px; padding: 10px; margin: 6px 0; font-family: var(--font-body); }
+    .star-picker { display: flex; gap: 4px; margin: 6px 0; font-size: 1.3rem; cursor: pointer; }
+    .star-picker span { color: var(--border); }
+    .star-picker span.on { color: var(--gold); }
+    .review-item { border-top: 1px solid var(--border-soft); padding-top: 12px; margin-top: 12px; }
+    .review-item .stars { font-size: 0.85rem; }
+
     @media print {
       body * { visibility: hidden; }
       #notesPanel, #notesPanel * { visibility: visible; }
       #notesPanel { position: absolute; left: 0; top: 0; width: 100%; color: #000; background: #fff; border: none; }
     }
-    @media (max-width: 860px) { .book-layout { grid-template-columns: 1fr; } }
+    @media (max-width: 980px) {
+      .product-grid { grid-template-columns: 1fr; }
+      .cover-col, .buy-box { position: static; }
+      .cover-col { order: 1; }
+      .info-col { order: 2; }
+      .buy-box { order: 3; }
+    }
   </style>
 </head>
 <body data-page="book">
   <div class="top-bar"><div class="top-bar-fill" id="topBar"></div></div>
   <header class="site-nav"></header>
   <main class="book-main">
-    <div id="book-content" class="book-layout"></div>
+    <div id="book-content"></div>
   </main>
 
   <script src="/api-config.js?v=20260711"></script>
@@ -94,24 +186,6 @@
       if (topBar) topBar.style.width = `${progress.pct}%`;
     }
 
-    function createCoverElement(book) {
-      const wrap = document.createElement('div');
-      wrap.className = 'book-cover-wrap';
-      const img = document.createElement('img');
-      img.src = `https://covers.openlibrary.org/b/isbn/${book.isbn}-L.jpg`;
-      img.alt = book.title;
-      img.className = 'book-cover';
-      img.addEventListener('error', () => {
-        img.remove();
-        const placeholder = document.createElement('div');
-        placeholder.className = 'book-cover-placeholder';
-        placeholder.textContent = book.title.charAt(0);
-        wrap.appendChild(placeholder);
-      }, { once: true });
-      wrap.appendChild(img);
-      return wrap;
-    }
-
     function formatPrice(price) {
       const value = Number(price || 0);
       return `$${value.toFixed(2)}`;
@@ -122,12 +196,18 @@
       return String(raw || 'free').toLowerCase().includes('pro') ? 'pro' : 'free';
     }
 
+    function starString(rating) {
+      const full = Math.round(rating);
+      return '★★★★★☆☆☆☆☆'.slice(5 - full, 10 - full);
+    }
+
     function saveReview(bookId, review) {
       const key = `mm_book_reviews_${bookId}`;
       const items = lsGet(key, []);
       items.push({
         name: String(review?.name || '').slice(0, 120),
         text: String(review?.text || '').slice(0, 2000),
+        rating: Math.max(1, Math.min(5, Number(review?.rating) || 5)),
         createdAt: String(review?.createdAt || new Date().toISOString()),
       });
       lsSet(key, items.slice(-100));
@@ -196,7 +276,7 @@
         optsWrap.className = 'bq-opts';
 
         (q.options || []).forEach((optionText, oi) => {
-          const letter = String.fromCharCode(65 + oi); // A, B, C, D
+          const letter = String.fromCharCode(65 + oi);
           const btn = document.createElement('button');
           btn.type = 'button';
           btn.className = 'bq-opt';
@@ -238,8 +318,6 @@
 
       function finishQuiz() {
         const percent = Math.round((score / questions.length) * 100);
-
-        // Identical persistence to quiz.html so progress/dashboard/XP pick it up unchanged
         const quizHistory = lsGet('mm_quiz_scores', {});
         quizHistory[book.subject] = [...(quizHistory[book.subject] || []), percent];
         lsSet('mm_quiz_scores', quizHistory);
@@ -261,9 +339,9 @@
           <div class="bq-result">
             <p class="bq-score">${percent}%</p>
             <p style="margin:0;color:var(--ink-soft);">${score} of ${questions.length} correct — saved to your progress.</p>
-            <div class="btn-row" style="margin-top:10px;">
-              <button type="button" class="btn" id="bqAgain">Try another quiz</button>
-              <a class="btn" href="/progress.html">See my progress →</a>
+            <div class="btn-secondary-row" style="margin-top:10px;">
+              <button type="button" class="btn-sm" id="bqAgain">Try another quiz</button>
+              <a class="btn-sm" href="/progress.html" style="text-decoration:none;">See my progress →</a>
             </div>
           </div>
         `;
@@ -277,7 +355,7 @@
     function renderChapterNotes(rawNotes, engineName, topicLabel, mount) {
       const KNOWN_HEADINGS = ['OVERVIEW', 'KEY POINTS', 'FORMULAS & DEFINITIONS', 'COMMON MISTAKES', 'EXAM TIPS'];
       const lines = String(rawNotes || '').split('\n');
-      let html = `<div class="notes-head"><h3 style="margin:12px 0 2px;">Chapter notes: ${topicLabel}</h3>` +
+      let html = `<div class="notes-head"><h3 style="margin:0 0 2px;">Chapter notes: ${topicLabel}</h3>` +
         `<p style="margin:0 0 10px;color:var(--ink-faint);font-size:0.8rem;">AI-generated original notes (${engineName}) — not copied from the book.</p></div>`;
       let inList = false;
       lines.forEach((line) => {
@@ -296,9 +374,9 @@
         }
       });
       if (inList) html += '</ul>';
-      html += `<div class="btn-row" style="margin-top:12px;">
-        <button type="button" class="btn" id="notesCopyBtn">Copy notes</button>
-        <button type="button" class="btn" id="notesPrintBtn">Print / Save as PDF</button>
+      html += `<div class="btn-secondary-row" style="margin-top:12px;">
+        <button type="button" class="btn-sm" id="notesCopyBtn">Copy notes</button>
+        <button type="button" class="btn-sm" id="notesPrintBtn">Print / Save as PDF</button>
       </div>`;
       mount.innerHTML = `<div class="notes-panel" id="notesPanel">${html}</div>`;
       mount.querySelector('#notesCopyBtn')?.addEventListener('click', () => {
@@ -327,35 +405,119 @@
 
       function renderBook(book, allBooks) {
         document.title = `${book.title} | Hungter`;
-        container.innerHTML = '';
+        const reviews = getReviews(book.id);
+        const avgRating = reviews.length ? reviews.reduce((sum, r) => sum + (Number(r.rating) || 5), 0) / reviews.length : 4.7;
+        const similar = allBooks.filter((b) => b.id !== book.id && b.section === book.section && b.subject === book.subject).slice(0, 3);
 
-        const aside = document.createElement('aside');
-        aside.className = 'book-panel';
-        aside.appendChild(createCoverElement(book));
-        aside.insertAdjacentHTML('beforeend', `
-          <button type="button" class="btn primary" id="buyBookBtn" style="display:flex;width:100%;justify-content:center;margin-top:10px;">Buy from Hungter — ${formatPrice(book.price)}</button>
-          <form id="buyBookForm" class="review-form" style="display:none;margin-top:8px;">
-            <label for="buyBookEmail" class="quiz-label" style="display:block;margin-bottom:4px;">Email for your order</label>
-            <input id="buyBookEmail" type="email" placeholder="you@school.edu" required>
-            <div class="btn-row" style="margin-top:6px;">
-              <button type="submit" class="btn primary">Confirm — ${formatPrice(book.price)}</button>
-              <button type="button" class="btn" id="cancelBuyBtn">Cancel</button>
+        container.innerHTML = `
+          <p class="crumb"><a href="/books.html">Books</a> › <a href="/books.html?section=${encodeURIComponent(book.section)}">${book.section}</a> › ${book.subject}</p>
+
+          <div class="product-grid">
+            <div class="cover-col">
+              <div class="book-cover-wrap" id="coverWrap"></div>
             </div>
-            <p id="buyBookStatus" style="margin:8px 0 0;font-size:0.82rem;color:var(--ink-soft);"></p>
-          </form>
-          <div class="btn-row">
-            <button class="btn" id="quizBtn">Generate Quiz</button>
-            <button class="btn" id="flashBtn">Generate Flashcards</button>
-            <button class="btn" id="paperBtn">Generate Guess Paper</button>
-          </div>
-          <div id="loadingState" class="loading"><span class="spinner"></span><span>Generating with all 3 AIs - this can take 15-30 seconds...</span></div>
-        `);
-        container.appendChild(aside);
 
-        const buyBookBtn = aside.querySelector('#buyBookBtn');
-        const buyBookForm = aside.querySelector('#buyBookForm');
-        const buyBookStatus = aside.querySelector('#buyBookStatus');
-        const buyBookEmail = aside.querySelector('#buyBookEmail');
+            <div class="info-col">
+              <div class="badge-row">
+                <span class="prod-badge section">${book.section}</span>
+                <span class="prod-badge subject">${book.subject}</span>
+              </div>
+              <h1>${book.title}</h1>
+              <p class="book-author">by <a href="#reviewsSection">${book.author}</a></p>
+              <div class="rating-row">
+                <span class="stars">${starString(avgRating)}</span>
+                <span class="rating-count">${avgRating.toFixed(1)} · ${reviews.length} review${reviews.length === 1 ? '' : 's'}</span>
+              </div>
+              <p class="book-desc">${book.description}</p>
+
+              <p class="topics-heading">📑 Chapters covered</p>
+              <div class="topic-pill-row">
+                ${(book.topics || []).map((t) => `<span class="topic-pill">${t}</span>`).join('') || '<span class="topic-pill">Full syllabus</span>'}
+              </div>
+            </div>
+
+            <div class="buy-col">
+              <div class="buy-box">
+                <p class="buy-price">${formatPrice(book.price)}</p>
+                <p class="buy-price-note">Prices include instant AI study tools for this book.</p>
+                <div class="buy-info-row"><span class="dot"></span> In stock — ships digitally in minutes</div>
+                <div class="buy-info-row"><span class="dot"></span> Free AI quiz &amp; flashcards included</div>
+                <button type="button" class="btn-buy" id="buyBookBtn">🛒 Buy now</button>
+                <form id="buyBookForm" class="buy-form" style="display:none;">
+                  <input id="buyBookEmail" type="email" placeholder="you@school.edu" required>
+                  <button type="submit" class="btn-buy" style="margin-top:0;">Confirm — ${formatPrice(book.price)}</button>
+                  <div class="btn-secondary-row"><button type="button" class="btn-sm" id="cancelBuyBtn">Cancel</button></div>
+                  <p id="buyBookStatus" style="margin:8px 0 0;font-size:0.82rem;color:var(--ink-soft);"></p>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <div class="ai-tools-card">
+            <h2>🤖 AI Study Tools for this book</h2>
+            <p class="ai-tools-sub">Pick a chapter, then generate original content from all 4 AI engines — nothing copied from the book itself.</p>
+            <select id="topicSelect" class="topic-select">
+              <option value="">Whole subject (all topics)</option>
+              ${(book.topics || []).map((topic) => `<option value="${topic}">${topic}</option>`).join('')}
+            </select>
+            <div class="tool-grid">
+              <button type="button" class="tool-btn" id="chapterNotesBtn"><span class="icon">📖</span><strong>Chapter Notes</strong><span>Key points, formulas &amp; exam tips</span></button>
+              <button type="button" class="tool-btn" id="quizBtn"><span class="icon">🎯</span><strong>Generate Quiz</strong><span>5 questions, instant scoring</span></button>
+              <button type="button" class="tool-btn" id="flashBtn"><span class="icon">🃏</span><strong>Generate Flashcards</strong><span>Adds to your review deck</span></button>
+              <a href="#" class="tool-btn" id="paperBtn"><span class="icon">📝</span><strong>Guess Paper</strong><span>Solvable timed exam + scoring</span></a>
+              <button type="button" class="tool-btn" id="studyPlanBtn"><span class="icon">🗓</span><strong>Study Plan</strong><span>Day-by-day plan to your exam date</span></button>
+              <button type="button" class="tool-btn" id="compareBooksBtn"><span class="icon">⚖️</span><strong>Compare Books</strong><span>vs. similar titles</span></button>
+            </div>
+            <div id="loadingState" class="loading"><span class="spinner"></span><span>All 4 engines are working on it — 15–30 seconds…</span></div>
+            <div id="notesArea"></div>
+            <div id="resultBox" class="result-box"></div>
+            <div id="quizArea"></div>
+          </div>
+
+          <div class="section-card">
+            <h2>📚 Similar books</h2>
+            <div class="similar-row">
+              ${similar.length ? similar.map((item) => `<a class="similar-card" href="/book.html?id=${item.id}"><strong>${item.title}</strong><p style="margin:6px 0 0;color:var(--ink-faint);font-size:0.82rem;">${item.section} · ${item.subject}</p></a>`).join('') : '<p style="color:var(--ink-soft);">No close matches yet.</p>'}
+            </div>
+          </div>
+
+          <div class="section-card" id="reviewsSection">
+            <h2>⭐ Customer reviews</h2>
+            <form id="reviewForm" class="review-form">
+              <label style="font-size:0.82rem;color:var(--ink-faint);">Your rating</label>
+              <div class="star-picker" id="starPicker">
+                ${[1,2,3,4,5].map((n) => `<span data-star="${n}">★</span>`).join('')}
+              </div>
+              <input id="reviewName" placeholder="Name (optional)">
+              <textarea id="reviewText" rows="3" placeholder="Write your review"></textarea>
+              <button type="submit" class="btn-sm" style="max-width:160px;">Submit review</button>
+            </form>
+            <div id="reviewsList" style="margin-top:8px;">
+              ${reviews.length ? reviews.slice().reverse().map((r) => `<article class="review-item"><div class="stars">${starString(r.rating || 5)}</div><strong>${escapeHtml(r.name || 'Anonymous')}</strong><p style="margin:4px 0 0;color:var(--ink-soft);">${escapeHtml(r.text || '')}</p></article>`).join('') : '<p style="color:var(--ink-soft);">No reviews yet — be the first.</p>'}
+            </div>
+          </div>
+        `;
+
+        // Cover image
+        const coverWrap = document.getElementById('coverWrap');
+        const img = document.createElement('img');
+        img.src = `https://covers.openlibrary.org/b/isbn/${book.isbn}-L.jpg`;
+        img.alt = book.title;
+        img.className = 'book-cover';
+        img.addEventListener('error', () => {
+          img.remove();
+          const placeholder = document.createElement('div');
+          placeholder.className = 'book-cover-placeholder';
+          placeholder.textContent = book.title.charAt(0);
+          coverWrap.appendChild(placeholder);
+        }, { once: true });
+        coverWrap.appendChild(img);
+
+        // Buy flow
+        const buyBookBtn = document.getElementById('buyBookBtn');
+        const buyBookForm = document.getElementById('buyBookForm');
+        const buyBookStatus = document.getElementById('buyBookStatus');
+        const buyBookEmail = document.getElementById('buyBookEmail');
 
         buyBookBtn?.addEventListener('click', () => {
           buyBookBtn.style.display = 'none';
@@ -365,9 +527,9 @@
           buyBookEmail.focus();
         });
 
-        aside.querySelector('#cancelBuyBtn')?.addEventListener('click', () => {
+        document.getElementById('cancelBuyBtn')?.addEventListener('click', () => {
           buyBookForm.style.display = 'none';
-          buyBookBtn.style.display = 'flex';
+          buyBookBtn.style.display = 'block';
           buyBookStatus.textContent = '';
         });
 
@@ -390,7 +552,7 @@
             buyBookStatus.textContent = `Order ${data.orderRef} recorded. ${data.message || ''}`;
             buyBookForm.querySelector('input').disabled = true;
             submitBtn.style.display = 'none';
-            aside.querySelector('#cancelBuyBtn').textContent = 'Done';
+            document.getElementById('cancelBuyBtn').textContent = 'Done';
           } catch (error) {
             buyBookStatus.style.color = 'var(--coral)';
             buyBookStatus.textContent = error.message || 'Could not place this order right now.';
@@ -398,52 +560,6 @@
             submitBtn.disabled = false;
           }
         });
-
-        const info = document.createElement('section');
-        info.className = 'book-panel';
-        const similar = allBooks.filter((b) => b.id !== book.id && b.section === book.section && b.subject === book.subject).slice(0, 3);
-        const reviews = getReviews(book.id);
-        info.innerHTML = `
-          <p class="eyebrow">${book.section} · ${book.subject}</p>
-          <h1 style="margin:0 0 8px;">${book.title}</h1>
-          <p class="book-author" style="margin:0;color:var(--ink-faint);">${book.author}</p>
-          <p style="margin:10px 0;color:var(--ink-soft);">${book.description}</p>
-
-          <label for="topicSelect" class="quiz-label">Chapter / topic</label>
-          <select id="topicSelect" class="topic-select">
-            <option value="">Whole subject (all topics)</option>
-            ${(book.topics || []).map((topic) => `<option value="${topic}">${topic}</option>`).join('')}
-          </select>
-
-          <div class="btn-row" style="margin-top:6px;">
-            <button class="btn primary" id="chapterNotesBtn">📖 Chapter Notes — key points & formulas</button>
-            <button class="btn" id="studyPlanBtn">Build my study plan</button>
-            <button class="btn" id="compareBooksBtn">Compare with similar books</button>
-          </div>
-
-          <div id="resultBox" class="result-box"></div>
-
-          <div class="faq-item"><h3 style="margin:0 0 6px;">Similar books</h3>
-            <div class="similar-row">
-              ${similar.length ? similar.map((item) => `<a class="book-panel" style="padding:10px;display:block;" href="/book.html?id=${item.id}"><strong>${item.title}</strong><p style="margin:6px 0 0;color:var(--ink-faint);">${item.section} · ${item.subject}</p></a>`).join('') : '<p style="color:var(--ink-soft);">No close matches yet.</p>'}
-            </div>
-          </div>
-
-          <div class="faq-item">
-            <h3 style="margin:0 0 6px;">Honest reviews</h3>
-            <form id="reviewForm" class="review-form">
-              <input id="reviewName" placeholder="Name (optional)">
-              <textarea id="reviewText" rows="3" placeholder="Write your review"></textarea>
-              <button type="submit" class="btn">Submit review</button>
-            </form>
-            <div id="reviewsList" style="margin-top:8px;">${reviews.length ? reviews.slice().reverse().map((r) => `<article style="border-top:1px solid var(--border-soft);padding-top:8px;margin-top:8px;"><strong>${escapeHtml(r.name || 'Anonymous')}</strong><p style="margin:4px 0 0;color:var(--ink-soft);">${escapeHtml(r.text || '')}</p></article>`).join('') : '<p style="color:var(--ink-soft);">No reviews yet.</p>'}</div>
-          </div>
-        `;
-        container.appendChild(info);
-
-        const quizArea = document.createElement('div');
-        quizArea.id = 'quizArea';
-        info.appendChild(quizArea);
 
         const topicSelect = document.getElementById('topicSelect');
         const resultBox = document.getElementById('resultBox');
@@ -486,7 +602,9 @@
             });
             const cards = data.cards || [];
             appendGeneratedFlashcards(cards, book.title);
-            resultBox.textContent = cards.map((card, i) => `${i + 1}. ${card.front} -> ${card.back}`).join('\n\n') || 'No flashcards generated.';
+            resultBox.textContent = cards.length
+              ? `✓ ${cards.length} flashcards added to your deck:\n\n` + cards.map((card, i) => `${i + 1}. ${card.front} → ${card.back}`).join('\n\n')
+              : 'No flashcards generated.';
           } catch (error) {
             resultBox.textContent = error.message;
           } finally {
@@ -494,33 +612,16 @@
           }
         });
 
-        document.getElementById('paperBtn')?.addEventListener('click', async () => {
-          try {
-            showLoading(true);
-            resultBox.textContent = '';
-            const chapter = topicSelect.value;
-            const data = await postJson('/api/guess-paper', {
-              plan: getPlan(),
-              section: book.section,
-              subject: book.subject,
-              chapter,
-              paperFormat: '60 minutes',
-            });
-            resultBox.textContent = data.paper || 'No paper generated.';
-          } catch (error) {
-            resultBox.textContent = error.message;
-          } finally {
-            showLoading(false);
-          }
+        document.getElementById('paperBtn')?.addEventListener('click', (event) => {
+          event.preventDefault();
+          const chapter = topicSelect.value;
+          const params = new URLSearchParams({ book: book.id });
+          if (chapter) params.set('chapter', chapter);
+          window.location.href = `/guess-papers.html?${params.toString()}`;
         });
 
         document.getElementById('chapterNotesBtn')?.addEventListener('click', async () => {
-          const notesArea = document.getElementById('notesArea') || (() => {
-            const div = document.createElement('div');
-            div.id = 'notesArea';
-            resultBox.parentNode.insertBefore(div, resultBox);
-            return div;
-          })();
+          const notesArea = document.getElementById('notesArea');
           try {
             showLoading(true);
             notesArea.innerHTML = '';
@@ -559,7 +660,7 @@
           }
           const existing = lsGet('mm_study_plans', []);
           lsSet('mm_study_plans', existing.concat(plan).slice(-400));
-          resultBox.textContent = `Study plan saved with ${plan.length} day entries.`;
+          resultBox.textContent = `✓ Study plan saved with ${plan.length} day entries. See it on your dashboard.`;
         });
 
         document.getElementById('compareBooksBtn')?.addEventListener('click', async () => {
@@ -579,12 +680,28 @@
           }
         });
 
+        // Star rating picker
+        let pickedRating = 5;
+        const starPicker = document.getElementById('starPicker');
+        function paintStars() {
+          starPicker.querySelectorAll('span').forEach((s) => {
+            s.classList.toggle('on', Number(s.dataset.star) <= pickedRating);
+          });
+        }
+        starPicker?.addEventListener('click', (event) => {
+          const star = event.target.closest('span[data-star]');
+          if (!star) return;
+          pickedRating = Number(star.dataset.star);
+          paintStars();
+        });
+        paintStars();
+
         document.getElementById('reviewForm')?.addEventListener('submit', (event) => {
           event.preventDefault();
           const name = document.getElementById('reviewName').value.trim();
           const text = document.getElementById('reviewText').value.trim();
           if (!text) return;
-          saveReview(book.id, { name, text, createdAt: new Date().toISOString() });
+          saveReview(book.id, { name, text, rating: pickedRating, createdAt: new Date().toISOString() });
           renderBook(book, allBooks);
         });
 

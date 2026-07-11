@@ -254,6 +254,19 @@
           opt.textContent = `${book.title} (${book.section} ${book.subject})`;
           select.appendChild(opt);
         });
+
+        // Deep link from a book page: /guess-papers.html?book=<id>&chapter=<topic>
+        const params = new URLSearchParams(location.search);
+        const wantBookId = params.get('book');
+        const wantChapter = params.get('chapter') || '';
+        if (wantBookId) {
+          const idx = books.findIndex((b) => b.id === wantBookId);
+          if (idx !== -1) {
+            select.value = String(idx);
+            select.dispatchEvent(new Event('change'));
+            if (wantChapter) el('chapterSelect').value = wantChapter;
+          }
+        }
       } catch { /* book picker stays empty — manual entry still works */ }
     })();
 
