@@ -331,6 +331,7 @@
         milestones.push({ event: `Scored ${percent}% on a ${book.title} quiz${chapter ? ` (${chapter})` : ''}`, date: new Date().toLocaleDateString() });
         lsSet('mm_milestones', milestones);
 
+        if (typeof bumpQuest === 'function') bumpQuest('quiz1');
         updateLevel();
         refreshTopBar();
 

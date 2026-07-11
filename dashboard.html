@@ -81,6 +81,7 @@
         <div><span>Streak</span><strong id="xpStreak">0</strong></div>
         <div><span>Milestones</span><strong id="xpMilestones">0</strong></div>
         <div><span>Explain-it-back</span><strong id="xpExplainBack">0</strong></div>
+        <div><span>Daily Quests</span><strong id="xpQuests">0</strong></div>
       </div>
     </div>
     <div class="stat-card c2">
@@ -125,6 +126,16 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <!-- DAILY QUESTS -->
+  <div class="card" style="margin-bottom:24px;border-color:var(--border-glow);box-shadow:0 0 20px rgba(200,255,77,0.1);">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+      <h3 style="margin:0;">🎯 Daily Quests</h3>
+      <span id="questsSummary" style="font-family:var(--font-mono);font-size:0.74rem;color:var(--ink-faint);letter-spacing:0.05em;"></span>
+    </div>
+    <p style="margin:6px 0 12px;color:var(--ink-soft);font-size:0.88rem;">Three fresh goals every day — complete them for instant bonus XP.</p>
+    <div id="questList"></div>
   </div>
 
   <!-- QUIZ CTA -->
@@ -243,6 +254,32 @@ el('xpQuizAccuracy').textContent = `${xpBreakdown.quizAccuracyXP} XP`;
 el('xpStreak').textContent = `${xpBreakdown.streakXP} XP`;
 el('xpMilestones').textContent = `${xpBreakdown.milestoneXP} XP`;
 el('xpExplainBack').textContent = `${xpBreakdown.explainBackXP || 0} XP`;
+el('xpQuests').textContent = `${xpBreakdown.questXP || 0} XP`;
+
+// Daily quests card
+if (typeof getDailyQuests === 'function') {
+  const quests = getDailyQuests();
+  const doneCount = quests.filter((q) => q.done).length;
+  el('questsSummary').textContent = `${doneCount} / ${quests.length} done today`;
+  const questLinks = { chat3: '/chat.html', quiz1: '/quiz.html', paper1: '/guess-papers.html' };
+  el('questList').innerHTML = quests.map((q) => {
+    const pct = q.done ? 100 : Math.round((q.progress / q.goal) * 100);
+    return `
+      <div style="display:flex;align-items:center;gap:14px;border:1px solid ${q.done ? 'rgba(200,255,77,0.35)' : 'var(--border)'};border-radius:12px;background:${q.done ? 'rgba(200,255,77,0.06)' : 'var(--surface-2)'};padding:12px 14px;margin-bottom:10px;">
+        <span style="font-size:1.3rem;">${q.icon}</span>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;justify-content:space-between;gap:8px;">
+            <strong style="font-size:0.92rem;${q.done ? 'color:var(--lime);' : ''}">${q.label}</strong>
+            <span style="font-family:var(--font-mono);font-size:0.74rem;color:${q.done ? 'var(--lime)' : 'var(--ink-faint)'};white-space:nowrap;">${q.done ? '✓ +' + q.xp + ' XP' : q.progress + ' / ' + q.goal}</span>
+          </div>
+          <div style="height:7px;background:var(--surface);border-radius:999px;margin-top:7px;overflow:hidden;">
+            <div style="height:100%;width:${pct}%;background:${q.done ? 'var(--lime)' : 'var(--gradient-brand)'};border-radius:999px;transition:width 0.6s ease;"></div>
+          </div>
+        </div>
+        ${q.done ? '' : `<a href="${questLinks[q.id] || '/chat.html'}" class="quiz-btn" style="padding:7px 13px;font-size:0.8rem;white-space:nowrap;">Go →</a>`}
+      </div>`;
+  }).join('');
+}
 
 const xpBreakdownPanel = el('xpBreakdown');
 const xpBreakdownToggle = el('toggleXpBreakdown');

@@ -573,7 +573,9 @@
         const history = lsGet('mm_guess_papers', []);
         history.push({ date: new Date().toDateString(), subject: key, chapter: exam.paper.chapter || '', pct, weak });
         lsSet('mm_guess_papers', history.slice(-20));
-        if (typeof recordMilestone === 'function') recordMilestone(`Completed a guess paper (${pct}%)`);
+        if (typeof bumpQuest === 'function') bumpQuest('paper1');
+        if (typeof addMilestone === 'function') addMilestone(`Completed a guess paper (${pct}%)`);
+        if (typeof updateLevel === 'function') updateLevel();
       } catch { /* localStorage full or unavailable — results still shown */ }
 
       refreshTopBar();

@@ -229,7 +229,8 @@ function getXPBreakdown() {
   const streakXP = Math.min(streak.length, 7) * 10;
   const milestoneXP = milestones.length * 5;
   const explainBackXP = Math.min(explainChecks.length, 10) * 20;
-  const total = messageXP + subjectXP + quizParticipationXP + quizAccuracyXP + streakXP + milestoneXP + explainBackXP;
+  const questXP = Number(lsGet('mm_bonus_xp', 0)) || 0;
+  const total = messageXP + subjectXP + quizParticipationXP + quizAccuracyXP + streakXP + milestoneXP + explainBackXP + questXP;
   return {
     messageXP,
     subjectXP,
@@ -238,8 +239,59 @@ function getXPBreakdown() {
     streakXP,
     milestoneXP,
     explainBackXP,
+    questXP,
     total,
   };
+}
+
+// ── Daily Quests ────────────────────────────────────────────────────────
+// Three fresh goals every day. Completing one instantly awards bonus XP
+// (stored in mm_bonus_xp, counted by getXPBreakdown) with the usual FX.
+const DAILY_QUESTS = [
+  { id: 'chat3', icon: '💬', label: 'Ask the tutor 3 questions', goal: 3, xp: 30 },
+  { id: 'quiz1', icon: '🧪', label: 'Finish a quiz', goal: 1, xp: 40 },
+  { id: 'paper1', icon: '📝', label: 'Complete a guess paper', goal: 1, xp: 60 },
+];
+
+function getQuestState() {
+  const today = new Date().toDateString();
+  let state = lsGet('mm_quests', null);
+  if (!state || state.date !== today) {
+    state = { date: today, progress: {}, completed: [] };
+    lsSet('mm_quests', state);
+  }
+  return state;
+}
+
+function getDailyQuests() {
+  const state = getQuestState();
+  return DAILY_QUESTS.map((quest) => ({
+    ...quest,
+    progress: Math.min(Number(state.progress[quest.id] || 0), quest.goal),
+    done: state.completed.includes(quest.id),
+  }));
+}
+
+function bumpQuest(id, amount = 1) {
+  const quest = DAILY_QUESTS.find((q) => q.id === id);
+  if (!quest) return;
+  const state = getQuestState();
+  if (state.completed.includes(id)) return;
+
+  state.progress[id] = Number(state.progress[id] || 0) + amount;
+  if (state.progress[id] >= quest.goal) {
+    state.completed.push(id);
+    lsSet('mm_quests', state);
+    lsSet('mm_bonus_xp', (Number(lsGet('mm_bonus_xp', 0)) || 0) + quest.xp);
+    updateLevel();
+    if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+      window.dispatchEvent(new CustomEvent('hungter:milestone', {
+        detail: { event: `Daily quest complete: ${quest.label} (+${quest.xp} XP)` },
+      }));
+    }
+    return;
+  }
+  lsSet('mm_quests', state);
 }
 
 function calculateXP() {
@@ -313,6 +365,7 @@ function recordChat(subject) {
   subjectsData[subject] = (subjectsData[subject] || 0) + 1;
   lsSet('mm_subjects', subjectsData);
   lsSet('mm_subject', subject);
+  bumpQuest('chat3');
   updateLevel();
   updateStreak();
   if ([1, 10, 25, 50, 100].includes(messageCount)) {

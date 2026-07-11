@@ -75,7 +75,8 @@ if ('serviceWorker' in navigator) {
       allScores.reduce((sum, score) => sum + Math.round(Number(score || 0) * 0.2), 0) +
       Math.min(streak.length, 7) * 10 +
       milestones.length * 5 +
-      Math.min(explainChecks.length, 10) * 20
+      Math.min(explainChecks.length, 10) * 20 +
+      (Number(lsGet('mm_bonus_xp', 0)) || 0)
     );
     const storedLevel = lsGet('mm_level', 'Newbie');
     const levels = [
@@ -178,7 +179,8 @@ if ('serviceWorker' in navigator) {
       allScores.reduce((sum, score) => sum + Math.round(Number(score || 0) * 0.2), 0) +
       Math.min(streak.length, 7) * 10 +
       milestones.length * 5 +
-      Math.min(explainChecks.length, 10) * 20
+      Math.min(explainChecks.length, 10) * 20 +
+      (Number(lsGet('mm_bonus_xp', 0)) || 0)
     );
   }
 

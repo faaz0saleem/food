@@ -372,6 +372,7 @@
       const quizHistory = lsGet('mm_quiz_scores', {});
       quizHistory[selectedSubject] = [...(quizHistory[selectedSubject] || []), percent];
       lsSet('mm_quiz_scores', quizHistory);
+      if (typeof bumpQuest === 'function') bumpQuest('quiz1');
       updateLevel();
       refreshTopBar();
       const milestones = lsGet('mm_milestones', []);
