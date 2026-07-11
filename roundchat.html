@@ -128,8 +128,8 @@
     <div class="roundchat-head">
       <div>
         <div class="eyebrow">RoundChat</div>
-        <h1 style="margin:0 0 6px;">Compare engines before committing</h1>
-        <p>RoundChat is separate from normal Chat. It first asks multiple engines for short previews, then expands only the one you choose.</p>
+        <h1 style="margin:0 0 6px;">All 4 engines <span class="hg-gradient-text">debate your question</span></h1>
+        <p>Reasoner 🟢, Solver 🟠, Explorer 🔵, and Storyteller 🟣 each give a short take. Compare them side by side, then expand the one that clicks with your brain.</p>
       </div>
       <a href="/chat.html" class="chat-btn">Open normal Chat</a>
     </div>
@@ -298,7 +298,9 @@
       const data = await response.json();
       const engines = data?.engines || {};
       const liveCount = Object.values(engines).filter(Boolean).length;
-      modelBadge.textContent = `${liveCount} engines available in RoundChat`;
+      modelBadge.textContent = liveCount >= 4
+        ? 'All 4 engines ready to debate'
+        : `${liveCount} engine${liveCount === 1 ? '' : 's'} available in RoundChat`;
     } catch {
       modelBadge.textContent = 'RoundChat backend unavailable';
     }
@@ -353,17 +355,19 @@
       return;
     }
 
+    const engineIcons = { reasoner: '🟢', solver: '🟠', explorer: '🔵', storyteller: '🟣' };
     previews.forEach((item) => {
       const card = document.createElement('article');
-      card.className = 'roundcard';
+      card.className = 'roundcard hg-holo';
 
       const heading = document.createElement('h3');
-      heading.textContent = item.name || '';
+      const icon = engineIcons[String(item.engine || '').toLowerCase()] || '🤖';
+      heading.textContent = `${icon} ${item.name || ''}`;
       const preview = document.createElement('p');
       preview.textContent = item.preview || '';
       const status = document.createElement('div');
       status.className = 'round-status';
-      status.textContent = `Engine key: ${item.engine || ''}`;
+      status.textContent = `Engine: ${item.engine || ''}`;
       card.appendChild(heading);
       card.appendChild(preview);
       card.appendChild(status);
