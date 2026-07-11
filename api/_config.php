@@ -6,39 +6,51 @@ function mm_env_value(string $key, string $default = ''): string {
         return (string) $fromEnv;
     }
 
+    // Look in the web root first, then ONE LEVEL ABOVE it (e.g. the folder
+    // containing public_html). Keeping .env above the web root means git
+    // deploys can never overwrite or delete it.
     $root = dirname(__DIR__);
-    $envPath = $root . DIRECTORY_SEPARATOR . '.env';
-    if (!is_file($envPath)) {
-        return $default;
-    }
+    $candidates = [
+        $root . DIRECTORY_SEPARATOR . '.env',
+        dirname($root) . DIRECTORY_SEPARATOR . '.env',
+    ];
 
-    $lines = @file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    if ($lines === false) {
-        return $default;
-    }
-
-    foreach ($lines as $line) {
-        $trimmed = trim($line);
-        if ($trimmed === '' || str_starts_with($trimmed, '#')) {
+    foreach ($candidates as $envPath) {
+        if (!is_file($envPath)) {
             continue;
         }
 
-        $parts = explode('=', $trimmed, 2);
-        if (count($parts) !== 2) {
+        $lines = @file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        if ($lines === false) {
             continue;
         }
 
-        $name = trim($parts[0]);
-        $value = trim($parts[1]);
-        if ($name !== $key) {
-            continue;
-        }
+        foreach ($lines as $line) {
+            $trimmed = trim($line);
+            if ($trimmed === '' || str_starts_with($trimmed, '#')) {
+                continue;
+            }
 
-        if ((str_starts_with($value, '"') && str_ends_with($value, '"')) || (str_starts_with($value, "'") && str_ends_with($value, "'"))) {
-            $value = substr($value, 1, -1);
-        }
+            $parts = explode('=', $trimmed, 2);
+            if (count($parts) !== 2) {
+                continue;
+            }
 
-        return $value;
+            $name = trim($parts[0]);
+            $value = trim($parts[1]);
+            if ($name !== $key) {
+                continue;
+            }
+
+            if ((str_starts_with($value, '"') && str_ends_with($value, '"')) || (str_starts_with($value, "'") && str_ends_with($value, "'"))) {
+                $value = substr($value, 1, -1);
+            }
+
+            if ($value !== '') {
+                return $value;
+            }
+            // Empty value in this file — keep looking in the next location.
+        }
     }
 
     return $default;
@@ -453,7 +465,7 @@ function mm_ai_budget_decision(array $body = [], int $cost = 1): array {
 
 function mm_demo_chat_reply(string $subject, string $message): string {
     $topic = trim($subject) !== '' ? $subject : 'your topic';
-    return 'Demo mode: Hungter is pacing AI usage right now. For ' . $topic . ', break the problem into smaller steps, identify the main concept, and try one worked example based on your question: "' . substr(trim($message), 0, 140) . '".';
+    return 'The AI engines are taking a quick breather — here\'s a study move that always works for ' . $topic . ': break your question ("' . substr(trim($message), 0, 120) . '") into the smallest piece you don\'t understand, look up just that piece, then try one worked example. Ask me again in a minute and the full engines should be back!';
 }
 
 function mm_check_rate_limit(string $key, int $windowSeconds = 60, int $maxRequests = 20): array {
@@ -1113,35 +1125,59 @@ function mm_parse_provider_reply(string $provider, mixed $raw, int $status, stri
 }
 
 /** Execute one or more provider request specs in parallel via curl_multi. */
-function mm_execute_provider_specs(array $specs, int $timeout = 40): array {
-    $multi = curl_multi_init();
-    $handles = [];
-
+function mm_provider_curl_options(array $spec, int $timeout): array {
     // Optional egress proxy + CA bundle (dev sandboxes); ignored when the
     // env vars are absent, which is the case on normal hosting.
     $proxy = getenv('HTTPS_PROXY') ?: getenv('https_proxy') ?: '';
     $caBundle = getenv('CURL_CA_BUNDLE') ?: getenv('SSL_CERT_FILE') ?: '';
+
+    $options = [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_HTTPHEADER => $spec['headers'],
+        CURLOPT_POSTFIELDS => $spec['payload'],
+        CURLOPT_TIMEOUT => $timeout,
+        CURLOPT_CONNECTTIMEOUT => 12,
+    ];
+    if ($proxy !== '') {
+        $options[CURLOPT_PROXY] = $proxy;
+    }
+    if ($caBundle !== '' && is_file($caBundle)) {
+        $options[CURLOPT_CAINFO] = $caBundle;
+    }
+    return $options;
+}
+
+function mm_execute_provider_specs(array $specs, int $timeout = 40): array {
+    // Single request: plain curl_exec. Sidesteps curl_multi quirks on some
+    // shared hosts and gives us a reliable error string.
+    if (count($specs) === 1) {
+        $key = array_key_first($specs);
+        $spec = $specs[$key];
+        $ch = curl_init($spec['url']);
+        if ($ch === false) {
+            return [$key => ['raw' => '', 'status' => 0, 'error' => 'curl_init failed']];
+        }
+        curl_setopt_array($ch, mm_provider_curl_options($spec, $timeout));
+        $raw = curl_exec($ch);
+        $result = [
+            'raw' => is_string($raw) ? $raw : '',
+            'status' => (int) curl_getinfo($ch, CURLINFO_HTTP_CODE),
+            'error' => curl_error($ch),
+        ];
+        curl_close($ch);
+        return [$key => $result];
+    }
+
+    $multi = curl_multi_init();
+    $handles = [];
 
     foreach ($specs as $key => $spec) {
         $ch = curl_init($spec['url']);
         if ($ch === false) {
             continue;
         }
-        $options = [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POST => true,
-            CURLOPT_HTTPHEADER => $spec['headers'],
-            CURLOPT_POSTFIELDS => $spec['payload'],
-            CURLOPT_TIMEOUT => $timeout,
-            CURLOPT_CONNECTTIMEOUT => 12,
-        ];
-        if ($proxy !== '') {
-            $options[CURLOPT_PROXY] = $proxy;
-        }
-        if ($caBundle !== '' && is_file($caBundle)) {
-            $options[CURLOPT_CAINFO] = $caBundle;
-        }
-        curl_setopt_array($ch, $options);
+        curl_setopt_array($ch, mm_provider_curl_options($spec, $timeout));
         curl_multi_add_handle($multi, $ch);
         $handles[$key] = $ch;
     }

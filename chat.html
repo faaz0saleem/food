@@ -615,6 +615,7 @@
       return {
         reply: data.reply || "Sorry, I couldn't generate a response right now.",
         engine: data.engine || null,
+        ownerHint: data.fallback ? String(data.ownerHint || '') : '',
       };
     } catch (error) {
       return {
@@ -661,12 +662,15 @@
     appendMessage(`${text}${attachmentNote}`, 'user');
     chatInput.value = '';
     showTyping();
-    const { reply, engine } = await fetchAIResponse(text, subject, { ...options, attachments });
+    const { reply, engine, ownerHint } = await fetchAIResponse(text, subject, { ...options, attachments });
     if (typingIndicator) {
       typingIndicator.remove();
       typingIndicator = null;
     }
     await appendStreamingMessage(reply, 'ai', engine, text);
+    if (ownerHint) {
+      appendMessage(`⚠️ AI engines are offline — reason: ${ownerHint}\nFull server self-check: open /api/diag on this site.`, 'ai', 'System');
+    }
     recordConversation(subject, text, reply);
     recordChat(subject);
     refreshTopBar();
