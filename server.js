@@ -326,44 +326,118 @@ async function runRoundtableDebate({ message, subject, userLevel }) {
   };
 }
 
-// Guess Paper generator: 3 engines each write a portion, merged into one original practice paper.
-async function generateGuessPaper({ section, subject, paperFormat, chapter }) {
-  const chapterFocus = chapter ? ` Focus specifically on the topic: ${chapter}.` : '';
-  const basePrompt = `You are helping create an ORIGINAL practice exam paper for a ${section} ${subject} student.${chapterFocus} This is NOT a copy of any real exam board paper - write entirely new, original questions in the style and difficulty of a real ${section} exam. Format: ${paperFormat || 'standard exam paper, mixed question types'}. Always include a separate "Answer Key" section after your questions.`;
+// Pull the first JSON array out of an LLM reply (tolerates fences + prose).
+function extractJsonArray(raw) {
+  const text = String(raw || '').replace(/^```(?:json)?\s*|\s*```$/gm, '').trim();
+  const start = text.indexOf('[');
+  if (start === -1) return [];
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let i = start; i < text.length; i++) {
+    const char = text[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (char === '\\') escaped = true;
+      else if (char === '"') inString = false;
+      continue;
+    }
+    if (char === '"') inString = true;
+    else if (char === '[') depth++;
+    else if (char === ']') {
+      depth--;
+      if (depth === 0) {
+        try {
+          const parsed = JSON.parse(text.slice(start, i + 1));
+          return Array.isArray(parsed) ? parsed : [];
+        } catch { return []; }
+      }
+    }
+  }
+  return [];
+}
+
+// Guess Paper generator: all four engines write structured, solvable
+// questions (mcq + short answer) tagged with topic + author engine.
+async function generateGuessPaper({ section, subject, chapter, bookTitle }) {
+  const topic = chapter || subject;
+  const source = bookTitle
+    ? `Base the questions on the kind of material covered by the book "${bookTitle}"${chapter ? `, chapter/topic "${chapter}"` : ''}.`
+    : `Focus on the topic "${topic}".`;
+  const jsonRules = 'Reply with ONLY a JSON array, no prose, no markdown. Each item: '
+    + '{"type":"mcq","question":"...","options":["A","B","C","D"],"correct":0,"explanation":"why","topic":"short topic tag","marks":2} '
+    + 'or {"type":"short","question":"...","answer":"model answer in 1-3 sentences","explanation":"marking notes","topic":"short topic tag","marks":4}. '
+    + `Questions must be ORIGINAL (never copied from any official paper), at ${section} difficulty, on ${subject}. ${source}`;
   const assignments = [
-    { key: 'reasoner', instruction: 'Write 2 conceptual reasoning questions with an answer key.' },
-    { key: 'solver', instruction: 'Write 2 calculation/problem-solving questions with a fully worked answer key.' },
-    { key: 'explorer', instruction: 'Write 2 applied/real-world scenario questions with an answer key.' },
-    { key: 'storyteller', instruction: 'Write 2 extended-response/essay-style questions with an answer key.' },
+    { key: 'reasoner', instruction: `Write 2 conceptual multiple-choice questions that test understanding, not memory. ${jsonRules}` },
+    { key: 'solver', instruction: `Write 2 calculation questions: 1 as "mcq" with numeric options and 1 as "short" with a fully worked model answer. ${jsonRules}` },
+    { key: 'explorer', instruction: `Write 2 applied real-world scenario multiple-choice questions. ${jsonRules}` },
+    { key: 'storyteller', instruction: `Write 2 "short" extended-response questions with a clear model answer. ${jsonRules}` },
   ];
+
+  const questions = [];
+  const generatedBy = [];
   const results = await Promise.all(assignments.map(async ({ key, instruction }) => {
     const engine = ENGINES[key];
     if (!engineChain(key).length) return null;
-    const text = await callEngineText(key, basePrompt, `${basePrompt}\n\n${instruction}`);
-    return text ? { name: engine.name, text } : null;
+    const text = await callEngineText(key, `You are writing exam questions for a ${section} ${subject} student.`, instruction, { maxTokens: 1400, temperature: 0.5 });
+    return text ? { key, engine, text } : null;
   }));
-  const successful = results.filter(Boolean);
-  if (!successful.length) {
-    const topic = chapter || subject;
-    const demoPaper = [
-      `${section} ${subject} — Practice Paper (Demo Mode)`,
-      `Time allowed: ${paperFormat || '60 minutes'}`,
-      '',
-      `1. Define the key idea of ${topic} in your own words, and give one everyday example.`,
-      `2. A student claims ${topic} only matters in exams. Give two real-world situations that prove them wrong.`,
-      `3. Explain one common mistake students make when working on ${topic}, and how to avoid it.`,
-      `4. Write a short worked example (with steps) involving ${topic}.`,
-      '',
-      'Answer Key',
-      '1-4: Open-ended — compare your answers with the AI tutor in chat for feedback.',
-      '',
-      '---',
-      'Demo paper (no AI engines connected). Set GROQ_API_KEY / OPENAI_API_KEY / ANTHROPIC_API_KEY on the server for full AI-generated papers.',
-    ].join('\n');
-    return { paper: demoPaper, generatedBy: ['Demo'] };
+
+  for (const result of results.filter(Boolean)) {
+    const items = extractJsonArray(result.text);
+    let added = false;
+    for (const item of items) {
+      if (!item || typeof item !== 'object') continue;
+      const type = String(item.type || '').toLowerCase();
+      const questionText = String(item.question || '').trim();
+      if (!questionText || !['mcq', 'short'].includes(type)) continue;
+      const entry = {
+        id: `q${questions.length + 1}`,
+        type,
+        question: questionText,
+        explanation: String(item.explanation || '').trim(),
+        topic: String(item.topic || topic).trim() || topic,
+        marks: Math.max(1, Math.min(10, Number(item.marks) || (type === 'mcq' ? 2 : 4))),
+        engine: result.engine.name,
+        engineIcon: result.engine.icon,
+        provider: '',
+      };
+      if (type === 'mcq') {
+        const options = (Array.isArray(item.options) ? item.options : []).map((o) => String(o).trim()).filter(Boolean);
+        const correct = Number(item.correct);
+        if (options.length < 2 || !Number.isInteger(correct) || correct < 0 || correct >= options.length) continue;
+        entry.options = options.slice(0, 5);
+        entry.correct = correct;
+      } else {
+        const answer = String(item.answer || '').trim();
+        if (!answer) continue;
+        entry.answer = answer;
+      }
+      questions.push(entry);
+      added = true;
+    }
+    if (added) generatedBy.push(result.engine.name);
   }
-  const paper = successful.map((r) => r.text).join('\n\n') + `\n\n---\nGenerated by AI (${successful.map((r) => r.name).join(', ')}) — original practice content, not an official exam paper.`;
-  return { paper, generatedBy: successful.map((r) => r.name) };
+
+  if (!questions.length) {
+    questions.push(
+      { id: 'q1', type: 'short', question: `Define the core idea of ${topic} in your own words and give one everyday example.`, answer: `A clear definition of ${topic} plus one concrete real-life example.`, explanation: 'Full marks for a correct definition and a relevant example.', topic, marks: 4, engine: 'Hungter', engineIcon: '🧠', provider: '' },
+      { id: 'q2', type: 'short', question: `Describe one common mistake students make with ${topic} and how to avoid it.`, answer: 'One realistic misconception and a practical way to avoid it.', explanation: 'Any sensible misconception accepted.', topic, marks: 4, engine: 'Hungter', engineIcon: '🧠', provider: '' },
+    );
+    generatedBy.push('Hungter offline generator');
+  }
+
+  const totalMarks = questions.reduce((sum, q) => sum + q.marks, 0);
+  return {
+    paper: {
+      title: `${section} ${subject} — AI Guess Paper`.trim(),
+      section, subject, chapter, book: bookTitle || '',
+      totalMarks, questionCount: questions.length,
+    },
+    questions,
+    generatedBy: [...new Set(generatedBy)],
+  };
 }
 
 const REQUIRE_PRO_FOR_GUESS_PAPERS = false;
@@ -911,14 +985,56 @@ const server = http.createServer(async (req, res) => {
       if (REQUIRE_PRO_FOR_GUESS_PAPERS && (payload.plan || 'free') !== 'pro') {
         return sendJson(res, 403, { error: 'Guess Papers are a Student Pro feature. Upgrade to unlock.' });
       }
-      const { section, subject, paperFormat, chapter } = payload;
+      const { section, subject, chapter, bookTitle } = payload;
       if (!section || !subject) return sendJson(res, 400, { error: 'section and subject are required.' });
-      const result = await generateGuessPaper({ section, subject, paperFormat, chapter });
-      return sendJson(res, 200, { status: 'ok', ...result });
+      const result = await generateGuessPaper({ section, subject, chapter, bookTitle });
+      return sendJson(res, 200, { status: 'ok', creditsCharged: 0, ...result });
     } catch (error) {
       console.error('Guess paper endpoint failed:', error.message);
       return sendJson(res, 500, { error: 'Guess paper generation failed. Please try again.' });
     }
+  }
+
+  if (req.method === 'POST' && pathname === '/api/guess-paper-grade') {
+    try {
+      if (isRateLimited(getClientIp(req))) return sendJson(res, 429, { error: 'Rate limit exceeded' });
+      const payload = await parseRequestBody(req);
+      const items = Array.isArray(payload.items) ? payload.items.slice(0, 12) : [];
+      if (!items.length) return sendJson(res, 400, { error: 'items to grade are required.' });
+
+      let parsed = [];
+      if (engineChain('reasoner').length) {
+        let prompt = 'Grade these student answers. Reply with ONLY a JSON array, one item per answer, same order: {"score":0.0-1.0,"feedback":"one short sentence"}.\n\n';
+        items.forEach((item, i) => {
+          prompt += `Q${i + 1}: ${String(item.question || '')}\nModel answer: ${String(item.modelAnswer || '')}\nStudent answer: ${String(item.studentAnswer || '').trim()}\n\n`;
+        });
+        const reply = await callEngineText('reasoner', 'You are a fair, encouraging exam marker.', prompt, { maxTokens: 800, temperature: 0.2 });
+        parsed = extractJsonArray(reply);
+      }
+
+      const grades = items.map((item, i) => {
+        const aiGrade = parsed[i];
+        if (aiGrade && typeof aiGrade === 'object' && 'score' in aiGrade) {
+          return {
+            score: Math.max(0, Math.min(1, Number(aiGrade.score) || 0)),
+            feedback: String(aiGrade.feedback || '').trim() || 'Graded.',
+            gradedBy: 'ai',
+          };
+        }
+        const student = String(item.studentAnswer || '').trim();
+        const modelWords = String(item.modelAnswer || '').toLowerCase().split(/\W+/).filter((w) => w.length > 3);
+        const studentWords = new Set(student.toLowerCase().split(/\W+/).filter((w) => w.length > 3));
+        const hits = modelWords.filter((w) => studentWords.has(w)).length;
+        const ratio = modelWords.length ? hits / modelWords.length : 0;
+        return {
+          score: student ? Math.round(Math.max(0.15, Math.min(0.9, ratio * 1.4)) * 100) / 100 : 0,
+          feedback: student ? 'Auto-marked by keyword match — compare with the model answer.' : 'No answer given.',
+          gradedBy: 'heuristic',
+        };
+      });
+
+      return sendJson(res, 200, { status: 'ok', grades });
+    } catch (error) { return sendJson(res, 400, { error: error.message }); }
   }
 
   if (req.method === 'POST' && pathname === '/api/book-flashcards') {

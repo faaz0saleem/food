@@ -16,12 +16,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Fredoka:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap">
-  <title>AI Guess Paper Generator — Original Practice Exams | Hungter</title>
-  <meta name="description" content="Generate original AI practice papers in the style of O-Level, A-Level, GCSE, SAT and PSAT exams. Pick your subject and chapter, print, and practice under timed conditions.">
+  <title>AI Guess Paper Generator — Solvable Practice Exams | Hungter</title>
+  <meta name="description" content="Generate original AI practice papers from real book topics, solve them on the site with a timer, and get your score plus weak areas instantly.">
   <link rel="canonical" href="https://hungter.com/guess-papers.html">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Hungter — Guess Papers">
-  <meta property="og:description" content="Create original practice papers and print them for exam mode.">
+  <meta property="og:description" content="Solvable AI practice exams with instant scoring and weak-area analysis.">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/brand.css?v=20260711">
   <link rel="stylesheet" href="/nav.css?v=20260711">
@@ -29,24 +29,98 @@
   <style>
     .top-bar { height: 4px; background: var(--surface-2); }
     .top-bar-fill { height: 100%; background: linear-gradient(90deg,var(--lime),var(--blue)); width: 0%; }
-    .gp-main { max-width: var(--container); margin: 0 auto; padding: 24px 16px 44px; }
-    .gp-card { background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px; }
-    .gp-grid { display:grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap:10px; }
-    .gp-grid input, .gp-grid select { border:2px solid var(--border); background:var(--surface-2); color:var(--ink); border-radius:10px; padding:10px; }
-    .btn-row { display:flex; gap:8px; flex-wrap:wrap; margin-top: 10px; }
-    .btn { border:2px solid var(--border); background:transparent; color:var(--ink); border-radius:999px; padding:8px 12px; cursor:pointer; }
-    .btn.primary { background:var(--lime); color:var(--bg-deep); border:none; box-shadow:var(--shadow-sm); }
-    .spinner { width:14px; height:14px; border:2px solid var(--border); border-top-color: var(--lime); border-radius:50%; animation:spin 1s linear infinite; display:inline-block; vertical-align:middle; margin-right:6px; }
+    .gp-main { max-width: 900px; margin: 0 auto; padding: 24px 16px 60px; }
+    .gp-card {
+      background: rgba(13, 20, 40, 0.72);
+      border: 1px solid var(--border-glow);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 26px;
+      backdrop-filter: blur(14px);
+      margin-bottom: 18px;
+    }
+    .gp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin: 14px 0; }
+    .gp-grid label { display: block; font-size: 0.74rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 5px; font-family: var(--font-mono); }
+    .gp-grid input, .gp-grid select {
+      width: 100%; border: 1px solid var(--border); background: var(--surface-2);
+      color: var(--ink); border-radius: 10px; padding: 11px 12px; font-family: var(--font-body); font-size: 0.92rem;
+    }
+    .gp-grid input:focus, .gp-grid select:focus { outline: none; border-color: var(--cyan); box-shadow: var(--glow-cyan); }
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; align-items: center; }
+    .btn { border: 1px solid var(--border); background: transparent; color: var(--ink); border-radius: 999px; padding: 11px 20px; cursor: pointer; font-family: var(--font-display); font-weight: 600; font-size: 0.92rem; transition: all 0.15s ease; }
+    .btn:hover { border-color: var(--cyan); color: var(--cyan); }
+    .btn.primary { background: var(--gradient-brand); color: var(--bg-deep); border: none; box-shadow: var(--glow-lime); }
+    .btn.primary:hover { transform: translateY(-1px); box-shadow: var(--glow-lime), var(--glow-cyan); color: var(--bg-deep); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .credit-note {
+      display: flex; align-items: center; gap: 8px; margin-top: 12px;
+      background: rgba(255, 209, 77, 0.08); border: 1px solid rgba(255, 209, 77, 0.3);
+      border-radius: 10px; padding: 10px 14px; color: var(--gold); font-size: 0.86rem;
+    }
+    .spinner { width: 15px; height: 15px; border: 2px solid var(--border); border-top-color: var(--lime); border-radius: 50%; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; margin-right: 8px; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .paper-box { white-space: pre-wrap; margin-top:12px; color:var(--ink-soft); background: var(--surface-solid); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; }
-    .gp-main h1 { font-family: var(--font-display); }
-    @media (max-width: 390px) {
-      .gp-grid { grid-template-columns: 1fr; }
+    .gp-main h1 { font-family: var(--font-display); margin: 0 0 6px; }
+
+    /* Exam header */
+    .exam-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .exam-timer {
+      font-family: var(--font-mono); font-size: 1.2rem; color: var(--cyan);
+      background: rgba(77, 240, 255, 0.08); border: 1px solid rgba(77, 240, 255, 0.3);
+      border-radius: 10px; padding: 8px 16px;
+    }
+    .exam-timer.low { color: var(--coral); border-color: rgba(255, 107, 74, 0.4); background: rgba(255, 107, 74, 0.08); }
+    .exam-meta { font-size: 0.85rem; color: var(--ink-soft); }
+    .gen-by { font-size: 0.78rem; color: var(--ink-faint); font-family: var(--font-mono); margin-top: 6px; }
+
+    /* Question cards */
+    .q-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 18px 20px; margin-bottom: 14px; }
+    .q-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+    .q-num { font-family: var(--font-display); font-weight: 700; color: var(--lime); }
+    .q-engine {
+      font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.05em;
+      color: var(--cyan); background: rgba(77, 240, 255, 0.08);
+      border: 1px solid rgba(77, 240, 255, 0.22); border-radius: 999px; padding: 3px 10px;
+      white-space: nowrap;
+    }
+    .q-marks { font-size: 0.75rem; color: var(--ink-faint); font-family: var(--font-mono); }
+    .q-text { font-size: 0.97rem; line-height: 1.55; margin-bottom: 12px; white-space: pre-wrap; }
+    .q-topic { display: inline-block; font-size: 0.7rem; color: var(--violet); background: rgba(139, 92, 255, 0.1); border: 1px solid rgba(139, 92, 255, 0.3); border-radius: 999px; padding: 2px 9px; margin-bottom: 10px; }
+    .opt { display: flex; align-items: flex-start; gap: 10px; border: 1px solid var(--border); border-radius: 10px; padding: 11px 13px; margin-bottom: 8px; cursor: pointer; transition: all 0.12s ease; font-size: 0.92rem; }
+    .opt:hover { border-color: var(--cyan); }
+    .opt.picked { border-color: var(--lime); background: rgba(200, 255, 77, 0.07); }
+    .opt input { accent-color: #C8FF4D; margin-top: 2px; }
+    .opt.correct-reveal { border-color: var(--lime); background: rgba(200, 255, 77, 0.12); }
+    .opt.wrong-reveal { border-color: var(--coral); background: rgba(255, 107, 74, 0.1); }
+    .short-answer { width: 100%; min-height: 90px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; color: var(--ink); padding: 12px; font-family: var(--font-body); font-size: 0.92rem; resize: vertical; }
+    .short-answer:focus { outline: none; border-color: var(--cyan); box-shadow: var(--glow-cyan); }
+
+    /* Results */
+    .score-hero { text-align: center; padding: 10px 0 4px; }
+    .score-big { font-family: var(--font-display); font-size: 3.4rem; font-weight: 700; }
+    .score-sub { color: var(--ink-soft); margin-top: 2px; }
+    .topic-bars { margin-top: 18px; }
+    .topic-bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+    .topic-bar-label { flex: 0 0 180px; font-size: 0.85rem; color: var(--ink-soft); text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .topic-bar-track { flex: 1; height: 12px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+    .topic-bar-fill { height: 100%; border-radius: 999px; transition: width 0.8s cubic-bezier(0.22,1,0.36,1); }
+    .topic-bar-pct { flex: 0 0 46px; font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-soft); }
+    .weak-chip { display: inline-flex; align-items: center; gap: 6px; background: rgba(255, 107, 74, 0.1); border: 1px solid rgba(255, 107, 74, 0.35); color: var(--coral); border-radius: 999px; padding: 6px 14px; font-size: 0.85rem; margin: 4px 6px 4px 0; }
+    .strong-chip { display: inline-flex; align-items: center; gap: 6px; background: rgba(200, 255, 77, 0.08); border: 1px solid rgba(200, 255, 77, 0.35); color: var(--lime); border-radius: 999px; padding: 6px 14px; font-size: 0.85rem; margin: 4px 6px 4px 0; }
+    .review-verdict { font-family: var(--font-display); font-weight: 600; margin-top: 8px; }
+    .review-verdict.good { color: var(--lime); }
+    .review-verdict.bad { color: var(--coral); }
+    .model-answer { background: rgba(200, 255, 77, 0.06); border: 1px solid rgba(200, 255, 77, 0.25); border-radius: 10px; padding: 10px 14px; margin-top: 10px; font-size: 0.88rem; color: var(--ink-soft); }
+    .feedback-line { font-size: 0.85rem; color: var(--ink-soft); margin-top: 8px; font-style: italic; }
+
+    @media (max-width: 560px) {
+      .topic-bar-label { flex-basis: 110px; font-size: 0.76rem; }
+      .gp-card { padding: 18px; }
     }
     @media print {
       body * { visibility: hidden; }
-      #paperOut, #paperOut * { visibility: visible; }
-      #paperOut { position: absolute; left: 0; top: 0; width: 100%; color:#000; }
+      #examArea, #examArea * { visibility: visible; }
+      #examArea { position: absolute; left: 0; top: 0; width: 100%; color: #000; }
+      .site-nav, .top-bar, .btn-row { display: none !important; }
     }
   </style>
 </head>
@@ -54,23 +128,98 @@
   <div class="top-bar"><div class="top-bar-fill" id="topBar"></div></div>
   <header class="site-nav"></header>
   <main class="gp-main">
-    <div class="gp-card">
-      <p class="eyebrow">Student Pro</p>
-      <h1 style="margin:0 0 8px;">Guess Papers</h1>
+
+    <!-- SETUP -->
+    <section id="setupArea" class="gp-card">
+      <p class="eyebrow">AI Exam Room</p>
+      <h1>Guess <span class="hg-gradient-text">Papers</span></h1>
+      <p style="color:var(--ink-soft);margin:4px 0 0;">All four AI engines write an original practice exam from your book and chapter. Solve it right here with a timer — then get your score, weak areas, and model answers.</p>
+
       <div class="gp-grid">
-        <input id="sectionInput" placeholder="Section e.g. O-Level">
-        <input id="subjectInput" placeholder="Subject e.g. Physics">
-        <input id="chapterInput" placeholder="Chapter/topic (optional)">
-        <input id="formatInput" placeholder="Paper format e.g. 60 minutes">
+        <div>
+          <label for="bookSelect">Book (optional)</label>
+          <select id="bookSelect"><option value="">— No specific book —</option></select>
+        </div>
+        <div>
+          <label for="chapterSelect">Chapter / topic</label>
+          <select id="chapterSelect" style="display:none;"><option value="">Whole book</option></select>
+          <input id="chapterInput" placeholder="e.g. Waves and Sound">
+        </div>
+        <div>
+          <label for="sectionInput">Exam level</label>
+          <select id="sectionInput">
+            <option>O-Level</option><option>A-Level</option><option>GCSE</option><option>SAT</option><option>PSAT</option><option>General</option>
+          </select>
+        </div>
+        <div>
+          <label for="subjectInput">Subject</label>
+          <input id="subjectInput" placeholder="e.g. Physics">
+        </div>
+        <div>
+          <label for="durationInput">Timer</label>
+          <select id="durationInput">
+            <option value="15">15 minutes</option>
+            <option value="30" selected>30 minutes</option>
+            <option value="45">45 minutes</option>
+            <option value="60">60 minutes</option>
+          </select>
+        </div>
       </div>
+
+      <div class="credit-note">⚡ Generating a full paper runs all 4 AI engines and uses <strong>half of your daily AI credits</strong>. Make it count.</div>
+
       <div class="btn-row">
-        <button id="generatePaper" class="btn primary" type="button">Generate paper</button>
-        <button id="printPaper" class="btn" type="button">Print / Save as PDF</button>
+        <button id="generatePaper" class="btn primary" type="button">Generate my paper</button>
+        <span id="loadingMsg" style="display:none;color:var(--ink-soft);"><span class="spinner"></span>All 4 engines are writing your paper… 15–30 seconds</span>
       </div>
-      <p style="margin:8px 0 0;color:var(--ink-soft);">AI-generated original practice content — not official exam board material.</p>
-      <p id="loadingMsg" style="display:none;color:var(--ink-soft);margin-top:8px;"><span class="spinner"></span>Generating with all 3 AIs - this can take 15-30 seconds...</p>
-      <div id="paperOut" class="paper-box"></div>
-    </div>
+      <p id="setupError" style="color:var(--coral);margin:10px 0 0;display:none;"></p>
+      <p style="margin:14px 0 0;color:var(--ink-faint);font-size:0.8rem;">AI-generated original practice content — not official exam board material.</p>
+    </section>
+
+    <!-- EXAM -->
+    <section id="examArea" style="display:none;">
+      <div class="gp-card">
+        <div class="exam-head">
+          <div>
+            <h1 id="examTitle" style="font-size:1.3rem;"></h1>
+            <div class="exam-meta" id="examMeta"></div>
+            <div class="gen-by" id="examGenBy"></div>
+          </div>
+          <div class="exam-timer" id="examTimer">30:00</div>
+        </div>
+      </div>
+      <div id="questionList"></div>
+      <div class="gp-card">
+        <div class="btn-row">
+          <button id="submitPaper" class="btn primary" type="button">Submit paper for marking</button>
+          <button id="printPaper" class="btn" type="button">Print / Save as PDF</button>
+          <button id="abandonPaper" class="btn" type="button">Abandon</button>
+        </div>
+        <p id="gradingMsg" style="display:none;color:var(--ink-soft);margin:10px 0 0;"><span class="spinner"></span>Marking your written answers with AI…</p>
+      </div>
+    </section>
+
+    <!-- RESULTS -->
+    <section id="resultsArea" style="display:none;">
+      <div class="gp-card">
+        <div class="score-hero">
+          <div class="score-big" id="scoreBig">0%</div>
+          <div class="score-sub" id="scoreSub"></div>
+        </div>
+        <div class="topic-bars" id="topicBars"></div>
+        <div style="margin-top:18px;">
+          <h3 style="margin:0 0 8px;font-size:1rem;">🧩 Weak areas to work on</h3>
+          <div id="weakAreas"></div>
+        </div>
+        <div class="btn-row" style="margin-top:16px;">
+          <a id="practiceWeakLink" class="btn primary" href="/chat.html" style="text-decoration:none;">Practice weak areas in Chat →</a>
+          <button id="newPaperBtn" class="btn" type="button">Generate another paper</button>
+        </div>
+      </div>
+      <h3 style="font-family:var(--font-display);margin:22px 0 12px;">📋 Full review</h3>
+      <div id="reviewList"></div>
+    </section>
+
   </main>
 
   <script src="/api-config.js?v=20260711"></script>
@@ -78,62 +227,345 @@
   <script src="/layout.js?v=20260711" defer></script>
   <script>
     ensureProfile();
-    // apiPath is the global from script.js — redeclaring it here is a SyntaxError that kills the page.
 
-    const topBar = document.getElementById('topBar');
-    const sectionInput = document.getElementById('sectionInput');
-    const subjectInput = document.getElementById('subjectInput');
-    const chapterInput = document.getElementById('chapterInput');
-    const formatInput = document.getElementById('formatInput');
-    const loadingMsg = document.getElementById('loadingMsg');
-    const paperOut = document.getElementById('paperOut');
+    const el = (id) => document.getElementById(id);
+    const setupArea = el('setupArea'), examArea = el('examArea'), resultsArea = el('resultsArea');
+    let exam = null;          // { paper, questions, generatedBy }
+    let timerHandle = null;
+    let secondsLeft = 0;
+    let books = [];
 
     function refreshTopBar() {
       const progress = getLevelProgress();
-      if (topBar) topBar.style.width = `${progress.pct}%`;
+      const bar = el('topBar');
+      if (bar) bar.style.width = `${progress.pct}%`;
     }
 
-    document.getElementById('generatePaper')?.addEventListener('click', async () => {
-      const section = sectionInput.value.trim();
-      const subject = subjectInput.value.trim();
-      const chapter = chapterInput.value.trim();
-      const paperFormat = formatInput.value.trim() || '60 minutes';
-      if (!section || !subject) {
-        paperOut.textContent = 'Section and subject are required.';
+    // ── Book / chapter pickers fed by the real catalog ──────────────────
+    (async function loadBooks() {
+      try {
+        const res = await fetch('/data/books.json');
+        const data = await res.json();
+        books = Array.isArray(data) ? data : (data.books || []);
+        const select = el('bookSelect');
+        books.forEach((book, i) => {
+          const opt = document.createElement('option');
+          opt.value = String(i);
+          opt.textContent = `${book.title} (${book.section} ${book.subject})`;
+          select.appendChild(opt);
+        });
+      } catch { /* book picker stays empty — manual entry still works */ }
+    })();
+
+    el('bookSelect').addEventListener('change', () => {
+      const idx = el('bookSelect').value;
+      const chapterSelect = el('chapterSelect');
+      const chapterInput = el('chapterInput');
+      if (idx === '') {
+        chapterSelect.style.display = 'none';
+        chapterInput.style.display = 'block';
+        return;
+      }
+      const book = books[Number(idx)];
+      el('sectionInput').value = book.section || 'General';
+      el('subjectInput').value = book.subject || '';
+      chapterSelect.innerHTML = '<option value="">Whole book</option>' +
+        (book.topics || []).map((t) => `<option>${t}</option>`).join('');
+      chapterSelect.style.display = 'block';
+      chapterInput.style.display = 'none';
+    });
+
+    // ── Generate ─────────────────────────────────────────────────────────
+    el('generatePaper').addEventListener('click', async () => {
+      const idx = el('bookSelect').value;
+      const book = idx === '' ? null : books[Number(idx)];
+      const section = el('sectionInput').value.trim();
+      const subject = el('subjectInput').value.trim();
+      const chapter = (book ? el('chapterSelect').value : el('chapterInput').value).trim();
+      const err = el('setupError');
+      err.style.display = 'none';
+
+      if (!subject) {
+        err.textContent = 'Enter a subject (or pick a book).';
+        err.style.display = 'block';
         return;
       }
 
+      el('generatePaper').disabled = true;
+      el('loadingMsg').style.display = 'inline';
       try {
-        loadingMsg.style.display = 'block';
-        paperOut.textContent = '';
-        paperOut.style.color = 'var(--ink-soft)';
-        const plan = String(lsGet('mm_plan', 'free')).toLowerCase().includes('pro') ? 'pro' : 'free';
         const response = await fetch(apiPath('/api/guess-paper'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ plan, section, subject, chapter, paperFormat }),
+          body: JSON.stringify({
+            visitorId: getSessionId(),
+            section, subject, chapter,
+            bookTitle: book ? book.title : '',
+          }),
         });
         const data = await response.json();
-        if (data && data.error) {
-          paperOut.style.color = 'var(--coral)';
-          paperOut.textContent = data.error;
+        if (!response.ok || data.error) {
+          err.textContent = data.error || 'Could not generate the paper. Try again.';
+          err.style.display = 'block';
           return;
         }
-        if (!response.ok) {
-          paperOut.style.color = 'var(--coral)';
-          paperOut.textContent = 'Could not generate paper.';
-          return;
-        }
-        paperOut.textContent = data.paper || 'No paper generated.';
-      } catch (error) {
-        paperOut.style.color = 'var(--coral)';
-        paperOut.textContent = error.message || 'Could not generate paper.';
+        exam = data;
+        startExam();
+      } catch {
+        err.textContent = 'Could not reach the paper generator. Check your connection and try again.';
+        err.style.display = 'block';
       } finally {
-        loadingMsg.style.display = 'none';
+        el('generatePaper').disabled = false;
+        el('loadingMsg').style.display = 'none';
       }
     });
 
-    document.getElementById('printPaper')?.addEventListener('click', () => window.print());
+    // ── Exam mode ────────────────────────────────────────────────────────
+    function startExam() {
+      setupArea.style.display = 'none';
+      resultsArea.style.display = 'none';
+      examArea.style.display = 'block';
+
+      const paper = exam.paper || {};
+      el('examTitle').textContent = paper.title || 'Practice Paper';
+      el('examMeta').textContent = `${paper.questionCount || exam.questions.length} questions · ${paper.totalMarks || '—'} marks` +
+        (paper.book ? ` · from “${paper.book}”` : '') + (paper.chapter ? ` · ${paper.chapter}` : '');
+      el('examGenBy').textContent = 'Written by: ' + (exam.generatedBy || []).join(' · ');
+
+      const list = el('questionList');
+      list.innerHTML = '';
+      exam.questions.forEach((q, i) => {
+        const card = document.createElement('article');
+        card.className = 'q-card hg-holo';
+        card.dataset.qid = q.id;
+        let body = '';
+        if (q.type === 'mcq') {
+          body = q.options.map((opt, oi) => `
+            <label class="opt" data-oi="${oi}">
+              <input type="radio" name="${q.id}" value="${oi}">
+              <span>${escapeHtml(opt)}</span>
+            </label>`).join('');
+        } else {
+          body = `<textarea class="short-answer" data-qid="${q.id}" placeholder="Write your answer here… (${q.marks} marks)"></textarea>`;
+        }
+        card.innerHTML = `
+          <div class="q-top">
+            <span class="q-num">Q${i + 1}</span>
+            <span class="q-engine">${q.engineIcon || '🤖'} ${escapeHtml(q.engine)}${q.provider ? ' · ' + escapeHtml(q.provider) : ''}</span>
+            <span class="q-marks">${q.marks} marks</span>
+          </div>
+          <span class="q-topic">${escapeHtml(q.topic)}</span>
+          <div class="q-text">${escapeHtml(q.question)}</div>
+          ${body}`;
+        list.appendChild(card);
+      });
+
+      list.querySelectorAll('.opt').forEach((opt) => {
+        opt.addEventListener('click', () => {
+          opt.parentElement.querySelectorAll('.opt').forEach((o) => o.classList.remove('picked'));
+          opt.classList.add('picked');
+          opt.querySelector('input').checked = true;
+        });
+      });
+
+      secondsLeft = Number(el('durationInput').value) * 60;
+      updateTimer();
+      clearInterval(timerHandle);
+      timerHandle = setInterval(() => {
+        secondsLeft--;
+        updateTimer();
+        if (secondsLeft <= 0) {
+          clearInterval(timerHandle);
+          submitPaper(true);
+        }
+      }, 1000);
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function updateTimer() {
+      const m = Math.max(0, Math.floor(secondsLeft / 60));
+      const s = Math.max(0, secondsLeft % 60);
+      const timer = el('examTimer');
+      timer.textContent = `${m}:${String(s).padStart(2, '0')}`;
+      timer.classList.toggle('low', secondsLeft <= 120);
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = String(text ?? '');
+      return div.innerHTML;
+    }
+
+    // ── Submit + grade ───────────────────────────────────────────────────
+    el('submitPaper').addEventListener('click', () => submitPaper(false));
+    el('abandonPaper').addEventListener('click', () => {
+      clearInterval(timerHandle);
+      examArea.style.display = 'none';
+      setupArea.style.display = 'block';
+    });
+    el('printPaper').addEventListener('click', () => window.print());
+    el('newPaperBtn').addEventListener('click', () => {
+      resultsArea.style.display = 'none';
+      setupArea.style.display = 'block';
+      window.scrollTo({ top: 0 });
+    });
+
+    async function submitPaper(timeUp) {
+      clearInterval(timerHandle);
+      const answers = {};
+      exam.questions.forEach((q) => {
+        if (q.type === 'mcq') {
+          const checked = document.querySelector(`input[name="${q.id}"]:checked`);
+          answers[q.id] = checked ? Number(checked.value) : null;
+        } else {
+          const box = document.querySelector(`textarea[data-qid="${q.id}"]`);
+          answers[q.id] = box ? box.value.trim() : '';
+        }
+      });
+
+      // AI-grade the written answers in one batch.
+      const shortQs = exam.questions.filter((q) => q.type === 'short');
+      let grades = [];
+      if (shortQs.length > 0) {
+        el('gradingMsg').style.display = 'block';
+        try {
+          const response = await fetch(apiPath('/api/guess-paper-grade'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              subject: exam.paper.subject || 'General',
+              items: shortQs.map((q) => ({
+                question: q.question,
+                modelAnswer: q.answer,
+                studentAnswer: answers[q.id] || '',
+              })),
+            }),
+          });
+          const data = await response.json();
+          grades = Array.isArray(data.grades) ? data.grades : [];
+        } catch { grades = []; }
+        el('gradingMsg').style.display = 'none';
+      }
+
+      showResults(answers, grades, timeUp);
+    }
+
+    function showResults(answers, grades, timeUp) {
+      examArea.style.display = 'none';
+      resultsArea.style.display = 'block';
+
+      let earned = 0, total = 0, shortIdx = 0;
+      const topicStats = {};
+      const review = [];
+
+      exam.questions.forEach((q, i) => {
+        total += q.marks;
+        const topic = q.topic || 'General';
+        topicStats[topic] = topicStats[topic] || { earned: 0, total: 0 };
+        topicStats[topic].total += q.marks;
+
+        let got = 0, verdict = '', feedback = '';
+        if (q.type === 'mcq') {
+          const picked = answers[q.id];
+          const right = picked === q.correct;
+          got = right ? q.marks : 0;
+          verdict = right ? 'Correct' : (picked === null ? 'Not answered' : 'Wrong');
+        } else {
+          const grade = grades[shortIdx++] || { score: 0, feedback: 'Not graded — compare with the model answer.' };
+          got = Math.round(q.marks * Math.max(0, Math.min(1, Number(grade.score) || 0)));
+          verdict = got >= q.marks * 0.7 ? 'Strong answer' : (got > 0 ? 'Partly right' : 'Needs work');
+          feedback = grade.feedback || '';
+        }
+        earned += got;
+        topicStats[topic].earned += got;
+        review.push({ q, i, got, verdict, feedback, picked: answers[q.id] });
+      });
+
+      const pct = total > 0 ? Math.round((earned / total) * 100) : 0;
+      const scoreEl = el('scoreBig');
+      scoreEl.textContent = `${pct}%`;
+      scoreEl.style.color = pct >= 70 ? 'var(--lime)' : pct >= 45 ? 'var(--gold)' : 'var(--coral)';
+      el('scoreSub').textContent = `${earned} / ${total} marks` + (timeUp ? ' · time ran out ⏰' : '') +
+        ` · ${pct >= 70 ? 'Excellent work! 🎉' : pct >= 45 ? 'Solid — sharpen the weak spots.' : 'Good try — the review below shows exactly what to fix.'}`;
+
+      // Topic bars + weak areas
+      const bars = el('topicBars');
+      bars.innerHTML = '';
+      const weak = [], strong = [];
+      Object.entries(topicStats).forEach(([topic, s]) => {
+        const tp = s.total > 0 ? Math.round((s.earned / s.total) * 100) : 0;
+        (tp < 60 ? weak : strong).push(topic);
+        const color = tp >= 70 ? 'var(--lime)' : tp >= 45 ? 'var(--gold)' : 'var(--coral)';
+        bars.innerHTML += `
+          <div class="topic-bar-row">
+            <div class="topic-bar-label" title="${escapeHtml(topic)}">${escapeHtml(topic)}</div>
+            <div class="topic-bar-track"><div class="topic-bar-fill" style="width:${tp}%;background:${color};"></div></div>
+            <div class="topic-bar-pct">${tp}%</div>
+          </div>`;
+      });
+
+      el('weakAreas').innerHTML = weak.length
+        ? weak.map((t) => `<span class="weak-chip">⚠️ ${escapeHtml(t)}</span>`).join('') +
+          (strong.length ? '<div style="margin-top:8px;">' + strong.map((t) => `<span class="strong-chip">✓ ${escapeHtml(t)}</span>`).join('') + '</div>' : '')
+        : '<span class="strong-chip">✓ No weak areas — every topic above 60%. 🔥</span>';
+
+      const weakPrompt = weak.length
+        ? `Help me practice these weak areas from my ${exam.paper.subject} guess paper: ${weak.join(', ')}. Quiz me one question at a time.`
+        : `Give me harder ${exam.paper.subject} practice questions on: ${Object.keys(topicStats).join(', ')}`;
+      el('practiceWeakLink').href = `/chat.html?q=${encodeURIComponent(weakPrompt)}`;
+
+      // Review list
+      const reviewList = el('reviewList');
+      reviewList.innerHTML = '';
+      review.forEach(({ q, i, got, verdict, feedback, picked }) => {
+        const good = got >= q.marks * 0.7;
+        let answerBlock = '';
+        if (q.type === 'mcq') {
+          answerBlock = q.options.map((opt, oi) => {
+            let cls = 'opt';
+            if (oi === q.correct) cls += ' correct-reveal';
+            else if (picked === oi) cls += ' wrong-reveal';
+            return `<div class="${cls}">${oi === q.correct ? '✓' : (picked === oi ? '✗' : '·')} ${escapeHtml(opt)}</div>`;
+          }).join('');
+        } else {
+          answerBlock = `
+            <div style="font-size:0.88rem;color:var(--ink-soft);white-space:pre-wrap;">Your answer: ${escapeHtml(picked || '(blank)')}</div>
+            <div class="model-answer"><strong>Model answer:</strong> ${escapeHtml(q.answer)}</div>`;
+        }
+        const card = document.createElement('article');
+        card.className = 'q-card';
+        card.innerHTML = `
+          <div class="q-top">
+            <span class="q-num">Q${i + 1}</span>
+            <span class="q-engine">${q.engineIcon || '🤖'} ${escapeHtml(q.engine)}</span>
+            <span class="q-marks">${got} / ${q.marks} marks</span>
+          </div>
+          <span class="q-topic">${escapeHtml(q.topic)}</span>
+          <div class="q-text">${escapeHtml(q.question)}</div>
+          ${answerBlock}
+          <div class="review-verdict ${good ? 'good' : 'bad'}">${good ? '✓' : '✗'} ${verdict}</div>
+          ${feedback ? `<div class="feedback-line">${escapeHtml(feedback)}</div>` : ''}
+          ${q.explanation ? `<div class="model-answer">💡 ${escapeHtml(q.explanation)}</div>` : ''}`;
+        reviewList.appendChild(card);
+      });
+
+      // Persist: quiz scores + weak topics feed the dashboard
+      try {
+        const scores = lsGet('mm_quiz_scores', {});
+        const key = exam.paper.subject || 'General';
+        scores[key] = scores[key] || [];
+        scores[key].push(pct);
+        lsSet('mm_quiz_scores', scores);
+        const history = lsGet('mm_guess_papers', []);
+        history.push({ date: new Date().toDateString(), subject: key, chapter: exam.paper.chapter || '', pct, weak });
+        lsSet('mm_guess_papers', history.slice(-20));
+        if (typeof recordMilestone === 'function') recordMilestone(`Completed a guess paper (${pct}%)`);
+      } catch { /* localStorage full or unavailable — results still shown */ }
+
+      refreshTopBar();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
 
     refreshTopBar();
   </script>

@@ -1508,6 +1508,185 @@ function mm_generate_guess_paper(string $section, string $subject, string $paper
     return ['paper' => $paper, 'generatedBy' => $generatedBy];
 }
 
+/**
+ * Pull the first JSON array out of an LLM reply (tolerates markdown fences
+ * and prose around it). Returns [] when nothing parseable is found.
+ */
+function mm_extract_json_array(string $raw): array {
+    $text = trim($raw);
+    $text = preg_replace('/^```(?:json)?\s*|\s*```$/m', '', $text);
+    $start = strpos($text, '[');
+    if ($start === false) {
+        return [];
+    }
+    $depth = 0;
+    $inString = false;
+    $escaped = false;
+    for ($i = $start, $len = strlen($text); $i < $len; $i++) {
+        $char = $text[$i];
+        if ($inString) {
+            if ($escaped) { $escaped = false; }
+            elseif ($char === '\\') { $escaped = true; }
+            elseif ($char === '"') { $inString = false; }
+            continue;
+        }
+        if ($char === '"') { $inString = true; }
+        elseif ($char === '[') { $depth++; }
+        elseif ($char === ']') {
+            $depth--;
+            if ($depth === 0) {
+                $candidate = substr($text, $start, $i - $start + 1);
+                $decoded = json_decode($candidate, true);
+                return is_array($decoded) ? $decoded : [];
+            }
+        }
+    }
+    return [];
+}
+
+/**
+ * Structured, solvable guess paper. Each of the four engines writes its own
+ * question types; every question carries the engine that wrote it plus a
+ * topic tag so results can show weak areas.
+ */
+function mm_generate_guess_paper_exam(string $section, string $subject, string $chapter, string $bookTitle, int $perEngine = 2): array {
+    $topic = $chapter !== '' ? $chapter : $subject;
+    $source = $bookTitle !== ''
+        ? 'Base the questions on the kind of material covered by the book "' . $bookTitle . '"' . ($chapter !== '' ? ', chapter/topic "' . $chapter . '"' : '') . '.'
+        : 'Focus on the topic "' . $topic . '".';
+
+    $jsonRules = 'Reply with ONLY a JSON array, no prose, no markdown. Each item: '
+        . '{"type":"mcq","question":"...","options":["A","B","C","D"],"correct":0,"explanation":"why","topic":"short topic tag","marks":2} '
+        . 'or {"type":"short","question":"...","answer":"model answer in 1-3 sentences","explanation":"marking notes","topic":"short topic tag","marks":4}. '
+        . 'Questions must be ORIGINAL (never copied from any official paper), at ' . $section . ' difficulty, on ' . $subject . '. ' . $source;
+
+    $n = max(1, min(3, $perEngine));
+    $assignments = [
+        'reasoner' => 'Write ' . $n . ' conceptual multiple-choice questions that test understanding, not memory. ' . $jsonRules,
+        'solver' => 'Write ' . $n . ' calculation/problem-solving questions: 1 as "mcq" with numeric options and the rest as "short" with a fully worked model answer. ' . $jsonRules,
+        'explorer' => 'Write ' . $n . ' applied real-world scenario multiple-choice questions. ' . $jsonRules,
+        'storyteller' => 'Write ' . $n . ' "short" extended-response questions that ask the student to explain or argue, with a clear model answer. ' . $jsonRules,
+    ];
+
+    $results = mm_call_engine_assignments($assignments, $subject, 'Learner', 1400, 0.5);
+
+    $questions = [];
+    $generatedBy = [];
+    foreach ($results as $result) {
+        $items = mm_extract_json_array((string) ($result['reply'] ?? ''));
+        $engineName = (string) ($result['engine'] ?? 'Engine');
+        $engineIcon = (string) ($result['icon'] ?? '🤖');
+        $providerLabel = (string) ($result['providerLabel'] ?? '');
+        $added = false;
+        foreach ($items as $item) {
+            if (!is_array($item)) { continue; }
+            $type = strtolower(trim((string) ($item['type'] ?? '')));
+            $questionText = trim((string) ($item['question'] ?? ''));
+            if ($questionText === '' || !in_array($type, ['mcq', 'short'], true)) { continue; }
+            $entry = [
+                'id' => 'q' . (count($questions) + 1),
+                'type' => $type,
+                'question' => $questionText,
+                'explanation' => trim((string) ($item['explanation'] ?? '')),
+                'topic' => trim((string) ($item['topic'] ?? $topic)) ?: $topic,
+                'marks' => max(1, min(10, (int) ($item['marks'] ?? ($type === 'mcq' ? 2 : 4)))),
+                'engine' => $engineName,
+                'engineIcon' => $engineIcon,
+                'provider' => $providerLabel,
+            ];
+            if ($type === 'mcq') {
+                $options = array_values(array_filter(array_map(static fn($o) => trim((string) $o), (array) ($item['options'] ?? [])), static fn($o) => $o !== ''));
+                $correct = (int) ($item['correct'] ?? -1);
+                if (count($options) < 2 || $correct < 0 || $correct >= count($options)) { continue; }
+                $entry['options'] = array_slice($options, 0, 5);
+                $entry['correct'] = $correct;
+            } else {
+                $answer = trim((string) ($item['answer'] ?? ''));
+                if ($answer === '') { continue; }
+                $entry['answer'] = $answer;
+            }
+            $questions[] = $entry;
+            $added = true;
+        }
+        if ($added) {
+            $generatedBy[] = $engineName . ($providerLabel !== '' ? ' (' . $providerLabel . ')' : '');
+        }
+    }
+
+    if (count($questions) === 0) {
+        // Guaranteed offline paper so the feature never dead-ends.
+        $questions = [
+            ['id' => 'q1', 'type' => 'short', 'question' => 'Define the core idea of ' . $topic . ' in your own words and give one everyday example.', 'answer' => 'A clear definition of ' . $topic . ' plus one concrete real-life example.', 'explanation' => 'Full marks for a correct definition and a relevant example.', 'topic' => $topic, 'marks' => 4, 'engine' => 'Hungter', 'engineIcon' => '🧠', 'provider' => ''],
+            ['id' => 'q2', 'type' => 'short', 'question' => 'Describe one common mistake students make with ' . $topic . ' and how to avoid it.', 'answer' => 'One realistic misconception and a practical way to avoid it.', 'explanation' => 'Any sensible misconception accepted.', 'topic' => $topic, 'marks' => 4, 'engine' => 'Hungter', 'engineIcon' => '🧠', 'provider' => ''],
+        ];
+        $generatedBy = ['Hungter offline generator'];
+    }
+
+    $totalMarks = 0;
+    foreach ($questions as $q) { $totalMarks += (int) $q['marks']; }
+
+    return [
+        'paper' => [
+            'title' => trim($section . ' ' . $subject) . ' — AI Guess Paper',
+            'section' => $section,
+            'subject' => $subject,
+            'chapter' => $chapter,
+            'book' => $bookTitle,
+            'totalMarks' => $totalMarks,
+            'questionCount' => count($questions),
+        ],
+        'questions' => $questions,
+        'generatedBy' => array_values(array_unique($generatedBy)),
+    ];
+}
+
+/**
+ * Grade written answers. One AI call grades the whole batch; a keyword
+ * overlap heuristic covers the offline case so grading always completes.
+ */
+function mm_grade_short_answers(array $items, string $subject): array {
+    $grades = [];
+
+    $prompt = "Grade these student answers. Reply with ONLY a JSON array, one item per answer, same order: {\"score\":0.0-1.0,\"feedback\":\"one short sentence\"}.\n\n";
+    foreach ($items as $i => $item) {
+        $prompt .= 'Q' . ($i + 1) . ': ' . (string) ($item['question'] ?? '') . "\n"
+            . 'Model answer: ' . (string) ($item['modelAnswer'] ?? '') . "\n"
+            . 'Student answer: ' . trim((string) ($item['studentAnswer'] ?? '')) . "\n\n";
+    }
+
+    $result = mm_call_engine('reasoner', $subject, 'Learner', $prompt, [], [], 800, 0.2);
+    $parsed = $result['ok'] ? mm_extract_json_array((string) $result['reply']) : [];
+
+    foreach ($items as $i => $item) {
+        $student = trim((string) ($item['studentAnswer'] ?? ''));
+        $aiGrade = $parsed[$i] ?? null;
+        if (is_array($aiGrade) && isset($aiGrade['score'])) {
+            $grades[] = [
+                'score' => max(0.0, min(1.0, (float) $aiGrade['score'])),
+                'feedback' => trim((string) ($aiGrade['feedback'] ?? '')) ?: 'Graded.',
+                'gradedBy' => 'ai',
+            ];
+            continue;
+        }
+        // Heuristic fallback: keyword overlap with the model answer.
+        $modelWords = array_filter(preg_split('/\W+/u', mb_strtolower((string) ($item['modelAnswer'] ?? ''))), static fn($w) => mb_strlen($w) > 3);
+        $studentWords = array_flip(array_filter(preg_split('/\W+/u', mb_strtolower($student)), static fn($w) => mb_strlen($w) > 3));
+        $hits = 0;
+        foreach ($modelWords as $word) {
+            if (isset($studentWords[$word])) { $hits++; }
+        }
+        $ratio = count($modelWords) > 0 ? $hits / count($modelWords) : 0;
+        $score = $student === '' ? 0.0 : max(0.15, min(0.9, $ratio * 1.4));
+        $grades[] = [
+            'score' => round($score, 2),
+            'feedback' => $student === '' ? 'No answer given.' : 'Auto-marked by keyword match — compare your answer with the model answer.',
+            'gradedBy' => 'heuristic',
+        ];
+    }
+
+    return $grades;
+}
+
 function mm_generate_explain_check(string $concept, string $studentExplanation): array {
     $result = mm_call_engine('reasoner', 'General', 'Learner', 'Concept: ' . $concept . "\nStudent explanation: " . $studentExplanation . "\n\nIn one short sentence, say whether they show understanding and give a brief correction or encouragement.", [], [], 120, 0.3);
 
