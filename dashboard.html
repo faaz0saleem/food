@@ -37,15 +37,15 @@
   <div class="page-head">
     <h1>Welcome back, <span class="lime" id="nameEl">Explorer</span> 👋</h1>
     <p>Your learning command center — progress, streaks, and AI insights in one place.</p>
-    <p class="page-subline">Plan: <span id="planName">Free</span> · <span id="engineStatusText">Reasoner engine live</span></p>
+    <p class="page-subline">Plan: <span id="planName">Free</span> · <span id="engineStatusText">All 4 engines live</span></p>
     <button id="shareProgressBtn" type="button" class="xp-breakdown-toggle" style="margin-top:8px;">Share progress snapshot</button>
   </div>
 
-  <div class="engine-pill-row">
-    <span class="engine-pill live">Reasoner · Groq · LIVE</span>
-    <span class="engine-pill soon">Solver · Gemini · Soon</span>
-    <span class="engine-pill soon">Explorer · OpenAI · Soon</span>
-    <span class="engine-pill soon">Storyteller · Claude · Soon</span>
+  <div class="engine-pill-row" id="enginePillRow">
+    <span class="engine-pill live">🟢 Reasoner · LIVE</span>
+    <span class="engine-pill live">🟠 Solver · LIVE</span>
+    <span class="engine-pill live">🔵 Explorer · LIVE</span>
+    <span class="engine-pill live">🟣 Storyteller · LIVE</span>
   </div>
 
   <!-- LEVEL HERO -->
@@ -409,6 +409,26 @@ const lastSubj = get('mm_subject');
 el('continueArea').innerHTML = lastSubj
   ? `<div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:16px 20px;"><div><div style="font-family:var(--font-display);font-size:1rem;font-weight:600;">${lastSubj}</div><div style="font-size:0.85rem;color:var(--ink-faint);">${subjectCounts[lastSubj]||0} messages in this subject</div></div><a href="/chat.html" style="font-family:var(--font-display);font-weight:600;font-size:0.9rem;background:var(--lime);color:var(--bg-deep);padding:11px 22px;border-radius:999px;box-shadow:var(--shadow-sm);">Resume →</a></div>`
   : `<a href="/chat.html" style="display:inline-block;font-family:var(--font-display);font-weight:600;background:var(--lime);color:var(--bg-deep);padding:13px 26px;border-radius:999px;box-shadow:var(--shadow-sm);">Start your first session →</a>`;
+
+// Live engine pills: pull real status + provider per engine from the backend.
+(async function refreshEnginePills(){
+  try {
+    const res = await fetch('/api/status');
+    const data = await res.json();
+    const details = data && data.engineDetails;
+    if (!details) return;
+    const icons = { reasoner: '🟢', solver: '🟠', explorer: '🔵', storyteller: '🟣' };
+    const row = el('enginePillRow');
+    if (row) {
+      row.innerHTML = Object.entries(details).map(([key, d]) =>
+        `<span class="engine-pill ${d.live ? 'live' : 'soon'}">${icons[key] || '🤖'} ${d.name}${d.live && d.provider ? ' · ' + d.provider.toUpperCase() : ''} · ${d.live ? 'LIVE' : 'Soon'}</span>`
+      ).join('');
+    }
+    const liveCount = Object.values(details).filter((d) => d.live).length;
+    const statusEl = el('engineStatusText');
+    if (statusEl) statusEl.textContent = liveCount >= 4 ? 'All 4 engines live' : `${liveCount} of 4 engines live`;
+  } catch { /* keep static all-live pills if status is unreachable */ }
+})();
 </script>
 </body>
 </html>

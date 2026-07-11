@@ -42,11 +42,12 @@
 }
 
 .nav-link {
-  padding: 10px 14px;
+  padding: 9px 10px;
   border-radius: 999px;
   color: var(--ink-soft);
-  font-size: 0.9rem;
+  font-size: 0.86rem;
   font-weight: 600;
+  white-space: nowrap;
   transition: all 0.2s ease;
   position: relative;
 }
@@ -140,6 +141,7 @@
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 0.9rem;
+  white-space: nowrap;
   box-shadow: var(--glow-lime);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
