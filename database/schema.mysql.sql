@@ -117,3 +117,20 @@ CREATE TABLE IF NOT EXISTS auth_challenges (
   KEY idx_auth_challenges_expires_at (expires_at),
   CONSTRAINT fk_auth_challenges_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS book_orders (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  order_ref VARCHAR(40) NOT NULL,
+  book_id VARCHAR(120) NOT NULL,
+  book_title VARCHAR(255) NOT NULL,
+  price DECIMAL(10,2) NOT NULL,
+  email VARCHAR(190) NOT NULL,
+  user_id BIGINT UNSIGNED NULL,
+  status VARCHAR(30) NOT NULL DEFAULT 'pending',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_book_orders_order_ref (order_ref),
+  KEY idx_book_orders_email (email),
+  KEY idx_book_orders_book_id (book_id),
+  KEY idx_book_orders_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

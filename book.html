@@ -112,7 +112,10 @@
       return wrap;
     }
 
-    function buyUrl(isbn) { return `https://www.amazon.com/s?k=${isbn}&tag=YOURTAG-20`; }
+    function formatPrice(price) {
+      const value = Number(price || 0);
+      return `$${value.toFixed(2)}`;
+    }
 
     function getPlan() {
       const raw = lsGet('mm_plan', 'free');
@@ -330,7 +333,16 @@
         aside.className = 'book-panel';
         aside.appendChild(createCoverElement(book));
         aside.insertAdjacentHTML('beforeend', `
-          <a href="${buyUrl(book.isbn)}" target="_blank" rel="noopener" class="btn primary" style="display:inline-flex;margin-top:10px;">Buy on Amazon</a>
+          <button type="button" class="btn primary" id="buyBookBtn" style="display:flex;width:100%;justify-content:center;margin-top:10px;">Buy from Hungter — ${formatPrice(book.price)}</button>
+          <form id="buyBookForm" class="review-form" style="display:none;margin-top:8px;">
+            <label for="buyBookEmail" class="quiz-label" style="display:block;margin-bottom:4px;">Email for your order</label>
+            <input id="buyBookEmail" type="email" placeholder="you@school.edu" required>
+            <div class="btn-row" style="margin-top:6px;">
+              <button type="submit" class="btn primary">Confirm — ${formatPrice(book.price)}</button>
+              <button type="button" class="btn" id="cancelBuyBtn">Cancel</button>
+            </div>
+            <p id="buyBookStatus" style="margin:8px 0 0;font-size:0.82rem;color:var(--ink-soft);"></p>
+          </form>
           <div class="btn-row">
             <button class="btn" id="quizBtn">Generate Quiz</button>
             <button class="btn" id="flashBtn">Generate Flashcards</button>
@@ -339,6 +351,53 @@
           <div id="loadingState" class="loading"><span class="spinner"></span><span>Generating with all 3 AIs - this can take 15-30 seconds...</span></div>
         `);
         container.appendChild(aside);
+
+        const buyBookBtn = aside.querySelector('#buyBookBtn');
+        const buyBookForm = aside.querySelector('#buyBookForm');
+        const buyBookStatus = aside.querySelector('#buyBookStatus');
+        const buyBookEmail = aside.querySelector('#buyBookEmail');
+
+        buyBookBtn?.addEventListener('click', () => {
+          buyBookBtn.style.display = 'none';
+          buyBookForm.style.display = 'block';
+          const savedEmail = lsGet('mm_email', '');
+          if (savedEmail) buyBookEmail.value = savedEmail;
+          buyBookEmail.focus();
+        });
+
+        aside.querySelector('#cancelBuyBtn')?.addEventListener('click', () => {
+          buyBookForm.style.display = 'none';
+          buyBookBtn.style.display = 'flex';
+          buyBookStatus.textContent = '';
+        });
+
+        buyBookForm?.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          const submitBtn = buyBookForm.querySelector('button[type="submit"]');
+          const email = buyBookEmail.value.trim();
+          try {
+            submitBtn.disabled = true;
+            buyBookStatus.style.color = 'var(--ink-soft)';
+            buyBookStatus.textContent = 'Placing your order...';
+            const data = await postJson('/api/book-order', {
+              bookId: book.id,
+              bookTitle: book.title,
+              price: book.price,
+              email,
+            });
+            lsSet('mm_email', email);
+            buyBookStatus.style.color = 'var(--lime)';
+            buyBookStatus.textContent = `Order ${data.orderRef} recorded. ${data.message || ''}`;
+            buyBookForm.querySelector('input').disabled = true;
+            submitBtn.style.display = 'none';
+            aside.querySelector('#cancelBuyBtn').textContent = 'Done';
+          } catch (error) {
+            buyBookStatus.style.color = 'var(--coral)';
+            buyBookStatus.textContent = error.message || 'Could not place this order right now.';
+          } finally {
+            submitBtn.disabled = false;
+          }
+        });
 
         const info = document.createElement('section');
         info.className = 'book-panel';

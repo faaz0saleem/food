@@ -247,6 +247,23 @@ function mm_ensure_runtime_tables(): void {
         CONSTRAINT fk_auth_challenges_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci');
 
+    $db->exec('CREATE TABLE IF NOT EXISTS book_orders (
+        id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+        order_ref VARCHAR(40) NOT NULL,
+        book_id VARCHAR(120) NOT NULL,
+        book_title VARCHAR(255) NOT NULL,
+        price DECIMAL(10,2) NOT NULL,
+        email VARCHAR(190) NOT NULL,
+        user_id BIGINT UNSIGNED NULL,
+        status VARCHAR(30) NOT NULL DEFAULT \'pending\',
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        UNIQUE KEY uq_book_orders_order_ref (order_ref),
+        KEY idx_book_orders_email (email),
+        KEY idx_book_orders_book_id (book_id),
+        KEY idx_book_orders_created_at (created_at)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci');
+
     $initialized = true;
 }
 
@@ -275,6 +292,46 @@ function mm_rate_limit_key(array $body = []): string {
     }
 
     return 'ip:' . mm_client_ip();
+}
+
+function mm_require_rate_limit(string $key, int $maxRequests, int $windowSeconds): void {
+    $db = mm_db();
+    if ($db === null) {
+        // No database configured (e.g. local dev without MySQL) - fail open
+        // rather than blocking every auth request.
+        return;
+    }
+    mm_ensure_runtime_tables();
+
+    $limiterKey = substr($key, 0, 160);
+    $stmt = $db->prepare('SELECT window_start, request_count FROM api_rate_limits WHERE limiter_key = :limiter_key LIMIT 1');
+    $stmt->execute([':limiter_key' => $limiterKey]);
+    $row = $stmt->fetch();
+
+    if ($row === false) {
+        $insert = $db->prepare('INSERT INTO api_rate_limits (limiter_key, window_start, request_count)
+                                VALUES (:limiter_key, UTC_TIMESTAMP(), 1)
+                                ON DUPLICATE KEY UPDATE window_start = VALUES(window_start), request_count = 1');
+        $insert->execute([':limiter_key' => $limiterKey]);
+        return;
+    }
+
+    $windowStart = strtotime((string) $row['window_start'] . ' UTC');
+    $elapsed = time() - $windowStart;
+
+    if ($elapsed > $windowSeconds) {
+        $reset = $db->prepare('UPDATE api_rate_limits SET window_start = UTC_TIMESTAMP(), request_count = 1 WHERE limiter_key = :limiter_key');
+        $reset->execute([':limiter_key' => $limiterKey]);
+        return;
+    }
+
+    if ((int) $row['request_count'] >= $maxRequests) {
+        mm_json_response(429, ['error' => 'Too many requests. Please wait a moment and try again.']);
+        exit;
+    }
+
+    $bump = $db->prepare('UPDATE api_rate_limits SET request_count = request_count + 1 WHERE limiter_key = :limiter_key');
+    $bump->execute([':limiter_key' => $limiterKey]);
 }
 
 function mm_ai_scope_key(array $body = []): string {
@@ -502,6 +559,31 @@ function mm_find_user_by_id(int $id): ?array {
     $stmt->execute([':id' => $id]);
     $row = $stmt->fetch();
     return is_array($row) ? $row : null;
+}
+
+function mm_create_user(string $name, string $email, string $password, string $learningStyle = 'Visual'): array {
+    $db = mm_db();
+    if ($db === null) {
+        throw new RuntimeException('Database not configured.');
+    }
+
+    $stmt = $db->prepare('INSERT INTO users (visitor_id, name, email, password_hash, email_verified, learning_style, level, xp, plan_status, created_at, updated_at)
+                          VALUES (:visitor_id, :name, :email, :password_hash, 0, :learning_style, :level, 0, :plan_status, UTC_TIMESTAMP(), UTC_TIMESTAMP())');
+    $stmt->execute([
+        ':visitor_id' => mm_generate_visitor_id(),
+        ':name' => substr($name, 0, 160),
+        ':email' => substr(strtolower(trim($email)), 0, 190),
+        ':password_hash' => mm_hash_password($password),
+        ':learning_style' => substr($learningStyle, 0, 60),
+        ':level' => 'Newbie',
+        ':plan_status' => 'inactive',
+    ]);
+
+    $user = mm_find_user_by_id((int) $db->lastInsertId());
+    if ($user === null) {
+        throw new RuntimeException('User was created but could not be reloaded.');
+    }
+    return $user;
 }
 
 function mm_public_user(array $user): array {

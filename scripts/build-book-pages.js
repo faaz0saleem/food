@@ -31,7 +31,9 @@ function bookPageHtml(book, books) {
   const metaDescription = escapeHtml(truncateDescription(book.description, 150));
   const canonical = `https://hungter.com/books/${book.id}.html`;
   const interactiveUrl = `/book.html?id=${book.id}`;
-  const buyLink = `https://www.amazon.com/s?k=${encodeURIComponent(book.isbn)}`;
+  const buyLink = interactiveUrl; // buying happens on Hungter's own site, not a third party
+  const price = Number(book.price || 0);
+  const priceLabel = price > 0 ? `$${price.toFixed(2)}` : '';
   const coverUrl = `https://covers.openlibrary.org/b/isbn/${book.isbn}-L.jpg`;
 
   const similar = books
@@ -114,7 +116,7 @@ function bookPageHtml(book, books) {
       <div>
         <p>${description}</p>
         <div class="book-actions">
-          <a class="btn primary" href="${buyLink}" target="_blank" rel="noopener noreferrer">Buy this book</a>
+          <a class="btn primary" href="${buyLink}">Buy this book${priceLabel ? ` — ${priceLabel}` : ''}</a>
           <a class="btn secondary" href="${interactiveUrl}">Open interactive AI tools for this book →</a>
         </div>
         <p class="notice">AI-generated original practice content — not official exam board material.</p>

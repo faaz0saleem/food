@@ -10,4 +10,5 @@ yes/
 public_html/
 database/*.db
 database/users.json
+database/book-orders.json
 .DS_Store

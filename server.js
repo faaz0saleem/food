@@ -719,6 +719,38 @@ const server = http.createServer(async (req, res) => {
     } catch (error) { return sendJson(res, 400, { error: error.message }); }
   }
 
+  if (req.method === 'POST' && pathname === '/api/book-order') {
+    try {
+      if (isRateLimited(getClientIp(req))) return sendJson(res, 429, { error: 'Rate limit exceeded' });
+      const payload = await parseRequestBody(req);
+      const bookId = String(payload.bookId || '').trim();
+      const bookTitle = String(payload.bookTitle || '').trim();
+      const price = Number(payload.price || 0);
+      const email = String(payload.email || '').trim().toLowerCase();
+      if (!bookId || !bookTitle) return sendJson(res, 400, { error: 'bookId and bookTitle are required.' });
+      if (!(price > 0)) return sendJson(res, 400, { error: 'A valid price is required.' });
+      if (!email || !email.includes('@')) return sendJson(res, 400, { error: 'Please enter a valid email.' });
+
+      const orderRef = `HB-${crypto.randomBytes(5).toString('hex').toUpperCase()}`;
+      const order = { orderRef, bookId, bookTitle, price, email, status: 'pending', createdAt: new Date().toISOString() };
+      const ordersFile = path.join(rootDir, 'database', 'book-orders.json');
+      let orders = [];
+      try { orders = JSON.parse(fs.readFileSync(ordersFile, 'utf8')); } catch { orders = []; }
+      orders.push(order);
+      fs.mkdir(path.dirname(ordersFile), { recursive: true }, () => {
+        fs.writeFile(ordersFile, JSON.stringify(orders, null, 2), (error) => {
+          if (error) console.error('Unable to save book order:', error.message);
+        });
+      });
+
+      return sendJson(res, 200, {
+        status: 'ok',
+        orderRef,
+        message: `Order recorded. Real payment processing is not connected yet — we will email you at ${email} with purchase instructions once billing is live.`,
+      });
+    } catch (error) { return sendJson(res, 400, { error: error.message }); }
+  }
+
   if (req.method === 'POST' && pathname === '/api/chat') {
     try {
       if (isRateLimited(getClientIp(req))) return sendJson(res, 429, { error: 'Rate limit exceeded' });
