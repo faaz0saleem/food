@@ -44,27 +44,25 @@ if (($budget['mode'] ?? 'live') === 'demo') {
     exit;
 }
 
-$engines = [
-    ['key' => 'reasoner', 'name' => 'Reasoner', 'style' => 'Give a structured explanation with clear steps.'],
-    ['key' => 'explorer', 'name' => 'Explorer', 'style' => 'Give practical real-world examples and applications.'],
-    ['key' => 'storyteller', 'name' => 'Storyteller', 'style' => 'Use an analogy or narrative framing to make it memorable.'],
-];
+// All four engines join the debate, each answering through its own provider
+// chain (native vendor when its key exists, best available fallback otherwise).
+$engineConfigs = mm_engines_config();
+$participants = [];
+foreach ($engineConfigs as $key => $engine) {
+    if (count(mm_engine_chain($key)) > 0) {
+        $participants[$key] = $engine;
+    }
+}
 
 $round1 = [];
-foreach ($engines as $engine) {
-    $systemPrompt = mm_build_system_prompt($subject, $userLevel, $engine['style']);
-    $result = mm_call_groq([
-        ['role' => 'system', 'content' => $systemPrompt],
-        ['role' => 'user', 'content' => $message . "\n\nGive your take in 2-3 sentences."],
-    ], 0.65, 500);
-
+foreach ($participants as $key => $engine) {
+    $result = mm_call_engine($key, $subject, $userLevel, $message . "\n\nGive your take on how to best explain this, in 2-3 sentences, using your specialty.", [], [], 500, 0.65);
     $text = trim((string) ($result['reply'] ?? ''));
     if ($text === '') {
-        $text = 'No response for this round.';
+        continue;
     }
-
     $round1[] = [
-        'key' => $engine['key'],
+        'key' => $key,
         'name' => $engine['name'],
         'text' => $text,
     ];
@@ -80,12 +78,7 @@ foreach ($round1 as $speaker) {
         $otherLines[] = $other['name'] . ': ' . $other['text'];
     }
 
-    $systemPrompt = mm_build_system_prompt($subject, $userLevel, 'React briefly to other tutor viewpoints.');
-    $result = mm_call_groq([
-        ['role' => 'system', 'content' => $systemPrompt],
-        ['role' => 'user', 'content' => "Student question: " . $message . "\n\nOther tutor takes:\n" . implode("\n", $otherLines) . "\n\nIn 1-2 sentences, add one missing point or correction."],
-    ], 0.5, 320);
-
+    $result = mm_call_engine($speaker['key'], $subject, $userLevel, "Student question: " . $message . "\n\nOther tutor takes:\n" . implode("\n", $otherLines) . "\n\nIn 1-2 sentences, add one missing point or correction.", [], [], 320, 0.5);
     $text = trim((string) ($result['reply'] ?? ''));
     if ($text === '') {
         $text = 'No follow-up response.';
@@ -108,12 +101,8 @@ foreach ($round2 as $item) {
     $transcript[] = ['round' => 2, 'engine' => $item['name'], 'text' => $item['text']];
 }
 
-$synthesisPrompt = mm_build_system_prompt($subject, $userLevel, 'Synthesize into one final clear response.');
 $transcriptText = implode("\n", array_map(static fn($line) => 'Round ' . $line['round'] . ' - ' . $line['engine'] . ': ' . $line['text'], $transcript));
-$final = mm_call_groq([
-    ['role' => 'system', 'content' => $synthesisPrompt],
-    ['role' => 'user', 'content' => "Student question: " . $message . "\n\nDebate transcript:\n" . $transcriptText . "\n\nWrite one final 2-4 sentence answer for the student."],
-], 0.45, 500);
+$final = mm_call_engine('reasoner', $subject, $userLevel, "Student question: " . $message . "\n\nDebate transcript:\n" . $transcriptText . "\n\nWrite one final 2-4 sentence answer for the student.", [], [], 500, 0.45);
 
 $finalAnswer = trim((string) ($final['reply'] ?? ''));
 if ($finalAnswer === '') {

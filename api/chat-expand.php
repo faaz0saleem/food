@@ -40,34 +40,23 @@ if (($budget['mode'] ?? 'live') === 'demo') {
     exit;
 }
 
-$engineMeta = [
-    'reasoner' => ['name' => 'Reasoner', 'extra' => 'Focus on logic, derivations, and clear steps.'],
-    'explorer' => ['name' => 'Explorer', 'extra' => 'Focus on real-world applications and practical examples.'],
-    'storyteller' => ['name' => 'Storyteller', 'extra' => 'Use analogy or short narrative to make the idea memorable.'],
-];
-$meta = $engineMeta[$engineKey] ?? $engineMeta['reasoner'];
+$engines = mm_engines_config();
+if (!isset($engines[$engineKey])) {
+    $engineKey = 'reasoner';
+}
+$engineName = $engines[$engineKey]['name'];
 
-$systemPrompt = mm_build_system_prompt($subject, $userLevel, $meta['extra']);
-$userPrompt = $message . "\n\nExpand this answer from the " . $meta['name'] . " perspective in 3-5 concise sentences.";
-
-$result = mm_call_groq([
-    ['role' => 'system', 'content' => $systemPrompt],
-    ['role' => 'user', 'content' => $userPrompt],
-], 0.6, 700);
+$userPrompt = $message . "\n\nExpand this answer from the " . $engineName . " perspective in 3-5 concise sentences.";
+$result = mm_call_engine($engineKey, $subject, $userLevel, $userPrompt, [], [], 700, 0.6);
 
 if (!$result['ok']) {
-    mm_json_response((int) ($result['status'] ?? 500), ['error' => (string) ($result['error'] ?? 'AI request failed')]);
+    mm_json_response(500, ['error' => (string) ($result['error'] ?? 'AI request failed')]);
     exit;
-}
-
-$reply = trim((string) ($result['reply'] ?? ''));
-if ($reply === '') {
-    $reply = 'Unable to expand this answer right now.';
 }
 
 mm_json_response(200, [
     'status' => 'ok',
-    'reply' => $reply,
-    'engine' => $meta['name'],
+    'reply' => (string) $result['reply'],
+    'engine' => mm_engine_display_name($result),
 ]);
 mm_record_ai_usage((string) ($budget['scopeKey'] ?? mm_ai_scope_key($body)), isset($budget['user']['id']) ? (int) $budget['user']['id'] : null, 1);

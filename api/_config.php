@@ -893,6 +893,443 @@ function mm_call_groq(array $messages, float $temperature = 0.5, int $maxTokens 
     return ['ok' => true, 'error' => '', 'status' => 200, 'model' => $model, 'reply' => $reply];
 }
 
+// ---------- Multi-engine AI layer (parity with server.js) ----------
+// Four student-facing engines, each with a native provider and a fallback
+// chain so every engine can answer as long as ANY provider key is configured.
+
+function mm_engines_config(): array {
+    return [
+        'reasoner' => [
+            'name' => 'Reasoner', 'icon' => '🟢', 'native' => 'groq',
+            'fallbacks' => ['gemini', 'openai', 'anthropic'],
+            'persona' => 'You are THE REASONER, Hungter\'s deep-reasoning engine. Your specialty: rigorous step-by-step logic. Break the problem into numbered steps and explain WHY each step is true, not just what to do.',
+        ],
+        'solver' => [
+            'name' => 'Solver', 'icon' => '🟠', 'native' => 'gemini',
+            'fallbacks' => ['groq', 'openai', 'anthropic'],
+            'persona' => 'You are THE SOLVER, Hungter\'s math/code/physics engine. Your specialty: precise worked solutions. Show every calculation line by line, state formulas before using them, and double-check the final answer.',
+        ],
+        'explorer' => [
+            'name' => 'Explorer', 'icon' => '🔵', 'native' => 'openai',
+            'fallbacks' => ['gemini', 'groq', 'anthropic'],
+            'persona' => 'You are THE EXPLORER, Hungter\'s real-world engine. Your specialty: concrete everyday examples. Anchor every explanation in a real situation the student has actually seen or lived.',
+        ],
+        'storyteller' => [
+            'name' => 'Storyteller', 'icon' => '🟣', 'native' => 'anthropic',
+            'fallbacks' => ['gemini', 'groq', 'openai'],
+            'persona' => 'You are THE STORYTELLER, Hungter\'s narrative engine. Your specialty: analogies and mini-stories that make ideas unforgettable. Teach through one vivid analogy or short story, then connect it back to the real concept.',
+        ],
+    ];
+}
+
+function mm_provider_api_key(string $provider): string {
+    return match ($provider) {
+        'groq' => mm_env_value('GROQ_API_KEY', ''),
+        'gemini' => mm_env_value('GEMINI_API_KEY', mm_env_value('GOOGLE_API_KEY', '')),
+        'openai' => mm_env_value('OPENAI_API_KEY', ''),
+        'anthropic' => mm_env_value('ANTHROPIC_API_KEY', ''),
+        default => '',
+    };
+}
+
+function mm_provider_model(string $provider): string {
+    return match ($provider) {
+        'groq' => mm_env_value('GROQ_MODEL', 'llama-3.3-70b-versatile'),
+        'gemini' => mm_env_value('GEMINI_MODEL', 'gemini-2.5-flash'),
+        'openai' => mm_env_value('OPENAI_MODEL', 'gpt-4o'),
+        'anthropic' => mm_env_value('ANTHROPIC_MODEL', 'claude-sonnet-5'),
+        default => '',
+    };
+}
+
+function mm_provider_label(string $provider): string {
+    return match ($provider) {
+        'groq' => 'Groq Llama 3.3',
+        'gemini' => 'Gemini Flash',
+        'openai' => 'GPT-4o',
+        'anthropic' => 'Claude Sonnet',
+        default => $provider,
+    };
+}
+
+function mm_provider_ready(string $provider): bool {
+    return mm_provider_api_key($provider) !== '';
+}
+
+function mm_provider_supports_vision(string $provider): bool {
+    return in_array($provider, ['gemini', 'openai', 'anthropic'], true);
+}
+
+function mm_engine_chain(string $engineKey, bool $needVision = false): array {
+    $engines = mm_engines_config();
+    if (!isset($engines[$engineKey])) {
+        return [];
+    }
+    $engine = $engines[$engineKey];
+    $chain = array_values(array_filter(array_merge([$engine['native']], $engine['fallbacks']), 'mm_provider_ready'));
+    if ($needVision) {
+        $vision = array_values(array_filter($chain, 'mm_provider_supports_vision'));
+        $rest = array_values(array_diff($chain, $vision));
+        if (count($vision) > 0) {
+            $chain = array_merge($vision, $rest);
+        }
+    }
+    return $chain;
+}
+
+/**
+ * Build a ready-to-send curl request spec for one provider.
+ * $images is a list of data: URLs (max 3 used).
+ */
+function mm_provider_request_spec(string $provider, string $systemPrompt, string $userText, array $history = [], array $images = [], int $maxTokens = 700, float $temperature = 0.7): ?array {
+    $apiKey = mm_provider_api_key($provider);
+    if ($apiKey === '') {
+        return null;
+    }
+    $model = mm_provider_model($provider);
+    $images = array_slice($images, 0, 3);
+
+    if ($provider === 'groq' || $provider === 'openai') {
+        $messages = [['role' => 'system', 'content' => $systemPrompt]];
+        foreach ($history as $item) {
+            $messages[] = ['role' => (string) ($item['role'] ?? 'user'), 'content' => (string) ($item['content'] ?? '')];
+        }
+        if ($provider === 'openai' && count($images) > 0) {
+            $parts = [['type' => 'text', 'text' => $userText]];
+            foreach ($images as $dataUrl) {
+                $parts[] = ['type' => 'image_url', 'image_url' => ['url' => $dataUrl]];
+            }
+            $messages[] = ['role' => 'user', 'content' => $parts];
+        } else {
+            $messages[] = ['role' => 'user', 'content' => $userText];
+        }
+        $payload = ['model' => $model, 'messages' => $messages, 'max_tokens' => $maxTokens];
+        if ($provider === 'groq') {
+            $payload['temperature'] = $temperature;
+        }
+        $url = $provider === 'groq'
+            ? mm_env_value('GROQ_API_URL', 'https://api.groq.com/openai/v1/chat/completions')
+            : mm_env_value('OPENAI_API_URL', 'https://api.openai.com/v1/chat/completions');
+        return [
+            'provider' => $provider,
+            'model' => $model,
+            'url' => $url,
+            'headers' => ['Content-Type: application/json', 'Authorization: Bearer ' . $apiKey],
+            'payload' => json_encode($payload),
+        ];
+    }
+
+    if ($provider === 'anthropic') {
+        $messages = [];
+        foreach ($history as $item) {
+            $messages[] = ['role' => (string) ($item['role'] ?? 'user'), 'content' => (string) ($item['content'] ?? '')];
+        }
+        if (count($images) > 0) {
+            $blocks = [['type' => 'text', 'text' => $userText]];
+            foreach ($images as $dataUrl) {
+                if (preg_match('/^data:([^;]+);base64,(.+)$/s', $dataUrl, $matches) !== 1) {
+                    continue;
+                }
+                $blocks[] = ['type' => 'image', 'source' => ['type' => 'base64', 'media_type' => $matches[1], 'data' => $matches[2]]];
+            }
+            $messages[] = ['role' => 'user', 'content' => $blocks];
+        } else {
+            $messages[] = ['role' => 'user', 'content' => $userText];
+        }
+        return [
+            'provider' => $provider,
+            'model' => $model,
+            'url' => mm_env_value('ANTHROPIC_API_URL', 'https://api.anthropic.com/v1/messages'),
+            'headers' => ['Content-Type: application/json', 'x-api-key: ' . $apiKey, 'anthropic-version: 2023-06-01'],
+            'payload' => json_encode(['model' => $model, 'max_tokens' => $maxTokens, 'system' => $systemPrompt, 'messages' => $messages]),
+        ];
+    }
+
+    if ($provider === 'gemini') {
+        $contents = [];
+        foreach ($history as $item) {
+            $contents[] = [
+                'role' => (($item['role'] ?? 'user') === 'assistant') ? 'model' : 'user',
+                'parts' => [['text' => (string) ($item['content'] ?? '')]],
+            ];
+        }
+        $parts = [['text' => $userText]];
+        foreach ($images as $dataUrl) {
+            if (preg_match('/^data:([^;]+);base64,(.+)$/s', $dataUrl, $matches) !== 1) {
+                continue;
+            }
+            $parts[] = ['inline_data' => ['mime_type' => $matches[1], 'data' => $matches[2]]];
+        }
+        $contents[] = ['role' => 'user', 'parts' => $parts];
+        $base = rtrim(mm_env_value('GEMINI_API_URL', 'https://generativelanguage.googleapis.com/v1beta'), '/');
+        return [
+            'provider' => $provider,
+            'model' => $model,
+            'url' => $base . '/models/' . $model . ':generateContent?key=' . urlencode($apiKey),
+            'headers' => ['Content-Type: application/json'],
+            'payload' => json_encode([
+                'systemInstruction' => ['parts' => [['text' => $systemPrompt]]],
+                'contents' => $contents,
+                'generationConfig' => ['maxOutputTokens' => $maxTokens, 'temperature' => $temperature],
+            ]),
+        ];
+    }
+
+    return null;
+}
+
+function mm_parse_provider_reply(string $provider, mixed $raw, int $status, string $curlError = ''): array {
+    if (!is_string($raw) || $raw === '') {
+        return ['ok' => false, 'reply' => '', 'error' => 'Request failed: ' . ($curlError !== '' ? $curlError : 'empty response'), 'status' => 500];
+    }
+    $data = json_decode($raw, true);
+    if (!is_array($data)) {
+        return ['ok' => false, 'reply' => '', 'error' => 'Invalid ' . $provider . ' response', 'status' => 500];
+    }
+    if ($status >= 400) {
+        $message = (string) ($data['error']['message'] ?? ($provider . ' API error'));
+        return ['ok' => false, 'reply' => '', 'error' => $message, 'status' => $status];
+    }
+
+    $reply = '';
+    if ($provider === 'anthropic') {
+        foreach ((array) ($data['content'] ?? []) as $block) {
+            if (is_array($block) && ($block['type'] ?? '') === 'text') {
+                $reply .= (string) ($block['text'] ?? '');
+            }
+        }
+    } elseif ($provider === 'gemini') {
+        foreach ((array) ($data['candidates'][0]['content']['parts'] ?? []) as $part) {
+            if (is_array($part)) {
+                $reply .= (string) ($part['text'] ?? '');
+            }
+        }
+    } else {
+        $reply = (string) ($data['choices'][0]['message']['content'] ?? '');
+    }
+
+    $reply = trim($reply);
+    return ['ok' => $reply !== '', 'reply' => $reply, 'error' => $reply === '' ? 'Empty reply' : '', 'status' => 200];
+}
+
+/** Execute one or more provider request specs in parallel via curl_multi. */
+function mm_execute_provider_specs(array $specs, int $timeout = 40): array {
+    $multi = curl_multi_init();
+    $handles = [];
+    foreach ($specs as $key => $spec) {
+        $ch = curl_init($spec['url']);
+        if ($ch === false) {
+            continue;
+        }
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_POST => true,
+            CURLOPT_HTTPHEADER => $spec['headers'],
+            CURLOPT_POSTFIELDS => $spec['payload'],
+            CURLOPT_TIMEOUT => $timeout,
+        ]);
+        curl_multi_add_handle($multi, $ch);
+        $handles[$key] = $ch;
+    }
+
+    do {
+        $state = curl_multi_exec($multi, $running);
+        if ($running > 0) {
+            curl_multi_select($multi, 1.0);
+        }
+    } while ($running > 0 && $state === CURLM_OK);
+
+    $results = [];
+    foreach ($handles as $key => $ch) {
+        $results[$key] = [
+            'raw' => curl_multi_getcontent($ch),
+            'status' => (int) curl_getinfo($ch, CURLINFO_HTTP_CODE),
+            'error' => curl_error($ch),
+        ];
+        curl_multi_remove_handle($multi, $ch);
+        curl_close($ch);
+    }
+    curl_multi_close($multi);
+    return $results;
+}
+
+/** Ask ONE engine, walking its provider fallback chain until something answers. */
+function mm_call_engine(string $engineKey, string $subject, string $userLevel, string $userText, array $history = [], array $images = [], int $maxTokens = 700, float $temperature = 0.7): array {
+    $engines = mm_engines_config();
+    $engine = $engines[$engineKey] ?? null;
+    if ($engine === null) {
+        return ['ok' => false, 'reply' => '', 'error' => 'Unknown engine', 'engine' => $engineKey, 'icon' => '', 'provider' => '', 'providerLabel' => '', 'model' => '', 'native' => false];
+    }
+
+    $systemPrompt = mm_build_system_prompt($subject, $userLevel, $engine['persona']);
+    foreach (mm_engine_chain($engineKey, count($images) > 0) as $provider) {
+        $spec = mm_provider_request_spec($provider, $systemPrompt, $userText, $history, $images, $maxTokens, $temperature);
+        if ($spec === null) {
+            continue;
+        }
+        $responses = mm_execute_provider_specs(['single' => $spec]);
+        $parsed = mm_parse_provider_reply($provider, $responses['single']['raw'] ?? '', $responses['single']['status'] ?? 0, $responses['single']['error'] ?? '');
+        if ($parsed['ok']) {
+            return [
+                'ok' => true, 'reply' => $parsed['reply'], 'error' => '',
+                'engine' => $engine['name'], 'icon' => $engine['icon'],
+                'provider' => $provider, 'providerLabel' => mm_provider_label($provider),
+                'model' => $spec['model'], 'native' => $provider === $engine['native'],
+            ];
+        }
+    }
+
+    return ['ok' => false, 'reply' => '', 'error' => 'No provider available', 'engine' => $engine['name'], 'icon' => $engine['icon'], 'provider' => '', 'providerLabel' => '', 'model' => '', 'native' => false];
+}
+
+function mm_engine_display_name(array $result): string {
+    $name = (string) ($result['engine'] ?? 'Engine');
+    if (!empty($result['native']) || empty($result['providerLabel'])) {
+        return $name;
+    }
+    return $name . ' (via ' . $result['providerLabel'] . ')';
+}
+
+/** Ask ALL engines in parallel (first-choice providers), falling back per engine on failure. */
+function mm_call_engines_all(string $subject, string $userLevel, string $userText, array $history = [], array $images = [], int $maxTokens = 700): array {
+    $engines = mm_engines_config();
+    $specs = [];
+    $meta = [];
+    foreach ($engines as $key => $engine) {
+        $chain = mm_engine_chain($key, count($images) > 0);
+        if (count($chain) === 0) {
+            continue;
+        }
+        $provider = $chain[0];
+        $systemPrompt = mm_build_system_prompt($subject, $userLevel, $engine['persona']);
+        $spec = mm_provider_request_spec($provider, $systemPrompt, $userText, $history, $images, $maxTokens, 0.7);
+        if ($spec === null) {
+            continue;
+        }
+        $specs[$key] = $spec;
+        $meta[$key] = $provider;
+    }
+    if (count($specs) === 0) {
+        return [];
+    }
+
+    $responses = mm_execute_provider_specs($specs);
+    $results = [];
+    foreach ($specs as $key => $spec) {
+        $provider = $meta[$key];
+        $engine = $engines[$key];
+        $parsed = mm_parse_provider_reply($provider, $responses[$key]['raw'] ?? '', $responses[$key]['status'] ?? 0, $responses[$key]['error'] ?? '');
+        if ($parsed['ok']) {
+            $results[] = [
+                'ok' => true, 'reply' => $parsed['reply'], 'error' => '',
+                'engine' => $engine['name'], 'icon' => $engine['icon'],
+                'provider' => $provider, 'providerLabel' => mm_provider_label($provider),
+                'model' => $spec['model'], 'native' => $provider === $engine['native'],
+            ];
+            continue;
+        }
+        // First-choice provider failed — retry through this engine's full chain.
+        $retry = mm_call_engine($key, $subject, $userLevel, $userText, $history, $images, $maxTokens);
+        if ($retry['ok']) {
+            $results[] = $retry;
+        }
+    }
+    return $results;
+}
+
+/**
+ * Run different prompts on different engines in parallel (first-choice
+ * providers), retrying each failed engine through its fallback chain.
+ * $assignments: engineKey => userPrompt. Returns engineKey => result array.
+ */
+function mm_call_engine_assignments(array $assignments, string $subject, string $userLevel, int $maxTokens = 900, float $temperature = 0.6): array {
+    $engines = mm_engines_config();
+    $specs = [];
+    $meta = [];
+    foreach ($assignments as $key => $userPrompt) {
+        if (!isset($engines[$key])) {
+            continue;
+        }
+        $chain = mm_engine_chain($key);
+        if (count($chain) === 0) {
+            continue;
+        }
+        $provider = $chain[0];
+        $systemPrompt = mm_build_system_prompt($subject, $userLevel, $engines[$key]['persona']);
+        $spec = mm_provider_request_spec($provider, $systemPrompt, $userPrompt, [], [], $maxTokens, $temperature);
+        if ($spec === null) {
+            continue;
+        }
+        $specs[$key] = $spec;
+        $meta[$key] = $provider;
+    }
+    if (count($specs) === 0) {
+        return [];
+    }
+
+    $responses = mm_execute_provider_specs($specs);
+    $results = [];
+    foreach ($specs as $key => $spec) {
+        $provider = $meta[$key];
+        $engine = $engines[$key];
+        $parsed = mm_parse_provider_reply($provider, $responses[$key]['raw'] ?? '', $responses[$key]['status'] ?? 0, $responses[$key]['error'] ?? '');
+        if ($parsed['ok']) {
+            $results[$key] = [
+                'ok' => true, 'reply' => $parsed['reply'], 'error' => '',
+                'engine' => $engine['name'], 'icon' => $engine['icon'],
+                'provider' => $provider, 'providerLabel' => mm_provider_label($provider),
+                'model' => $spec['model'], 'native' => $provider === $engine['native'],
+            ];
+            continue;
+        }
+        $retry = mm_call_engine($key, $subject, $userLevel, $assignments[$key], [], [], $maxTokens, $temperature);
+        if ($retry['ok']) {
+            $results[$key] = $retry;
+        }
+    }
+    return $results;
+}
+
+/** Keyword routing: pick the best engine for a message (no extra API call). */
+function mm_route_engine(string $message, string $subject, string $learningStyle = ''): string {
+    $haystack = strtolower($message . ' ' . $subject);
+    foreach (['story', 'analogy', 'poem', 'imagine', 'narrative'] as $word) {
+        if (str_contains($haystack, $word)) {
+            return 'storyteller';
+        }
+    }
+    foreach (['solve', 'calculate', 'equation', 'math', 'algebra', 'geometry', 'calculus', 'derivative', 'integral', 'physics', 'code', 'coding', 'program', 'debug', 'formula', 'simplify', 'factor'] as $word) {
+        if (str_contains($haystack, $word)) {
+            return 'solver';
+        }
+    }
+    foreach (['example', 'real-world', 'real world', 'real life', 'application', 'use case'] as $word) {
+        if (str_contains($haystack, $word)) {
+            return 'explorer';
+        }
+    }
+    if ($learningStyle === 'Stories') {
+        return 'storyteller';
+    }
+    return 'reasoner';
+}
+
+function mm_engine_details(): array {
+    $details = [];
+    foreach (mm_engines_config() as $key => $engine) {
+        $chain = mm_engine_chain($key);
+        $backing = $chain[0] ?? null;
+        $details[$key] = [
+            'name' => $engine['name'],
+            'live' => $backing !== null,
+            'native' => $backing === $engine['native'],
+            'provider' => $backing !== null ? mm_provider_label($backing) : null,
+            'model' => $backing !== null ? mm_provider_model($backing) : null,
+        ];
+    }
+    return $details;
+}
+
 function mm_quiz_pool(): array {
     return [
         'Math' => [
@@ -954,30 +1391,33 @@ function mm_generate_quiz_question(string $subject): array {
 
 function mm_generate_book_flashcards(string $subject, string $chapter, string $bookContext): array {
     $topic = trim($chapter) !== '' ? trim($chapter) : trim($subject);
-    $prompt = 'Create 6 original flashcards for the topic "' . $topic . '"'
-        . ($bookContext !== '' ? ' studied from a book like "' . $bookContext . '"' : '')
-        . '. Return ONLY valid JSON like [{"front":"...","back":"..."}].';
-    $result = mm_ai_text('You generate concise educational flashcards. Only return valid JSON.', $prompt, 0.4, 900);
-    if (!($result['ok'] ?? false)) {
-        return [['front' => 'What is the key idea in ' . $topic . '?', 'back' => 'Review this topic with the AI tutor for a full explanation.']];
-    }
-
-    $parsed = mm_parse_json_loose((string) ($result['reply'] ?? ''));
-    if (!is_array($parsed)) {
-        return [['front' => 'What is the key idea in ' . $topic . '?', 'back' => 'Review this topic with the AI tutor for a full explanation.']];
-    }
+    $bookNote = $bookContext !== '' ? ' studied from a book like "' . $bookContext . '"' : '';
+    $jsonRule = ' Return ONLY valid JSON like [{"front":"...","back":"..."}]. No other text.';
+    $assignments = [
+        'reasoner' => 'Write 3 original flashcards focused on core definitions/facts for the topic "' . $topic . '"' . $bookNote . '.' . $jsonRule,
+        'solver' => 'Write 3 original flashcards focused on formulas and worked steps for the topic "' . $topic . '"' . $bookNote . '.' . $jsonRule,
+        'explorer' => 'Write 3 original flashcards focused on applied real-world examples for the topic "' . $topic . '"' . $bookNote . '.' . $jsonRule,
+        'storyteller' => 'Write 3 original flashcards focused on memorable analogies for the topic "' . $topic . '"' . $bookNote . '.' . $jsonRule,
+    ];
+    $results = mm_call_engine_assignments($assignments, $subject, 'Learner', 800, 0.4);
 
     $cards = [];
-    foreach ($parsed as $item) {
-        if (!is_array($item)) {
+    foreach ($results as $result) {
+        $parsed = mm_parse_json_loose((string) ($result['reply'] ?? ''));
+        if (!is_array($parsed)) {
             continue;
         }
-        $front = trim((string) ($item['front'] ?? ''));
-        $back = trim((string) ($item['back'] ?? ''));
-        if ($front === '' || $back === '') {
-            continue;
+        foreach ($parsed as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+            $front = trim((string) ($item['front'] ?? ''));
+            $back = trim((string) ($item['back'] ?? ''));
+            if ($front === '' || $back === '') {
+                continue;
+            }
+            $cards[] = ['front' => $front, 'back' => $back];
         }
-        $cards[] = ['front' => $front, 'back' => $back];
     }
 
     return count($cards) ? array_slice($cards, 0, 12) : [['front' => 'What is the key idea in ' . $topic . '?', 'back' => 'Review this topic with the AI tutor for a full explanation.']];
@@ -985,48 +1425,62 @@ function mm_generate_book_flashcards(string $subject, string $chapter, string $b
 
 function mm_generate_chapter_notes(string $subject, string $chapter, string $bookContext, string $userLevel): array {
     $topic = trim($chapter) !== '' ? trim($chapter) : trim($subject);
-    $systemPrompt = mm_build_system_prompt($subject, $userLevel, 'Write complete original revision notes in a structured format.');
     $userPrompt = 'Write original revision notes for the topic "' . $topic . '"'
         . ($bookContext !== '' ? ' from a book like "' . $bookContext . '"' : '')
         . '. Use these exact headings: OVERVIEW, KEY POINTS, FORMULAS & DEFINITIONS, COMMON MISTAKES, EXAM TIPS.';
-    $result = mm_ai_text($systemPrompt, $userPrompt, 0.45, 1300);
-    if (!($result['ok'] ?? false) || trim((string) ($result['reply'] ?? '')) === '') {
-        return [
-            'notes' => "OVERVIEW\n" . $topic . " is a core part of " . $subject . ".\n\nKEY POINTS\n- Review this topic with the AI tutor.\n- Practice quiz questions on this chapter.\n\nFORMULAS & DEFINITIONS\n- Add key terms here once AI is connected.\n\nCOMMON MISTAKES\n- Rushing without checking definitions.\n\nEXAM TIPS\n- Show your working and define key terms clearly.",
-            'engine' => 'Demo',
-        ];
+
+    // Strongest available engine first, walking each one's fallback chain.
+    foreach (['storyteller', 'explorer', 'solver', 'reasoner'] as $engineKey) {
+        if (count(mm_engine_chain($engineKey)) === 0) {
+            continue;
+        }
+        $result = mm_call_engine($engineKey, $subject, $userLevel, $userPrompt, [], [], 1300, 0.45);
+        if ($result['ok'] && trim((string) $result['reply']) !== '') {
+            return [
+                'notes' => trim((string) $result['reply']),
+                'engine' => mm_engine_display_name($result),
+            ];
+        }
     }
 
     return [
-        'notes' => trim((string) $result['reply']),
-        'engine' => 'Reasoner',
+        'notes' => "OVERVIEW\n" . $topic . " is a core part of " . $subject . ".\n\nKEY POINTS\n- Review this topic with the AI tutor.\n- Practice quiz questions on this chapter.\n\nFORMULAS & DEFINITIONS\n- Add key terms here once AI is connected.\n\nCOMMON MISTAKES\n- Rushing without checking definitions.\n\nEXAM TIPS\n- Show your working and define key terms clearly.",
+        'engine' => 'Demo',
     ];
 }
 
 function mm_generate_guess_paper(string $section, string $subject, string $paperFormat, string $chapter): array {
     $topic = trim($chapter) !== '' ? trim($chapter) : trim($subject);
-    $prompt = 'Create an ORIGINAL practice paper for ' . trim($section) . ' ' . trim($subject)
-        . ' focused on "' . $topic . '". Format: ' . ($paperFormat !== '' ? $paperFormat : '60 minutes')
-        . '. Include 6 questions and a separate Answer Key. Do not copy any official exam paper.';
-    $result = mm_ai_text('You generate original practice exam papers for students.', $prompt, 0.55, 1500);
-    if (!($result['ok'] ?? false) || trim((string) ($result['reply'] ?? '')) === '') {
+    $base = 'You are helping create an ORIGINAL practice exam paper for a ' . trim($section) . ' ' . trim($subject) . ' student focused on "' . $topic
+        . '". Format: ' . ($paperFormat !== '' ? $paperFormat : '60 minutes')
+        . '. Write entirely new original questions — do not copy any official exam paper. Include a separate "Answer Key" section after your questions. ';
+    $assignments = [
+        'reasoner' => $base . 'Write 2 conceptual reasoning questions with an answer key.',
+        'solver' => $base . 'Write 2 calculation/problem-solving questions with a fully worked answer key.',
+        'explorer' => $base . 'Write 2 applied/real-world scenario questions with an answer key.',
+        'storyteller' => $base . 'Write 2 extended-response/essay-style questions with an answer key.',
+    ];
+    $results = mm_call_engine_assignments($assignments, $subject, 'Learner', 1200, 0.55);
+
+    if (count($results) === 0) {
         return [
             'paper' => trim($section . ' ' . $subject) . " — Practice Paper\n\n1. Define the key idea of " . $topic . ".\n2. Give one worked example.\n3. Explain one common mistake students make.\n\nAnswer Key\n1-3: Open-ended demo paper.",
             'generatedBy' => ['Demo'],
         ];
     }
 
-    return [
-        'paper' => trim((string) $result['reply']),
-        'generatedBy' => ['Reasoner'],
-    ];
+    $sections = [];
+    $generatedBy = [];
+    foreach ($results as $result) {
+        $sections[] = trim((string) $result['reply']);
+        $generatedBy[] = (string) $result['engine'];
+    }
+    $paper = implode("\n\n", $sections) . "\n\n---\nGenerated by AI (" . implode(', ', $generatedBy) . ") — original practice content, not an official exam paper.";
+    return ['paper' => $paper, 'generatedBy' => $generatedBy];
 }
 
 function mm_generate_explain_check(string $concept, string $studentExplanation): array {
-    $result = mm_call_groq([
-        ['role' => 'system', 'content' => 'You are a supportive tutor grading a student explanation briefly.'],
-        ['role' => 'user', 'content' => 'Concept: ' . $concept . "\nStudent explanation: " . $studentExplanation . "\n\nIn one short sentence, say whether they show understanding and give a brief correction or encouragement."],
-    ], 0.3, 120);
+    $result = mm_call_engine('reasoner', 'General', 'Learner', 'Concept: ' . $concept . "\nStudent explanation: " . $studentExplanation . "\n\nIn one short sentence, say whether they show understanding and give a brief correction or encouragement.", [], [], 120, 0.3);
 
     if ($result['ok'] && trim((string) ($result['reply'] ?? '')) !== '') {
         return ['understood' => true, 'feedback' => (string) $result['reply']];

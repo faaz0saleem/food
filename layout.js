@@ -14,15 +14,14 @@ if ('serviceWorker' in navigator) {
   }
 
   const NAV_LINKS = [
-    { label: 'Dashboard', href: '/dashboard.html' },
-    { label: 'Learn', href: '/learn.html' },
-    { label: 'Subjects', href: '/subjects.html' },
-    { label: 'Books', href: '/books.html' },
-    { label: 'Quiz', href: '/quiz.html' },
-    { label: 'Guess Papers', href: '/guess-papers.html' },
-    { label: 'Progress', href: '/progress.html' },
-    { label: 'RoundChat', href: '/roundchat.html' },
-    { label: 'Chat', href: '/chat.html' },
+    { label: '💡 Learn', href: '/learn.html' },
+    { label: '📚 Subjects', href: '/subjects.html' },
+    { label: '📖 Books', href: '/books.html' },
+    { label: '🧪 Quiz', href: '/quiz.html' },
+    { label: '📄 Guess Papers', href: '/guess-papers.html' },
+    { label: '📊 Progress', href: '/progress.html' },
+    { label: '🎙️ RoundChat', href: '/roundchat.html' },
+    { label: '💬 Chat', href: '/chat.html' },
   ];
 
   const ENGINES = [
@@ -147,7 +146,7 @@ if ('serviceWorker' in navigator) {
               <small>${Math.max(0, Number(level.xp || 0))} XP</small>
             </span>
           </div>
-          <a href="/chat.html" class="chat-btn">Ask AI →</a>
+          <a href="/chat.html" class="chat-btn">💬 Ask AI</a>
           <a href="/profile.html" class="avatar" style="background-color:${avatarColor}" title="Profile">${initials}</a>
         </div>
       </div>

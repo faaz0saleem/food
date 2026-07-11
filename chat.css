@@ -329,6 +329,54 @@
   color: var(--coral);
 }
 
+.engine-picker {
+  padding: 12px;
+  background: rgba(200, 255, 77, 0.05);
+  border: 1px solid var(--border-glow);
+  border-radius: var(--radius-sm);
+  margin-bottom: 12px;
+}
+
+.engine-picker-label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--lime);
+  margin-bottom: 8px;
+}
+
+.engine-picker-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.engine-btn {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--ink-soft);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  font-family: var(--font-body);
+  transition: all 0.15s ease;
+}
+
+.engine-btn:hover {
+  border-color: var(--lime);
+  color: var(--lime);
+  box-shadow: var(--glow-lime);
+}
+
+.engine-btn.active {
+  background: var(--lime);
+  color: var(--bg-deep);
+  border-color: var(--lime);
+  box-shadow: var(--glow-lime);
+}
+
 .composer-note {
   text-align: center;
   font-size: 0.76rem;
@@ -347,6 +395,15 @@
 
   .attachment-chip-label {
     max-width: 220px;
+  }
+
+  .engine-picker-buttons {
+    flex-direction: column;
+  }
+
+  .engine-btn {
+    width: 100%;
+    text-align: center;
   }
 }
 

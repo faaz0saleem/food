@@ -5,6 +5,7 @@ const path = require('path');
 const Groq = require('groq-sdk');
 const OpenAI = require('openai');
 const Anthropic = require('@anthropic-ai/sdk');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const port = process.env.PORT || 3000;
 const rootDir = __dirname;
@@ -12,6 +13,7 @@ const statsFile = path.join(rootDir, 'stats.json');
 const ADMIN_KEY = process.env.ADMIN_KEY || '';
 
 const GROQ_MODEL = process.env.GROQ_MODEL || process.env.GROQ_MODEL_NAME || 'llama-3.3-70b-versatile';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o';
 const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-sonnet-5';
 const MODEL_LABEL = process.env.GROQ_MODEL_LABEL || GROQ_MODEL;
@@ -19,15 +21,115 @@ const MODEL_LABEL = process.env.GROQ_MODEL_LABEL || GROQ_MODEL;
 const groqClient = process.env.GROQ_API_KEY ? new Groq({ apiKey: process.env.GROQ_API_KEY }) : null;
 const openaiClient = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
 const anthropicClient = process.env.ANTHROPIC_API_KEY ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }) : null;
+const geminiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
+const geminiClient = geminiKey ? new GoogleGenerativeAI(geminiKey) : null;
+const geminiRequestOptions = process.env.GEMINI_BASE_URL ? { baseUrl: process.env.GEMINI_BASE_URL } : undefined;
 
-const ENGINES = {
-  reasoner: { name: 'Reasoner', provider: 'Groq', model: GROQ_MODEL, client: groqClient },
-  solver: { name: 'Solver', provider: 'Groq (standing in for Gemini)', model: GROQ_MODEL, client: groqClient },
-  explorer: { name: 'Explorer', provider: 'OpenAI', model: OPENAI_MODEL, client: openaiClient },
-  storyteller: { name: 'Storyteller', provider: 'Anthropic', model: ANTHROPIC_MODEL, client: anthropicClient },
+// ---------- providers: the raw AI vendors an engine can run on ----------
+const PROVIDERS = {
+  groq: {
+    label: 'Groq Llama 3.3',
+    model: () => GROQ_MODEL,
+    ready: () => Boolean(groqClient),
+    vision: false,
+    call: async ({ systemPrompt, userContent, history = [], maxTokens = 700, temperature = 0.7 }) => {
+      const text = typeof userContent === 'string' ? userContent : (userContent.find((p) => p.type === 'text')?.text || '');
+      const messages = [{ role: 'system', content: systemPrompt }, ...history, { role: 'user', content: text }];
+      const response = await groqClient.chat.completions.create({ model: GROQ_MODEL, messages, max_tokens: maxTokens, temperature });
+      return response.choices?.[0]?.message?.content?.trim() || null;
+    },
+  },
+  gemini: {
+    label: 'Gemini Flash',
+    model: () => GEMINI_MODEL,
+    ready: () => Boolean(geminiClient),
+    vision: true,
+    call: async ({ systemPrompt, userContent, history = [], maxTokens = 700, temperature = 0.7 }) => {
+      const model = geminiClient.getGenerativeModel({ model: GEMINI_MODEL, systemInstruction: systemPrompt }, geminiRequestOptions);
+      const contents = history.map((h) => ({ role: h.role === 'assistant' ? 'model' : 'user', parts: [{ text: h.content }] }));
+      let parts;
+      if (typeof userContent === 'string') {
+        parts = [{ text: userContent }];
+      } else {
+        parts = userContent.map((p) => {
+          if (p.type === 'text') return { text: p.text };
+          const match = (p.image_url?.url || '').match(/^data:([^;]+);base64,(.+)$/s);
+          return match ? { inlineData: { mimeType: match[1], data: match[2] } } : null;
+        }).filter(Boolean);
+      }
+      contents.push({ role: 'user', parts });
+      const result = await model.generateContent({ contents, generationConfig: { maxOutputTokens: maxTokens, temperature } });
+      return result.response?.text()?.trim() || null;
+    },
+  },
+  openai: {
+    label: 'GPT-4o',
+    model: () => OPENAI_MODEL,
+    ready: () => Boolean(openaiClient),
+    vision: true,
+    call: async ({ systemPrompt, userContent, history = [], maxTokens = 700 }) => {
+      const messages = [{ role: 'system', content: systemPrompt }, ...history, { role: 'user', content: userContent }];
+      const response = await openaiClient.chat.completions.create({ model: OPENAI_MODEL, messages, max_tokens: maxTokens });
+      return response.choices?.[0]?.message?.content?.trim() || null;
+    },
+  },
+  anthropic: {
+    label: 'Claude Sonnet',
+    model: () => ANTHROPIC_MODEL,
+    ready: () => Boolean(anthropicClient),
+    vision: true,
+    call: async ({ systemPrompt, userContent, history = [], maxTokens = 700 }) => {
+      let content = userContent;
+      if (Array.isArray(userContent)) {
+        content = userContent.map((p) => {
+          if (p.type === 'text') return { type: 'text', text: p.text };
+          const match = (p.image_url?.url || '').match(/^data:([^;]+);base64,(.+)$/s);
+          return match ? { type: 'image', source: { type: 'base64', media_type: match[1], data: match[2] } } : null;
+        }).filter(Boolean);
+      }
+      const messages = [...history, { role: 'user', content }];
+      const response = await anthropicClient.messages.create({ model: ANTHROPIC_MODEL, max_tokens: maxTokens, system: systemPrompt, messages });
+      const textBlock = response.content?.find((block) => block.type === 'text');
+      return textBlock?.text?.trim() || null;
+    },
+  },
 };
 
-function buildSystemPrompt(subject, userLevel) {
+// ---------- engines: the 4 tutoring personalities students see ----------
+// Each engine has a native provider plus a fallback chain, so every engine can
+// answer as long as at least one API key is configured. The persona keeps the
+// engines genuinely different even when two of them share a backing provider.
+const ENGINES = {
+  reasoner: {
+    name: 'Reasoner', icon: '🟢', native: 'groq', fallbacks: ['gemini', 'openai', 'anthropic'],
+    persona: 'You are THE REASONER, Hungter\'s deep-reasoning engine. Your specialty: rigorous step-by-step logic. Break the problem into numbered steps and explain WHY each step is true, not just what to do.',
+  },
+  solver: {
+    name: 'Solver', icon: '🟠', native: 'gemini', fallbacks: ['groq', 'openai', 'anthropic'],
+    persona: 'You are THE SOLVER, Hungter\'s math/code/physics engine. Your specialty: precise worked solutions. Show every calculation line by line, state formulas before using them, and double-check the final answer.',
+  },
+  explorer: {
+    name: 'Explorer', icon: '🔵', native: 'openai', fallbacks: ['gemini', 'groq', 'anthropic'],
+    persona: 'You are THE EXPLORER, Hungter\'s real-world engine. Your specialty: concrete everyday examples. Anchor every explanation in a real situation the student has actually seen or lived.',
+  },
+  storyteller: {
+    name: 'Storyteller', icon: '🟣', native: 'anthropic', fallbacks: ['gemini', 'groq', 'openai'],
+    persona: 'You are THE STORYTELLER, Hungter\'s narrative engine. Your specialty: analogies and mini-stories that make ideas unforgettable. Teach through one vivid analogy or short story, then connect it back to the real concept.',
+  },
+};
+
+function engineChain(key, { needVision = false } = {}) {
+  const engine = ENGINES[key];
+  if (!engine) return [];
+  let chain = [engine.native, ...engine.fallbacks].filter((p) => PROVIDERS[p].ready());
+  if (needVision) {
+    const vision = chain.filter((p) => PROVIDERS[p].vision);
+    if (vision.length) chain = [...vision, ...chain.filter((p) => !PROVIDERS[p].vision)];
+  }
+  return chain;
+}
+
+function buildSystemPrompt(subject, userLevel, persona = '') {
   return `You are Hungter, an AI tutor. You ONLY help with educational topics: schoolwork, academic subjects, study skills, and learning ${subject || 'general topics'}. If the user asks about anything unrelated to learning or education, politely decline and redirect them to ask a study-related question instead - do not answer the off-topic request.
 
 You are helping a student at the "${userLevel || 'Newbie'}" level.
@@ -35,35 +137,24 @@ You are helping a student at the "${userLevel || 'Newbie'}" level.
 - Explorer/Scholar: give more detailed explanations with worked examples.
 - Master: offer advanced insights and complex problem-solving.
 
-Be encouraging, clear, and keep responses concise (2-4 sentences) unless the question needs a worked example.`;
+Be encouraging, clear, and keep responses concise (2-4 sentences) unless the question needs a worked example.${persona ? `\n\n${persona}` : ''}`;
 }
 
-async function callGroq(client, model, systemPrompt, message, history = []) {
-  const messages = [{ role: 'system', content: systemPrompt }, ...history, { role: 'user', content: message }];
-  const response = await client.chat.completions.create({
-    model, messages, max_tokens: 700, temperature: 0.7,
-  });
-  return response.choices?.[0]?.message?.content?.trim() || null;
+// Run a plain-text prompt through an engine, walking its provider fallback chain.
+async function callEngineText(key, systemPrompt, userPrompt, { maxTokens = 700, temperature = 0.7 } = {}) {
+  for (const providerKey of engineChain(key)) {
+    try {
+      const reply = await PROVIDERS[providerKey].call({ systemPrompt, userContent: userPrompt, maxTokens, temperature });
+      if (reply) return reply;
+    } catch (error) {
+      console.error(`${ENGINES[key].name} via ${providerKey} failed:`, error.message);
+    }
+  }
+  return null;
 }
 
-async function callOpenAI(client, model, systemPrompt, userContent, history = []) {
-  const messages = [{ role: 'system', content: systemPrompt }, ...history, { role: 'user', content: userContent }];
-  const response = await client.chat.completions.create({
-    model, messages, max_tokens: 700,
-  });
-  return response.choices?.[0]?.message?.content?.trim() || null;
-}
-
-async function callAnthropic(client, model, systemPrompt, userContent, history = []) {
-  const messages = [...history, { role: 'user', content: userContent }];
-  const response = await client.messages.create({
-    model, max_tokens: 700, system: systemPrompt, messages,
-  });
-  const textBlock = response.content?.find((block) => block.type === 'text');
-  return textBlock?.text?.trim() || null;
-}
-
-// Build the user message content — handles text files and vision (images) per provider.
+// Build the user message content — text files inline, images as vision parts
+// (openai-style; each provider's call() converts to its own format).
 function buildUserContent(message, attachments, provider) {
   const images = (attachments || []).filter((a) => a.kind === 'image' && a.imageDataUrl);
   const files = (attachments || []).filter((a) => a.kind !== 'image' && a.textContent);
@@ -72,65 +163,51 @@ function buildUserContent(message, attachments, provider) {
     text += '\n\n' + files.map((f) => `[File: ${f.name}]\n${f.textContent}`).join('\n\n');
   }
   if (!images.length) return text;
-  if (provider === 'openai') {
+  if (PROVIDERS[provider]?.vision) {
     const content = [{ type: 'text', text }];
     for (const img of images.slice(0, 3)) {
       content.push({ type: 'image_url', image_url: { url: img.imageDataUrl } });
     }
     return content;
   }
-  if (provider === 'anthropic') {
-    const content = [{ type: 'text', text }];
-    for (const img of images.slice(0, 3)) {
-      const match = img.imageDataUrl.match(/^data:([^;]+);base64,(.+)$/s);
-      if (!match) continue;
-      content.push({ type: 'image', source: { type: 'base64', media_type: match[1], data: match[2] } });
-    }
-    return content;
-  }
-  // Groq / Llama — no vision; embed as a text note
+  // Non-vision provider — embed as a text note
   text += `\n\n[Note: The student attached ${images.length} image(s). Acknowledge this and ask them to describe the key parts in text so you can help.]`;
   return text;
 }
 
 async function callOneEngine(key, message, subject, userLevel, history = [], attachments = []) {
   const engine = ENGINES[key];
-  if (!engine.client) return { name: engine.name, reply: null };
-  const systemPrompt = buildSystemPrompt(subject, userLevel);
-  const provider = key === 'explorer' ? 'openai' : key === 'storyteller' ? 'anthropic' : 'groq';
-  const userContent = buildUserContent(message, attachments, provider);
-  try {
-    let reply;
-    if (key === 'reasoner' || key === 'solver') reply = await callGroq(engine.client, engine.model, systemPrompt, typeof userContent === 'string' ? userContent : message, history);
-    else if (key === 'explorer') reply = await callOpenAI(engine.client, engine.model, systemPrompt, userContent, history);
-    else reply = await callAnthropic(engine.client, engine.model, systemPrompt, userContent, history);
-    return { name: engine.name, reply };
-  } catch (error) {
-    console.error(`${engine.name} (${engine.provider}) call failed:`, error.message);
-    return { name: engine.name, reply: null };
+  if (!engine) return { name: 'Unknown', reply: null };
+  const systemPrompt = buildSystemPrompt(subject, userLevel, engine.persona);
+  const hasImages = (attachments || []).some((a) => a.kind === 'image' && a.imageDataUrl);
+  for (const providerKey of engineChain(key, { needVision: hasImages })) {
+    const provider = PROVIDERS[providerKey];
+    try {
+      const userContent = buildUserContent(message, attachments, providerKey);
+      const reply = await provider.call({ systemPrompt, userContent, history });
+      if (reply) {
+        return { name: engine.name, icon: engine.icon, reply, provider: providerKey, providerLabel: provider.label, model: provider.model(), native: providerKey === engine.native };
+      }
+    } catch (error) {
+      console.error(`${engine.name} via ${providerKey} failed:`, error.message);
+    }
   }
+  return { name: engine.name, icon: engine.icon, reply: null };
 }
 
 async function classifyMessage(message, subject) {
-  if (!groqClient) return 'GENERAL';
   try {
-    const response = await groqClient.chat.completions.create({
-      model: GROQ_MODEL,
-      messages: [
-        { role: 'system', content: `Classify the student's message into exactly one category. Reply with ONLY the category word, nothing else.
+    const raw = await callEngineText('reasoner', `Classify the student's message into exactly one category. Reply with ONLY the category word, nothing else.
 Categories:
 MATH - math, coding, physics, or step-by-step problem solving
 EXAMPLES - wants real-world examples, practical applications, or research-style detail
 STORY - wants a story, analogy, poem, or creative explanation
 COMPLEX - a genuinely hard, multi-part, or ambiguous question that would benefit from more than one perspective
-GENERAL - anything else, including simple conceptual questions` },
-        { role: 'user', content: `Subject: ${subject || 'General'}\nMessage: ${message}` },
-      ],
-      max_tokens: 5, temperature: 0,
-    });
-    const raw = (response.choices?.[0]?.message?.content || '').trim().toUpperCase();
+GENERAL - anything else, including simple conceptual questions`,
+    `Subject: ${subject || 'General'}\nMessage: ${message}`, { maxTokens: 5, temperature: 0 });
+    const upper = String(raw || '').trim().toUpperCase();
     const categories = ['MATH', 'EXAMPLES', 'STORY', 'COMPLEX', 'GENERAL'];
-    return categories.find((c) => raw.includes(c)) || 'GENERAL';
+    return categories.find((c) => upper.includes(c)) || 'GENERAL';
   } catch (error) {
     console.error('Classifier failed:', error.message);
     return 'GENERAL';
@@ -139,63 +216,82 @@ GENERAL - anything else, including simple conceptual questions` },
 
 const CATEGORY_TO_ENGINE = { MATH: 'solver', EXAMPLES: 'explorer', STORY: 'storyteller', GENERAL: 'reasoner' };
 
-async function answerSmart({ message, subject, userLevel, excludeEngine, history = [], attachments = [] }) {
+function engineTag(result) {
+  return result.native ? result.name : `${result.name} (via ${result.providerLabel})`;
+}
+
+async function answerSmart({ message, subject, userLevel, learningStyle, excludeEngine, engineMode = 'auto', history = [], attachments = [] }) {
+  const mode = String(engineMode || 'auto').toLowerCase();
+
+  // Forced single engine: the student picked one from the chat engine selector.
+  if (ENGINES[mode]) {
+    const result = await callOneEngine(mode, message, subject, userLevel, history, attachments);
+    if (result.reply) return { reply: result.reply, engines: [engineTag(result)] };
+  }
+
+  // All-engines mode: every engine answers, each with its own persona.
+  if (mode === 'all') {
+    const results = await Promise.all(Object.keys(ENGINES).map((key) => callOneEngine(key, message, subject, userLevel, history, attachments)));
+    const successful = results.filter((r) => r.reply);
+    if (successful.length) {
+      const merged = successful.map((r) => `**${r.icon} ${r.name}** · _${r.providerLabel}_\n\n${r.reply}`).join('\n\n---\n\n');
+      return { reply: merged, engines: successful.map((r) => engineTag(r)) };
+    }
+  }
+
   const category = await classifyMessage(message, subject);
 
   // Route image-containing messages to vision-capable engines first
   const hasImages = attachments.some((a) => a.kind === 'image' && a.imageDataUrl);
   if (hasImages) {
-    const visionKey = ENGINES.explorer.client ? 'explorer' : ENGINES.storyteller.client ? 'storyteller' : null;
+    const visionKey = Object.keys(ENGINES).find((key) => engineChain(key).some((p) => PROVIDERS[p].vision));
     if (visionKey) {
       const result = await callOneEngine(visionKey, message, subject, userLevel, history, attachments);
-      if (result.reply) return { reply: result.reply, engines: [result.name] };
+      if (result.reply) return { reply: result.reply, engines: [engineTag(result)] };
     }
   }
 
   if (category === 'COMPLEX') {
-    const secondaryKey = ENGINES.storyteller.client ? 'storyteller' : (ENGINES.explorer.client ? 'explorer' : 'solver');
+    const secondaryKey = engineChain('storyteller').length ? 'storyteller' : (engineChain('explorer').length ? 'explorer' : 'solver');
     const [a, b] = await Promise.all([
       callOneEngine('reasoner', message, subject, userLevel, history, attachments),
       callOneEngine(secondaryKey, message, subject, userLevel, history, attachments),
     ]);
     const successful = [a, b].filter((r) => r.reply).filter((r, i, arr) => arr.findIndex((x) => x.name === r.name) === i);
     if (successful.length) {
-      const merged = successful.map((r) => `**${r.name}:**\n${r.reply}`).join('\n\n---\n\n');
-      return { reply: merged, engines: successful.map((r) => r.name) };
+      const merged = successful.map((r) => `**${r.icon} ${r.name}:**\n${r.reply}`).join('\n\n---\n\n');
+      return { reply: merged, engines: successful.map((r) => engineTag(r)) };
     }
   } else {
     let primaryKey = CATEGORY_TO_ENGINE[category] || 'reasoner';
+    // Students who chose story-based learning get the Storyteller for general questions.
+    if (primaryKey === 'reasoner' && String(learningStyle || '') === 'Stories') primaryKey = 'storyteller';
     if (excludeEngine && ENGINES[primaryKey]?.name === excludeEngine) {
-      const alt = ['reasoner', 'explorer', 'storyteller'].find((k) => ENGINES[k].name !== excludeEngine && ENGINES[k].client);
+      const alt = Object.keys(ENGINES).find((k) => ENGINES[k].name !== excludeEngine && engineChain(k).length);
       if (alt) primaryKey = alt;
     }
     const result = await callOneEngine(primaryKey, message, subject, userLevel, history, attachments);
-    if (result.reply) return { reply: result.reply, engines: [result.name] };
+    if (result.reply) return { reply: result.reply, engines: [engineTag(result)] };
   }
 
   const fallback = await callOneEngine('reasoner', message, subject, userLevel, history, attachments);
-  if (fallback.reply) return { reply: fallback.reply, engines: [fallback.name] };
+  if (fallback.reply) return { reply: fallback.reply, engines: [engineTag(fallback)] };
 
   return { reply: `Demo mode answer for ${subject || 'your topic'}: Keep practicing and review one concept at a time to master it!`, engines: ['Reasoner'] };
 }
 
 async function runRoundtableDebate({ message, subject, userLevel }) {
-  const availableKeys = ['reasoner', 'explorer', 'storyteller'].filter((k) => ENGINES[k].client);
+  const availableKeys = Object.keys(ENGINES).filter((k) => engineChain(k).length);
   if (availableKeys.length < 2) {
     const solo = await answerSmart({ message, subject, userLevel });
     return { transcript: [], finalAnswer: solo.reply, engines: solo.engines };
   }
-  const basePrompt = buildSystemPrompt(subject, userLevel);
 
   const round1 = await Promise.all(availableKeys.map(async (key) => {
     const engine = ENGINES[key];
-    const prompt = `${message}\n\nGive your take on how to best explain this, in 2-3 sentences.`;
-    let text = null;
-    try {
-      if (key === 'reasoner') text = await callGroq(engine.client, engine.model, basePrompt, prompt);
-      else if (key === 'explorer') text = await callOpenAI(engine.client, engine.model, basePrompt, prompt);
-      else text = await callAnthropic(engine.client, engine.model, basePrompt, prompt);
-    } catch (e) { console.error(`Round 1 (${engine.name}) failed:`, e.message); }
+    const systemPrompt = buildSystemPrompt(subject, userLevel, engine.persona);
+    const prompt = `${message}\n\nGive your take on how to best explain this, in 2-3 sentences, using your specialty.`;
+    const text = await callEngineText(key, systemPrompt, prompt);
     return { key, name: engine.name, text };
   }));
   const round1Valid = round1.filter((r) => r.text);
@@ -203,14 +299,10 @@ async function runRoundtableDebate({ message, subject, userLevel }) {
 
   const round2 = await Promise.all(round1Valid.map(async (r) => {
     const engine = ENGINES[r.key];
+    const systemPrompt = buildSystemPrompt(subject, userLevel, engine.persona);
     const others = round1Valid.filter((o) => o.key !== r.key).map((o) => `${o.name}: ${o.text}`).join('\n');
     const prompt = `Other tutors said, about explaining "${message}":\n${others}\n\nIn 1-2 sentences, briefly agree, disagree, or add something they missed.`;
-    let text = null;
-    try {
-      if (r.key === 'reasoner') text = await callGroq(engine.client, engine.model, basePrompt, prompt);
-      else if (r.key === 'explorer') text = await callOpenAI(engine.client, engine.model, basePrompt, prompt);
-      else text = await callAnthropic(engine.client, engine.model, basePrompt, prompt);
-    } catch (e) { console.error(`Round 2 (${engine.name}) failed:`, e.message); }
+    const text = await callEngineText(r.key, systemPrompt, prompt);
     return { key: r.key, name: r.name, text: text || '(no response)' };
   }));
 
@@ -219,12 +311,8 @@ async function runRoundtableDebate({ message, subject, userLevel }) {
     ...round2.map((r) => `${r.name} (Round 2): ${r.text}`),
   ].join('\n');
 
-  let finalAnswer = null;
-  if (groqClient) {
-    try {
-      finalAnswer = await callGroq(groqClient, GROQ_MODEL, basePrompt, `Here is a debate between 3 AI tutors about how to answer a student's question: "${message}"\n\n${fullTranscript}\n\nWrite ONE final, clear answer for the student (2-4 sentences), combining the best of what they said.`);
-    } catch (e) { console.error('Final synthesis failed:', e.message); }
-  }
+  let finalAnswer = await callEngineText('reasoner', buildSystemPrompt(subject, userLevel),
+    `Here is a debate between ${round1Valid.length} AI tutors about how to answer a student's question: "${message}"\n\n${fullTranscript}\n\nWrite ONE final, clear answer for the student (2-4 sentences), combining the best of what they said.`);
   if (!finalAnswer) finalAnswer = round1Valid[0].text;
 
   return {
@@ -243,24 +331,16 @@ async function generateGuessPaper({ section, subject, paperFormat, chapter }) {
   const chapterFocus = chapter ? ` Focus specifically on the topic: ${chapter}.` : '';
   const basePrompt = `You are helping create an ORIGINAL practice exam paper for a ${section} ${subject} student.${chapterFocus} This is NOT a copy of any real exam board paper - write entirely new, original questions in the style and difficulty of a real ${section} exam. Format: ${paperFormat || 'standard exam paper, mixed question types'}. Always include a separate "Answer Key" section after your questions.`;
   const assignments = [
-    { key: 'reasoner', instruction: 'Write 2 calculation/problem-solving questions with an answer key.' },
+    { key: 'reasoner', instruction: 'Write 2 conceptual reasoning questions with an answer key.' },
+    { key: 'solver', instruction: 'Write 2 calculation/problem-solving questions with a fully worked answer key.' },
     { key: 'explorer', instruction: 'Write 2 applied/real-world scenario questions with an answer key.' },
     { key: 'storyteller', instruction: 'Write 2 extended-response/essay-style questions with an answer key.' },
   ];
   const results = await Promise.all(assignments.map(async ({ key, instruction }) => {
     const engine = ENGINES[key];
-    if (!engine.client) return null;
-    try {
-      const fullPrompt = `${basePrompt}\n\n${instruction}`;
-      let text;
-      if (key === 'reasoner') text = await callGroq(engine.client, engine.model, basePrompt, fullPrompt);
-      else if (key === 'explorer') text = await callOpenAI(engine.client, engine.model, basePrompt, fullPrompt);
-      else text = await callAnthropic(engine.client, engine.model, basePrompt, fullPrompt);
-      return text ? { name: engine.name, text } : null;
-    } catch (error) {
-      console.error(`Guess paper section (${engine.name}) failed:`, error.message);
-      return null;
-    }
+    if (!engineChain(key).length) return null;
+    const text = await callEngineText(key, basePrompt, `${basePrompt}\n\n${instruction}`);
+    return text ? { name: engine.name, text } : null;
   }));
   const successful = results.filter(Boolean);
   if (!successful.length) {
@@ -288,8 +368,24 @@ async function generateGuessPaper({ section, subject, paperFormat, chapter }) {
 
 const REQUIRE_PRO_FOR_GUESS_PAPERS = false;
 
+function getEngineDetails() {
+  const details = {};
+  for (const [key, engine] of Object.entries(ENGINES)) {
+    const chain = engineChain(key);
+    const backing = chain[0] || null;
+    details[key] = {
+      name: engine.name,
+      live: Boolean(backing),
+      native: backing === engine.native,
+      provider: backing ? PROVIDERS[backing].label : null,
+      model: backing ? PROVIDERS[backing].model() : null,
+    };
+  }
+  return details;
+}
+
 function getEngineAvailability() {
-  return { reasoner: Boolean(groqClient), solver: false, explorer: Boolean(openaiClient), storyteller: Boolean(anthropicClient) };
+  return Object.fromEntries(Object.entries(getEngineDetails()).map(([key, detail]) => [key, detail.live]));
 }
 
 // ---------- stats / analytics ----------
@@ -410,15 +506,14 @@ function getDemoQuiz(subject, count = 5) {
   return Array.from({ length: count }, () => ({ ...g }));
 }
 async function generateQuiz(subject, count = 5, askedQuestions = [], chapter, bookContext) {
-  if (!groqClient) return getDemoQuiz(subject, count);
+  if (!engineChain('reasoner').length) return getDemoQuiz(subject, count);
   const filteredAsked = Array.isArray(askedQuestions) ? askedQuestions.filter((i) => typeof i === 'string' && i.trim().length > 5) : [];
   try {
     const chapterPrompt = chapter || bookContext
       ? ` Focus on the topic '${chapter || subject}' as covered in a book like '${bookContext || 'general coursebook'}'. Do not quote or reproduce any text from that book - write entirely original questions.`
       : '';
     const prompt = `Generate ${count} multiple choice questions for a student learning ${subject}.${chapterPrompt} Avoid repeating any questions the student has already answered. Previously asked questions: ${filteredAsked.slice(-20).join(' | ')}. Return ONLY valid JSON in this exact format: [{"question": "...","options": ["A)...","B)...","C)...","D)..."],"correct":"A","explanation":"..."}]`;
-    const response = await groqClient.chat.completions.create({ model: GROQ_MODEL, messages: [{ role: 'system', content: 'You are a quiz generator. Only output valid JSON.' }, { role: 'user', content: prompt }], max_tokens: 1024 });
-    const content = response.choices?.[0]?.message?.content || '';
+    const content = await callEngineText('reasoner', 'You are a quiz generator. Only output valid JSON.', prompt, { maxTokens: 1024 }) || '';
     const data = Array.isArray(parseJsonSafe(content)) ? parseJsonSafe(content) : [];
     const unique = data.filter((item) => {
       if (!item || typeof item.question !== 'string') return false;
@@ -439,24 +534,15 @@ async function generateBookFlashcards({ subject, chapter, bookContext }) {
   const basePrompt = `Create flashcards (front/back pairs) for a student studying "${topic}"${bookContext ? ` from a book like "${bookContext}"` : ''}. Do NOT quote or reproduce any text from that book - write entirely original flashcard content in your own words, testing the same topic. Return ONLY valid JSON: [{"front":"...","back":"..."}]`;
   const assignments = [
     { key: 'reasoner', instruction: 'Write 3 flashcards focused on core definitions/facts.' },
+    { key: 'solver', instruction: 'Write 3 flashcards focused on formulas and worked steps.' },
     { key: 'explorer', instruction: 'Write 3 flashcards focused on applied examples.' },
     { key: 'storyteller', instruction: 'Write 3 flashcards focused on memorable analogies.' },
   ];
   const results = await Promise.all(assignments.map(async ({ key, instruction }) => {
-    const engine = ENGINES[key];
-    if (!engine.client) return [];
-    try {
-      const fullPrompt = `${basePrompt}\n\n${instruction}`;
-      let text;
-      if (key === 'reasoner') text = await callGroq(engine.client, engine.model, basePrompt, fullPrompt);
-      else if (key === 'explorer') text = await callOpenAI(engine.client, engine.model, basePrompt, fullPrompt);
-      else text = await callAnthropic(engine.client, engine.model, basePrompt, fullPrompt);
-      const parsed = parseJsonSafe(text || '');
-      return Array.isArray(parsed) ? parsed.filter((c) => c && c.front && c.back) : [];
-    } catch (error) {
-      console.error(`Flashcard generation (${engine.name}) failed:`, error.message);
-      return [];
-    }
+    if (!engineChain(key).length) return [];
+    const text = await callEngineText(key, basePrompt, `${basePrompt}\n\n${instruction}`, { maxTokens: 800 });
+    const parsed = parseJsonSafe(text || '');
+    return Array.isArray(parsed) ? parsed.filter((c) => c && c.front && c.back) : [];
   }));
   const cards = results.flat();
   if (!cards.length) return [{ front: `What is the key idea in ${topic}?`, back: 'Review this topic with the AI tutor chat for a full explanation.' }];
@@ -484,20 +570,10 @@ EXAM TIPS
 2-3 practical tips for answering exam questions on this topic.`;
 
   // Try the strongest available engine first, fall back through the rest.
-  const order = [
-    { key: 'storyteller', call: () => anthropicClient.messages.create({ model: ANTHROPIC_MODEL, max_tokens: 1400, system: systemPrompt, messages: [{ role: 'user', content: userPrompt }] }).then((r) => r.content?.find((b) => b.type === 'text')?.text?.trim() || null) },
-    { key: 'explorer', call: () => openaiClient.chat.completions.create({ model: OPENAI_MODEL, max_tokens: 1400, messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }] }).then((r) => r.choices?.[0]?.message?.content?.trim() || null) },
-    { key: 'reasoner', call: () => groqClient.chat.completions.create({ model: GROQ_MODEL, max_tokens: 1400, temperature: 0.5, messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userPrompt }] }).then((r) => r.choices?.[0]?.message?.content?.trim() || null) },
-  ];
-
-  for (const engine of order) {
-    if (!ENGINES[engine.key]?.client) continue;
-    try {
-      const notes = await engine.call();
-      if (notes) return { notes, engine: ENGINES[engine.key].name };
-    } catch (error) {
-      console.error(`Chapter notes (${ENGINES[engine.key].name}) failed:`, error.message);
-    }
+  for (const key of ['storyteller', 'explorer', 'solver', 'reasoner']) {
+    if (!engineChain(key).length) continue;
+    const notes = await callEngineText(key, systemPrompt, userPrompt, { maxTokens: 1400, temperature: 0.5 });
+    if (notes) return { notes, engine: ENGINES[key].name };
   }
 
   return {
@@ -612,7 +688,7 @@ const server = http.createServer(async (req, res) => {
     if (requestedPath && ['.css', '.js', '.png', '.svg', '.ico', '.json'].includes(ext)) return sendFile(res, filePath);
     if (pathname.endsWith('.html')) return sendFile(res, filePath);
     if (pathname === '/health') return sendJson(res, 200, { status: 'ok' });
-    if (pathname === '/api/status') return sendJson(res, 200, { status: 'ok', model: MODEL_LABEL, engines: getEngineAvailability(), stats: getStatusSummary() });
+    if (pathname === '/api/status') return sendJson(res, 200, { status: 'ok', model: MODEL_LABEL, engines: getEngineAvailability(), engineDetails: getEngineDetails(), stats: getStatusSummary() });
     if (pathname === '/api/admin-stats') {
       const providedKey = req.headers['x-admin-key'] || url.searchParams.get('key') || '';
       if (!ADMIN_KEY || providedKey !== ADMIN_KEY) return sendJson(res, 401, { error: 'Unauthorized' });
@@ -784,7 +860,13 @@ const server = http.createServer(async (req, res) => {
         }))
         .slice(0, 5);
 
-      const { reply, engines } = await answerSmart({ message, subject, userLevel, excludeEngine: payload.excludeEngine, history, attachments });
+      const { reply, engines } = await answerSmart({
+        message, subject, userLevel,
+        learningStyle: payload.learningStyle,
+        excludeEngine: payload.excludeEngine,
+        engineMode: payload.engineMode || payload.engine || 'auto',
+        history, attachments,
+      });
       return sendJson(res, 200, { status: 'ok', reply, engine: engines.join(', '), model: MODEL_LABEL, stats: getStatusSummary() });
     } catch (error) { return sendJson(res, 400, { error: error.message }); }
   }
@@ -815,10 +897,9 @@ const server = http.createServer(async (req, res) => {
       const payload = await parseRequestBody(req);
       const { concept, studentExplanation } = payload;
       if (!concept || !studentExplanation) return sendJson(res, 400, { error: 'concept and studentExplanation are required.' });
-      if (!groqClient) return sendJson(res, 200, { understood: true, feedback: 'Nice explanation!' });
+      if (!engineChain('reasoner').length) return sendJson(res, 200, { understood: true, feedback: 'Nice explanation!' });
       const gradingPrompt = `A student is trying to explain this concept back in their own words: "${concept}". Their explanation: "${studentExplanation}". In ONE short sentence, say whether they show real understanding and give one word of encouragement or a gentle correction.`;
-      const response = await groqClient.chat.completions.create({ model: GROQ_MODEL, messages: [{ role: 'system', content: 'You are a supportive tutor grading a student explanation briefly.' }, { role: 'user', content: gradingPrompt }], max_tokens: 60, temperature: 0.3 });
-      const feedback = response.choices?.[0]?.message?.content?.trim() || 'Good effort!';
+      const feedback = await callEngineText('reasoner', 'You are a supportive tutor grading a student explanation briefly.', gradingPrompt, { maxTokens: 60, temperature: 0.3 }) || 'Good effort!';
       return sendJson(res, 200, { understood: true, feedback });
     } catch (error) { return sendJson(res, 400, { error: error.message }); }
   }

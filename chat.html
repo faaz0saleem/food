@@ -77,12 +77,23 @@
     </div>
 
     <div class="chat-composer">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
         <div id="modelBadge" class="model-badge">Model: loading…</div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
           <button id="roundtableToggle" type="button" class="msg-action-btn">Roundtable: OFF</button>
           <a href="/roundchat.html" class="msg-action-btn" style="text-decoration:none;">Open RoundChat page</a>
           <button id="pwaInstallBtn" type="button" class="msg-action-btn" style="display:none;border-color:var(--cyan);color:var(--cyan);">📲 Add to Home Screen</button>
+        </div>
+      </div>
+      <div class="engine-picker">
+        <div class="engine-picker-label">Pick an AI engine:</div>
+        <div class="engine-picker-buttons">
+          <button type="button" class="engine-btn" data-engine="auto" title="Smart routing based on question type">🤖 Auto</button>
+          <button type="button" class="engine-btn" data-engine="reasoner" title="Deep explanations and reasoning">🟢 Reasoner</button>
+          <button type="button" class="engine-btn" data-engine="solver" title="Math, coding, step-by-step">🟠 Solver</button>
+          <button type="button" class="engine-btn" data-engine="explorer" title="Real-world examples and research">🔵 Explorer</button>
+          <button type="button" class="engine-btn" data-engine="storyteller" title="Stories, analogies, creative">🟣 Storyteller</button>
+          <button type="button" class="engine-btn" data-engine="all" title="All 4 engines answer">⚡ All 4</button>
         </div>
       </div>
       <div class="composer-row">
@@ -119,6 +130,7 @@
   let typingIndicator = null;
   let stageIndicator = null;
   let roundtableMode = false;
+  let selectedEngine = 'auto';
   const fallbackModel = 'llama-3.3-70b-versatile';
   let pendingQuestion = null;
   const MAX_ATTACHMENTS = 5;
@@ -602,6 +614,7 @@
           learningStyle: lsGet('mm_style', 'Visual'),
           userLevel: lsGet('mm_level', 'Newbie'),
           message: prompt,
+          engineMode: options.engineMode || selectedEngine,
           excludeEngine: options.excludeEngine || undefined,
           history,
           attachments,
@@ -774,12 +787,31 @@
     refreshTopBar();
   }
 
+  function updateEngineButtons() {
+    document.querySelectorAll('.engine-btn').forEach((btn) => {
+      if (btn.dataset.engine === selectedEngine) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+  }
+
+  document.querySelectorAll('.engine-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      selectedEngine = btn.dataset.engine;
+      updateEngineButtons();
+    });
+  });
+
   document.querySelectorAll('.quick-prompt-card').forEach((card) => {
     card.addEventListener('click', () => {
       chatInput.value = card.dataset.prompt;
       sendMessage();
     });
   });
+
+  updateEngineButtons();
 
   chatInput.addEventListener('keypress', (event) => {
     if (event.key === 'Enter') {
