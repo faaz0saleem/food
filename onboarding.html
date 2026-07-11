@@ -25,7 +25,7 @@
   <meta property="og:description" content="Personalize your Hungter onboarding in a few quick steps.">
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="manifest" href="/manifest.json">
-  <link rel="stylesheet" href="/brand.css">
+  <link rel="stylesheet" href="/brand.css?v=20260711">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -119,13 +119,14 @@
     /* ── CARD SHELL ──────────────────────── */
     .ob-card {
       width: min(680px, 100%);
-      background: rgba(42,27,77,0.7);
-      border: 2px solid var(--border);
+      background: rgba(13, 20, 40, 0.72);
+      border: 1px solid var(--border-glow);
       border-radius: 28px;
       padding: 44px 48px;
       backdrop-filter: blur(18px);
       position: relative;
       overflow: hidden;
+      box-shadow: var(--shadow);
     }
     .ob-card::before {
       content: '';
@@ -192,7 +193,7 @@
       font-weight: 700;
       color: var(--bg-deep);
       background: var(--lime);
-      box-shadow: 6px 6px 0 var(--bg-deep);
+      box-shadow: var(--glow-lime);
       transition: background 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
       user-select: none;
     }
@@ -281,7 +282,7 @@
       border-color: var(--lime);
       background: rgba(200,255,77,0.12);
       color: var(--ink);
-      box-shadow: 0 0 0 3px rgba(200,255,77,0.18), 4px 4px 0 var(--bg-deep);
+      box-shadow: 0 0 0 3px rgba(200,255,77,0.18), var(--glow-lime);
     }
     .ob-choice.selected .ob-check { opacity: 1; transform: scale(1); }
     .ob-choice-emoji { font-size: 2rem; line-height: 1; }
@@ -348,13 +349,13 @@
       transition: transform 0.15s ease, box-shadow 0.15s ease;
     }
     .ob-btn-primary {
-      background: var(--lime);
+      background: var(--gradient-brand);
       color: var(--bg-deep);
-      box-shadow: 4px 4px 0 var(--bg-deep);
+      box-shadow: var(--glow-lime);
       flex: 1;
     }
-    .ob-btn-primary:hover { transform: translate(-2px,-2px); box-shadow: 6px 6px 0 var(--bg-deep); }
-    .ob-btn-primary:active { transform: translate(0,0); box-shadow: 2px 2px 0 var(--bg-deep); }
+    .ob-btn-primary:hover { transform: translateY(-2px); box-shadow: var(--glow-lime), var(--glow-cyan); }
+    .ob-btn-primary:active { transform: translateY(0); box-shadow: var(--shadow-sm); }
     .ob-btn-secondary {
       background: rgba(255,255,255,0.05);
       color: var(--ink-soft);
@@ -770,7 +771,7 @@
     const isDark = ['#c8ff4d','#ffd14d','#4dd8ff'].includes(state.avatarColor);
     preview.style.background = state.avatarColor;
     preview.style.color = isDark ? '#120b26' : '#fff8f0';
-    preview.style.boxShadow = `6px 6px 0 ${state.avatarColor}44`;
+    preview.style.boxShadow = `0 0 22px ${state.avatarColor}66`;
   }
 
   nameInput.addEventListener('input', updateAvatar);

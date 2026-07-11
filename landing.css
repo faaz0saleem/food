@@ -248,14 +248,17 @@
   font-family: var(--font-display);
   font-weight: 600;
   font-size: 0.95rem;
-  background: var(--surface);
+  color: var(--ink);
   border: 1px solid transparent;
-  background-image: linear-gradient(var(--surface), var(--surface)), var(--gradient-brand);
+  background-image: linear-gradient(var(--surface-solid), var(--surface-solid)), var(--gradient-brand);
   background-origin: border-box;
   background-clip: padding-box, border-box;
   border-radius: 999px;
   padding: 14px 22px;
   box-shadow: var(--shadow-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .sticker span {

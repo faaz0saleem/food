@@ -2,8 +2,8 @@
 @import url('/nav.css');
 
 :root {
-  --panel: rgba(42, 27, 77, 0.95);
-  --panel-strong: rgba(26, 16, 51, 0.96);
+  --panel: rgba(13, 20, 40, 0.92);
+  --panel-strong: rgba(7, 11, 26, 0.96);
   --accent: var(--blue);
   --accent-2: var(--pink);
   --accent-3: var(--coral);

@@ -1,5 +1,6 @@
-// Hungter Service Worker — app shell cache for offline support
-const CACHE = 'hungter-v1';
+// Hungter Service Worker — network-first so deploys show up immediately,
+// cache only as an offline fallback. Bump CACHE on every deploy.
+const CACHE = 'hungter-v2026-07-11';
 const SHELL = [
   '/',
   '/chat.html',
@@ -12,6 +13,7 @@ const SHELL = [
   '/layout.js',
   '/app.js',
   '/api-config.js',
+  '/fx.js',
   '/manifest.json',
   '/favicon.svg',
 ];
@@ -44,18 +46,18 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
+  // Network-first: fresh content whenever online, cache as offline fallback.
   e.respondWith(
-    caches.match(e.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(e.request)
-        .then((response) => {
-          if (e.request.method === 'GET' && response.ok) {
-            const clone = response.clone();
-            caches.open(CACHE).then((c) => c.put(e.request, clone));
-          }
-          return response;
-        })
-        .catch(() => caches.match('/'));
-    })
+    fetch(e.request)
+      .then((response) => {
+        if (e.request.method === 'GET' && response.ok) {
+          const clone = response.clone();
+          caches.open(CACHE).then((c) => c.put(e.request, clone));
+        }
+        return response;
+      })
+      .catch(() =>
+        caches.match(e.request).then((cached) => cached || caches.match('/'))
+      )
   );
 });

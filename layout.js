@@ -421,9 +421,9 @@ if ('serviceWorker' in navigator) {
   };
 
   function loadFXLayer() {
-    if (document.querySelector('script[src="/fx.js"]') || window.__hungterFX) return;
+    if (document.querySelector('script[src^="/fx.js"]') || window.__hungterFX) return;
     const script = document.createElement('script');
-    script.src = '/fx.js';
+    script.src = '/fx.js?v=20260711';
     script.defer = true;
     document.head.appendChild(script);
   }
