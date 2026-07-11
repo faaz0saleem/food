@@ -74,7 +74,7 @@
             <button type="button" class="plan-card" data-plan="pro">
               <span class="plan-card-name">Student Pro</span>
               <span class="plan-card-price">$12<sub>/mo</sub></span>
-              <span class="plan-card-note">Guess Papers + RoundChat</span>
+              <span class="plan-card-note">Guess Papers + All-4 engine mode</span>
             </button>
           </div>
           <select id="planSelect" onchange="updateOrderSummary()" style="display:none;" aria-hidden="true">
@@ -193,7 +193,7 @@
     const plans = {
       free: { id: 'free', name: 'Free', price: 0, features: ['20 messages/day', '3 subjects', 'Progress tracking', 'Core tutor access'] },
       student: { id: 'student', name: 'Student', price: 5, features: ['Unlimited messages', 'Every subject', 'Progress tracking', 'Core tutor access'] },
-      pro: { id: 'pro', name: 'Student Pro', price: 12, features: ['Everything in Student', 'Guess Papers', 'RoundChat compare mode', 'Priority generation queue'] }
+      pro: { id: 'pro', name: 'Student Pro', price: 12, features: ['Everything in Student', 'Guess Papers', 'All-4 engine compare mode', 'Priority generation queue'] }
     };
 
     function updateOrderSummary() {

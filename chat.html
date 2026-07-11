@@ -80,8 +80,6 @@
       <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
         <div id="modelBadge" class="model-badge">Model: loading…</div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <button id="roundtableToggle" type="button" class="msg-action-btn">Roundtable: OFF</button>
-          <a href="/roundchat.html" class="msg-action-btn" style="text-decoration:none;">Open RoundChat page</a>
           <button id="pwaInstallBtn" type="button" class="msg-action-btn" style="display:none;border-color:var(--cyan);color:var(--cyan);">📲 Add to Home Screen</button>
         </div>
       </div>
@@ -125,11 +123,8 @@
   const fileInput = document.getElementById('fileInput');
   const attachmentTray = document.getElementById('attachmentTray');
   const modelBadge = document.getElementById('modelBadge');
-  const roundtableToggle = document.getElementById('roundtableToggle');
   const topBar = document.getElementById('topBar');
   let typingIndicator = null;
-  let stageIndicator = null;
-  let roundtableMode = false;
   let selectedEngine = 'auto';
   const fallbackModel = 'llama-3.3-70b-versatile';
   let pendingQuestion = null;
@@ -201,7 +196,10 @@
         const url = joinApi(base, candidatePath);
         try {
           const response = await fetch(url, fetchOptions);
-          if (response.ok || response.status === 429 || response.status === 400 || response.status === 401 || response.status === 403) {
+          // Any JSON response is a real backend answer (including its error
+          // messages) — only keep hunting on network errors or HTML 404 pages.
+          const contentType = String(response.headers.get('content-type') || '');
+          if (response.ok || contentType.includes('application/json')) {
             return { response, resolvedBase: base };
           }
           lastError = new Error(`HTTP ${response.status}`);
@@ -566,27 +564,6 @@
     document.getElementById('chatFeed').scrollTop = document.getElementById('chatFeed').scrollHeight;
   }
 
-  function showStageIndicator(text) {
-    if (!stageIndicator) {
-      stageIndicator = document.createElement('div');
-      stageIndicator.className = 'msg-row ai';
-      stageIndicator.innerHTML = `
-        <div class="msg-avatar">🧠</div>
-        <div class="msg-bubble"><strong id="stageIndicatorText"></strong></div>
-      `;
-      messages.appendChild(stageIndicator);
-    }
-    const stageText = stageIndicator.querySelector('#stageIndicatorText');
-    if (stageText) stageText.textContent = text;
-    document.getElementById('chatFeed').scrollTop = document.getElementById('chatFeed').scrollHeight;
-  }
-
-  function hideStageIndicator() {
-    if (!stageIndicator) return;
-    stageIndicator.remove();
-    stageIndicator = null;
-  }
-
   async function loadModelInfo() {
     try {
       const { response } = await fetchWithApiFallback('/api/status');
@@ -632,95 +609,19 @@
         };
       }
 
+      if (data.fallback && data.ownerHint) {
+        console.warn('Hungter AI fallback active:', data.ownerHint);
+      }
       return {
         reply: data.reply || "Sorry, I couldn't generate a response right now.",
         engine: data.engine || null,
       };
     } catch (error) {
       return {
-        reply: 'Could not reach the AI backend. Your site needs a live /api/chat backend (same domain, Netlify functions, or a valid mm_api_base URL).',
+        reply: "I couldn't reach the tutor server just now — give it a few seconds and try again. If this keeps happening, the site owner should check that /api/chat is reachable and GROQ_API_KEY is set on the server.",
         engine: 'System'
       };
     }
-  }
-
-  async function fetchRoundtableDebate(prompt, subject) {
-    try {
-      const { response } = await fetchWithApiFallback('/api/roundtable', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: prompt,
-          subject,
-          userLevel: lsGet('mm_level', 'Newbie'),
-        }),
-      });
-      const data = await response.json();
-      if (!response.ok || data?.error) {
-        return { error: data?.error || 'Roundtable request failed.' };
-      }
-      return data;
-    } catch {
-      return { error: 'Could not reach the roundtable backend.' };
-    }
-  }
-
-  function renderDebateResult(data, sourcePrompt) {
-    const row = document.createElement('div');
-    row.className = 'msg-row ai';
-
-    const avatar = document.createElement('div');
-    avatar.className = 'msg-avatar';
-    avatar.textContent = '🧠';
-
-    const bubble = document.createElement('div');
-    bubble.className = 'msg-bubble';
-
-    const tag = document.createElement('div');
-    tag.className = 'engine-tag';
-    tag.textContent = `Roundtable Debate${Array.isArray(data.engines) && data.engines.length ? ` · ${data.engines.join(', ')}` : ''}`;
-    bubble.appendChild(tag);
-
-    const panel = document.createElement('div');
-    panel.style.maxHeight = '240px';
-    panel.style.overflowY = 'auto';
-    panel.style.border = '1px solid var(--border)';
-    panel.style.borderRadius = '12px';
-    panel.style.padding = '10px';
-    panel.style.background = 'var(--surface-2)';
-    panel.style.marginTop = '8px';
-    panel.style.whiteSpace = 'pre-wrap';
-    panel.style.fontSize = '0.88rem';
-    panel.style.lineHeight = '1.45';
-    panel.textContent = (data.transcript || []).map((item) => `Round ${item.round} · ${item.engine}\n${item.text}`).join('\n\n') || 'No transcript available.';
-    bubble.appendChild(panel);
-
-    const finalBox = document.createElement('div');
-    finalBox.style.marginTop = '10px';
-    finalBox.style.border = '2px solid rgba(200, 255, 77, 0.35)';
-    finalBox.style.background = 'rgba(200, 255, 77, 0.08)';
-    finalBox.style.borderRadius = '12px';
-    finalBox.style.padding = '10px';
-    finalBox.style.whiteSpace = 'pre-wrap';
-    finalBox.innerHTML = `<strong>Final Answer</strong><br>${renderMarkdownMath(String(data.finalAnswer || 'No final answer generated.'))}`;
-    bubble.appendChild(finalBox);
-
-    const actions = document.createElement('div');
-    actions.className = 'msg-actions';
-    const explainBtn = document.createElement('button');
-    explainBtn.type = 'button';
-    explainBtn.className = 'msg-action-btn';
-    explainBtn.textContent = 'Explain differently';
-    explainBtn.addEventListener('click', () => {
-      sendMessage(sourcePrompt);
-    });
-    actions.appendChild(explainBtn);
-    bubble.appendChild(actions);
-
-    row.appendChild(avatar);
-    row.appendChild(bubble);
-    messages.appendChild(row);
-    document.getElementById('chatFeed').scrollTop = document.getElementById('chatFeed').scrollHeight;
   }
 
   async function explainItBack(concept, aiReply) {
@@ -759,30 +660,14 @@
       : '';
     appendMessage(`${text}${attachmentNote}`, 'user');
     chatInput.value = '';
-    if (roundtableMode) {
-      showStageIndicator('Round 1: gathering perspectives...');
-      const t2 = setTimeout(() => showStageIndicator('Round 2: AIs are debating...'), 2600);
-      const t3 = setTimeout(() => showStageIndicator('Finalizing answer...'), 5200);
-      const debate = await fetchRoundtableDebate(text, subject);
-      clearTimeout(t2);
-      clearTimeout(t3);
-      hideStageIndicator();
-      if (debate.error) {
-        appendMessage(debate.error, 'ai', 'System');
-      } else {
-        renderDebateResult(debate, text);
-        recordConversation(subject, `[Roundtable] ${text}`, debate.finalAnswer || '');
-      }
-    } else {
-      showTyping();
-      const { reply, engine } = await fetchAIResponse(text, subject, { ...options, attachments });
-      if (typingIndicator) {
-        typingIndicator.remove();
-        typingIndicator = null;
-      }
-      await appendStreamingMessage(reply, 'ai', engine, text);
-      recordConversation(subject, text, reply);
+    showTyping();
+    const { reply, engine } = await fetchAIResponse(text, subject, { ...options, attachments });
+    if (typingIndicator) {
+      typingIndicator.remove();
+      typingIndicator = null;
     }
+    await appendStreamingMessage(reply, 'ai', engine, text);
+    recordConversation(subject, text, reply);
     recordChat(subject);
     refreshTopBar();
   }
@@ -821,12 +706,6 @@
   });
 
   sendButton.addEventListener('click', sendMessage);
-  roundtableToggle?.addEventListener('click', () => {
-    roundtableMode = !roundtableMode;
-    roundtableToggle.textContent = `Roundtable: ${roundtableMode ? 'ON' : 'OFF'}`;
-    roundtableToggle.style.borderColor = roundtableMode ? 'var(--lime)' : 'var(--border)';
-    roundtableToggle.style.color = roundtableMode ? 'var(--lime)' : 'var(--ink-soft)';
-  });
   attachButton?.addEventListener('click', () => fileInput?.click());
   fileInput?.addEventListener('change', async (event) => {
     await addFiles(Array.from(event.target.files || []));

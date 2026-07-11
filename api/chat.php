@@ -104,11 +104,22 @@ if ($engineMode === 'all') {
         $reply = (string) $result['reply'];
         $engineNames[] = mm_engine_display_name($result);
         $modelUsed = (string) $result['model'];
+    } else {
+        $aiFailureDetail = (string) ($result['error'] ?? '');
     }
 }
 
 if ($reply === '') {
-    mm_json_response(500, ['error' => 'No AI engine is available right now. Please try again shortly.']);
+    // Never leave the student without an answer: fall back to the built-in
+    // tutor reply and tell the site owner what actually broke.
+    mm_json_response(200, [
+        'status' => 'ok',
+        'reply' => mm_demo_chat_reply($subject, $message),
+        'engine' => 'Hungter',
+        'model' => $modelUsed,
+        'fallback' => true,
+        'ownerHint' => $aiFailureDetail ?? 'All AI providers failed or none are configured. Check GROQ_API_KEY in .env on the server.',
+    ]);
     exit;
 }
 

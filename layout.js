@@ -20,7 +20,6 @@ if ('serviceWorker' in navigator) {
     { label: '🧪 Quiz', href: '/quiz.html' },
     { label: '📄 Guess Papers', href: '/guess-papers.html' },
     { label: '📊 Progress', href: '/progress.html' },
-    { label: '🎙️ RoundChat', href: '/roundchat.html' },
     { label: '💬 Chat', href: '/chat.html' },
   ];
 

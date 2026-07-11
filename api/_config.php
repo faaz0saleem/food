@@ -1116,18 +1116,32 @@ function mm_parse_provider_reply(string $provider, mixed $raw, int $status, stri
 function mm_execute_provider_specs(array $specs, int $timeout = 40): array {
     $multi = curl_multi_init();
     $handles = [];
+
+    // Optional egress proxy + CA bundle (dev sandboxes); ignored when the
+    // env vars are absent, which is the case on normal hosting.
+    $proxy = getenv('HTTPS_PROXY') ?: getenv('https_proxy') ?: '';
+    $caBundle = getenv('CURL_CA_BUNDLE') ?: getenv('SSL_CERT_FILE') ?: '';
+
     foreach ($specs as $key => $spec) {
         $ch = curl_init($spec['url']);
         if ($ch === false) {
             continue;
         }
-        curl_setopt_array($ch, [
+        $options = [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_POST => true,
             CURLOPT_HTTPHEADER => $spec['headers'],
             CURLOPT_POSTFIELDS => $spec['payload'],
             CURLOPT_TIMEOUT => $timeout,
-        ]);
+            CURLOPT_CONNECTTIMEOUT => 12,
+        ];
+        if ($proxy !== '') {
+            $options[CURLOPT_PROXY] = $proxy;
+        }
+        if ($caBundle !== '' && is_file($caBundle)) {
+            $options[CURLOPT_CAINFO] = $caBundle;
+        }
+        curl_setopt_array($ch, $options);
         curl_multi_add_handle($multi, $ch);
         $handles[$key] = $ch;
     }
@@ -1139,12 +1153,25 @@ function mm_execute_provider_specs(array $specs, int $timeout = 40): array {
         }
     } while ($running > 0 && $state === CURLM_OK);
 
+    // curl_error() is unreliable on multi handles — read transfer results
+    // from the multi stack so real network errors surface.
+    $transferErrors = [];
+    while (($info = curl_multi_info_read($multi)) !== false) {
+        if (($info['result'] ?? CURLE_OK) !== CURLE_OK && isset($info['handle'])) {
+            $transferErrors[spl_object_id($info['handle'])] = (string) curl_strerror((int) $info['result']);
+        }
+    }
+
     $results = [];
     foreach ($handles as $key => $ch) {
+        $error = curl_error($ch);
+        if ($error === '' && isset($transferErrors[spl_object_id($ch)])) {
+            $error = $transferErrors[spl_object_id($ch)];
+        }
         $results[$key] = [
             'raw' => curl_multi_getcontent($ch),
             'status' => (int) curl_getinfo($ch, CURLINFO_HTTP_CODE),
-            'error' => curl_error($ch),
+            'error' => $error,
         ];
         curl_multi_remove_handle($multi, $ch);
         curl_close($ch);
@@ -1162,6 +1189,7 @@ function mm_call_engine(string $engineKey, string $subject, string $userLevel, s
     }
 
     $systemPrompt = mm_build_system_prompt($subject, $userLevel, $engine['persona']);
+    $lastError = 'No AI provider is configured (set GROQ_API_KEY in .env)';
     foreach (mm_engine_chain($engineKey, count($images) > 0) as $provider) {
         $spec = mm_provider_request_spec($provider, $systemPrompt, $userText, $history, $images, $maxTokens, $temperature);
         if ($spec === null) {
@@ -1177,9 +1205,10 @@ function mm_call_engine(string $engineKey, string $subject, string $userLevel, s
                 'model' => $spec['model'], 'native' => $provider === $engine['native'],
             ];
         }
+        $lastError = $provider . ': ' . (string) ($parsed['error'] ?? 'request failed');
     }
 
-    return ['ok' => false, 'reply' => '', 'error' => 'No provider available', 'engine' => $engine['name'], 'icon' => $engine['icon'], 'provider' => '', 'providerLabel' => '', 'model' => '', 'native' => false];
+    return ['ok' => false, 'reply' => '', 'error' => $lastError, 'engine' => $engine['name'], 'icon' => $engine['icon'], 'provider' => '', 'providerLabel' => '', 'model' => '', 'native' => false];
 }
 
 function mm_engine_display_name(array $result): string {

@@ -277,7 +277,6 @@ if (subjKeys.length >= 5) achievementBadges.push('🌍 5 Subjects Explored');
 if (count >= 25) achievementBadges.push('💬 25 Messages');
 if ((allScores.length && Math.round(allScores.reduce((a,b)=>a+b,0)/allScores.length) >= 80)) achievementBadges.push('📈 80% Quiz Average');
 if (explainChecks.length >= 3) achievementBadges.push('🗣 Explainer x3');
-if (roundchatPicks >= 3) achievementBadges.push('🧪 RoundChat x3');
 if (!achievementBadges.length) achievementBadges.push('🌱 First steps');
 
 const badgesEl = el('achievementBadges');
@@ -354,10 +353,10 @@ if (novelFeaturesArea) {
         <a href="/chat.html" class="quiz-btn" style="display:inline-flex;margin-top:10px;padding:8px 12px;">Try in Chat</a>
       </article>
       <article style="border:1px solid var(--border);border-radius:12px;background:var(--surface-2);padding:12px;">
-        <h4 style="margin:0 0 6px;">RoundChat Compare</h4>
-        <p style="margin:0;color:var(--ink-soft);font-size:0.9rem;">Engine picks expanded: <strong>${roundchatPicks}</strong></p>
-        <p style="margin:6px 0 0;color:var(--ink-faint);font-size:0.84rem;">Compare engine previews first, then expand your chosen answer.</p>
-        <a href="/roundchat.html" class="quiz-btn" style="display:inline-flex;margin-top:10px;padding:8px 12px;">Open RoundChat</a>
+        <h4 style="margin:0 0 6px;">⚡ All-4 Engine Mode</h4>
+        <p style="margin:0;color:var(--ink-soft);font-size:0.9rem;">Get four answers with four teaching styles on one question.</p>
+        <p style="margin:6px 0 0;color:var(--ink-faint);font-size:0.84rem;">Pick the ⚡ All 4 button in chat to compare every engine at once.</p>
+        <a href="/chat.html" class="quiz-btn" style="display:inline-flex;margin-top:10px;padding:8px 12px;">Open Chat</a>
       </article>
     </div>
   `;
