@@ -26,9 +26,9 @@ if ('serviceWorker' in navigator) {
 
   const ENGINES = [
     { id: 'reasoner', name: 'The Reasoner', provider: 'Groq', status: 'live', color: 'var(--lime)', desc: 'Step-by-step explanations tuned to your level.' },
-    { id: 'solver', name: 'The Solver', provider: 'Gemini', status: 'soon', color: 'var(--coral)', desc: 'Math and code walkthroughs with worked solutions.' },
-    { id: 'explorer', name: 'The Explorer', provider: 'OpenAI', status: 'soon', color: 'var(--blue)', desc: 'Real-world examples and visual learning paths.' },
-    { id: 'storyteller', name: 'The Storyteller', provider: 'Claude', status: 'soon', color: 'var(--pink)', desc: 'Analogies and narratives that make ideas stick.' },
+    { id: 'solver', name: 'The Solver', provider: 'Gemini', status: 'live', color: 'var(--coral)', desc: 'Math and code walkthroughs with worked solutions.' },
+    { id: 'explorer', name: 'The Explorer', provider: 'OpenAI', status: 'live', color: 'var(--blue)', desc: 'Real-world examples and visual learning paths.' },
+    { id: 'storyteller', name: 'The Storyteller', provider: 'Claude', status: 'live', color: 'var(--pink)', desc: 'Analogies and narratives that make ideas stick.' },
   ];
 
   function lsGet(key, fallback) {
@@ -245,9 +245,8 @@ if ('serviceWorker' in navigator) {
           </div>
           <div class="footer-col" data-footer-status>
             <h4>Status</h4>
-            <p>Reasoner (Groq): live</p>
-            <p>Solver, Explorer, Storyteller: checking…</p>
-            <p>Stripe billing: testing phase</p>
+            <p>Reasoner, Solver, Explorer, Storyteller: live</p>
+            <p>Billing: testing phase</p>
           </div>
         </div>
         <div class="footer-bottom">
@@ -263,7 +262,7 @@ if ('serviceWorker' in navigator) {
     container.innerHTML = ENGINES.map((engine) => {
       const status = statuses[engine.id] ? 'live' : 'soon';
       return `
-      <article class="engine-status ${status}">
+      <article class="engine-status hg-holo ${status}">
         <div class="engine-status-top">
           <span class="engine-dot ${status}" style="background:${engine.color}"></span>
           <span class="engine-badge ${status}">${status === 'live' ? 'LIVE' : 'COMING SOON'}</span>
@@ -283,17 +282,24 @@ if ('serviceWorker' in navigator) {
     const comingSoon = ENGINES.filter((engine) => !statuses[engine.id]).map((engine) => engine.name.replace('The ', ''));
     const lines = [`<h4>Status</h4>`, `<p>${liveEngines.length ? liveEngines.join(', ') : 'No engines'}: live</p>`];
     if (comingSoon.length) lines.push(`<p>${comingSoon.join(', ')}: coming soon</p>`);
-    lines.push('<p>Stripe billing: testing phase</p>');
+    lines.push('<p>Billing: testing phase</p>');
     target.innerHTML = lines.join('');
   }
 
+  function liveEnginesLabel(count) {
+    if (count >= 4) return 'All 4 AI engines live';
+    if (count <= 0) return 'Engines starting up…';
+    return `${count} engine${count === 1 ? '' : 's'} live · ${4 - count} coming soon`;
+  }
+
   async function renderEngineStatus(container) {
-    const fallbackStatuses = { reasoner: true, solver: false, explorer: false, storyteller: false };
+    // Fallback chains mean every engine answers as long as one key is set,
+    // so default to all-live until /api/status says otherwise.
+    const fallbackStatuses = { reasoner: true, solver: true, explorer: true, storyteller: true };
     if (container) renderEngineCards(container, fallbackStatuses);
     const sticker = document.querySelector('[data-live-engines]');
     if (sticker) {
-      const liveFallback = Object.values(fallbackStatuses).filter(Boolean).length;
-      sticker.textContent = `${liveFallback} engine${liveFallback === 1 ? '' : 's'} live · ${4 - liveFallback} coming soon`;
+      sticker.innerHTML = `<span class="hg-live-dot"></span> ${liveEnginesLabel(4)}`;
     }
     try {
       const response = await fetch(apiPath('/api/status'));
@@ -303,11 +309,11 @@ if ('serviceWorker' in navigator) {
         renderFooterStatus(data.engines);
         if (sticker) {
           const liveCount = Object.values(data.engines).filter(Boolean).length;
-          sticker.textContent = `${liveCount} engine${liveCount === 1 ? '' : 's'} live · ${4 - liveCount} coming soon`;
+          sticker.innerHTML = `<span class="hg-live-dot"></span> ${liveEnginesLabel(liveCount)}`;
         }
       }
     } catch {
-      // keep the fallback render (Groq only) if /api/status is unreachable
+      // keep the all-live fallback render if /api/status is unreachable
       renderFooterStatus(fallbackStatuses);
     }
   }
@@ -414,6 +420,14 @@ if ('serviceWorker' in navigator) {
     lsGet,
   };
 
+  function loadFXLayer() {
+    if (document.querySelector('script[src="/fx.js"]') || window.__hungterFX) return;
+    const script = document.createElement('script');
+    script.src = '/fx.js';
+    script.defer = true;
+    document.head.appendChild(script);
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     buildBetaBanner();
     ensureTopProgressBar();
@@ -421,5 +435,6 @@ if ('serviceWorker' in navigator) {
     buildFooter();
     renderEngineStatus(document.querySelector('[data-engine-status]'));
     initGamificationFX();
+    loadFXLayer();
   });
 })();

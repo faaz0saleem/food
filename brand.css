@@ -772,6 +772,72 @@ textarea:focus {
   transform: translateY(-1px);
 }
 
+/* ── Futuristic FX layer (fx.js) ─────────────────────────────────────── */
+.hg-reveal {
+  opacity: 0;
+  transform: translateY(22px);
+  transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.hg-reveal.hg-revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Animated gradient headline text */
+.hg-gradient-text {
+  background: linear-gradient(120deg, var(--lime), var(--cyan), var(--violet), var(--lime));
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: hg-gradient-shift 6s ease infinite;
+}
+
+@keyframes hg-gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* Holographic card sheen on hover */
+.hg-holo {
+  position: relative;
+  overflow: hidden;
+}
+
+.hg-holo::after {
+  content: '';
+  position: absolute;
+  top: -60%;
+  left: -80%;
+  width: 60%;
+  height: 220%;
+  background: linear-gradient(105deg, transparent, rgba(255, 255, 255, 0.10), transparent);
+  transform: rotate(18deg);
+  transition: left 0.6s ease;
+  pointer-events: none;
+}
+
+.hg-holo:hover::after {
+  left: 130%;
+}
+
+/* Neon pulse ring for live badges */
+.hg-live-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--lime);
+  box-shadow: 0 0 8px rgba(200, 255, 77, 0.8);
+  animation: hg-live-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes hg-live-pulse {
+  0%, 100% { box-shadow: 0 0 6px rgba(200, 255, 77, 0.6); }
+  50% { box-shadow: 0 0 14px rgba(200, 255, 77, 1); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
