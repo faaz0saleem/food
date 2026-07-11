@@ -356,11 +356,18 @@
     previews.forEach((item) => {
       const card = document.createElement('article');
       card.className = 'roundcard';
-      card.innerHTML = `
-        <h3>${item.name}</h3>
-        <p>${item.preview || ''}</p>
-        <div class="round-status">Engine key: ${item.engine}</div>
-      `;
+
+      const heading = document.createElement('h3');
+      heading.textContent = item.name || '';
+      const preview = document.createElement('p');
+      preview.textContent = item.preview || '';
+      const status = document.createElement('div');
+      status.className = 'round-status';
+      status.textContent = `Engine key: ${item.engine || ''}`;
+      card.appendChild(heading);
+      card.appendChild(preview);
+      card.appendChild(status);
+
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'pick-btn';

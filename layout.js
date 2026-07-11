@@ -122,6 +122,10 @@ if ('serviceWorker' in navigator) {
     const avatarColor = lsGet('mm_avatarColor', '#7b7cff');
     const initials = getInitials(name);
     const level = getLevelMeta();
+    const streakDays = lsGet('mm_streak', []).length;
+    const streakBadge = streakDays >= 3
+      ? `<span class="nav-streak-flame" title="${streakDays}-day streak">🔥 ${streakDays}</span>`
+      : '';
     const links = NAV_LINKS.map((link) => {
       const active = isActive(link.href) ? ' active' : '';
       return `<a href="${link.href}" class="nav-link${active}">${link.label}</a>`;
@@ -135,7 +139,8 @@ if ('serviceWorker' in navigator) {
       <div class="nav-panel">
         <nav class="nav-links">${links}</nav>
         <div class="nav-right">
-          <div class="nav-level-badge" aria-label="Current level">
+          ${streakBadge}
+          <div class="nav-level-badge" id="navLevelBadge" aria-label="Current level">
             <span class="nav-level-icon">${level.icon}</span>
             <span class="nav-level-copy">
               <strong>${level.name}</strong>
@@ -308,6 +313,98 @@ if ('serviceWorker' in navigator) {
     }
   }
 
+  // ---------- Gamification FX: XP toasts, level-up celebrations, milestone toasts ----------
+  function ensureFXLayer() {
+    let layer = document.getElementById('hungterFXLayer');
+    if (layer) return layer;
+    layer = document.createElement('div');
+    layer.id = 'hungterFXLayer';
+    layer.setAttribute('aria-live', 'polite');
+    document.body.appendChild(layer);
+    return layer;
+  }
+
+  function showXPToast(gained) {
+    const layer = ensureFXLayer();
+    const toast = document.createElement('div');
+    toast.className = 'hg-xp-toast';
+    toast.textContent = `+${gained} XP`;
+    layer.appendChild(toast);
+    // Also pulse the nav badge if it's on screen.
+    const badge = document.getElementById('navLevelBadge');
+    if (badge) {
+      badge.classList.remove('hg-pulse');
+      void badge.offsetWidth;
+      badge.classList.add('hg-pulse');
+    }
+    window.setTimeout(() => toast.remove(), 1800);
+  }
+
+  function showMilestoneToast(eventName) {
+    const layer = ensureFXLayer();
+    const toast = document.createElement('div');
+    toast.className = 'hg-milestone-toast';
+    toast.innerHTML = `<span class="hg-milestone-icon">🏆</span><span></span>`;
+    toast.querySelector('span:last-child').textContent = eventName;
+    layer.appendChild(toast);
+    window.setTimeout(() => toast.classList.add('hg-leaving'), 3200);
+    window.setTimeout(() => toast.remove(), 3600);
+  }
+
+  function spawnConfetti(container) {
+    const colors = ['#C8FF4D', '#4DF0FF', '#8B5CFF', '#FF4DE3', '#FFD14D'];
+    const pieceCount = 42;
+    for (let i = 0; i < pieceCount; i += 1) {
+      const piece = document.createElement('span');
+      piece.className = 'hg-confetti-piece';
+      piece.style.left = `${Math.random() * 100}%`;
+      piece.style.background = colors[i % colors.length];
+      piece.style.animationDelay = `${Math.random() * 0.4}s`;
+      piece.style.animationDuration = `${1.6 + Math.random() * 1.2}s`;
+      piece.style.setProperty('--drift', `${(Math.random() - 0.5) * 160}px`);
+      container.appendChild(piece);
+    }
+  }
+
+  function showLevelUpModal(detail) {
+    const layer = ensureFXLayer();
+    const overlay = document.createElement('div');
+    overlay.className = 'hg-levelup-overlay';
+    overlay.innerHTML = `
+      <div class="hg-confetti-field"></div>
+      <div class="hg-levelup-card">
+        <div class="hg-levelup-icon">${detail.icon || '🏆'}</div>
+        <p class="hg-levelup-eyebrow">Level up</p>
+        <h2>You're now a ${detail.level}!</h2>
+        <p class="hg-levelup-copy">You leveled up from ${detail.previousLevel} to ${detail.level}. Keep the streak going.</p>
+        <button type="button" class="hg-levelup-dismiss">Nice →</button>
+      </div>
+    `;
+    layer.appendChild(overlay);
+    spawnConfetti(overlay.querySelector('.hg-confetti-field'));
+
+    const close = () => overlay.remove();
+    overlay.querySelector('.hg-levelup-dismiss')?.addEventListener('click', close);
+    overlay.addEventListener('click', (event) => {
+      if (event.target === overlay) close();
+    });
+    window.setTimeout(close, 6000);
+  }
+
+  function initGamificationFX() {
+    window.addEventListener('hungter:xpgain', (event) => {
+      const gained = event?.detail?.gained;
+      if (gained && gained > 0) showXPToast(gained);
+    });
+    window.addEventListener('hungter:milestone', (event) => {
+      const name = event?.detail?.event;
+      if (name) showMilestoneToast(name);
+    });
+    window.addEventListener('hungter:levelup', (event) => {
+      if (event?.detail?.level) showLevelUpModal(event.detail);
+    });
+  }
+
   window.HungterUI = {
     ENGINES,
     buildBetaBanner,
@@ -324,5 +421,6 @@ if ('serviceWorker' in navigator) {
     buildNav();
     buildFooter();
     renderEngineStatus(document.querySelector('[data-engine-status]'));
+    initGamificationFX();
   });
 })();

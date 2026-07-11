@@ -268,10 +268,23 @@ function getLevelProgress(totalXP = calculateXP()) {
 }
 
 function updateLevel() {
+  const previousXP = Number(lsGet('mm_xp', 0)) || 0;
+  const previousLevel = lsGet('mm_level', 'Newbie');
   const totalXP = calculateXP();
   const level = getLevelForCount(totalXP);
   lsSet('mm_level', level);
   lsSet('mm_xp', totalXP);
+
+  const gained = totalXP - previousXP;
+  if (gained > 0 && typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+    window.dispatchEvent(new CustomEvent('hungter:xpgain', { detail: { gained, totalXP } }));
+  }
+  if (level !== previousLevel && typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+    const entry = LEVEL_THRESHOLDS.find((l) => l.name === level);
+    window.dispatchEvent(new CustomEvent('hungter:levelup', {
+      detail: { previousLevel, level, icon: entry ? entry.icon : '🏆' },
+    }));
+  }
   return level;
 }
 
@@ -279,6 +292,9 @@ function addMilestone(eventName) {
   const milestones = lsGet('mm_milestones', []);
   milestones.push({ event: eventName, date: new Date().toLocaleDateString() });
   lsSet('mm_milestones', milestones);
+  if (typeof window !== 'undefined' && typeof window.dispatchEvent === 'function') {
+    window.dispatchEvent(new CustomEvent('hungter:milestone', { detail: { event: eventName } }));
+  }
 }
 
 function updateStreak() {
