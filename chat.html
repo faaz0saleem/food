@@ -671,7 +671,7 @@
     }
     await appendStreamingMessage(reply, 'ai', engine, text);
     if (ownerHint) {
-      appendMessage(`⚠️ AI engines are offline — reason: ${ownerHint}\nFull server self-check: open /api/diag on this site.`, 'ai', 'System');
+      appendMessage(`⚠️ AI engines are offline — reason: ${ownerHint}\nOwner fix: open /api/setup · Full self-check: /api/diag`, 'ai', 'System');
     }
     recordConversation(subject, text, reply);
     recordChat(subject);

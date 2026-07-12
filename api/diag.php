@@ -63,7 +63,7 @@ if ($groqKey !== '' && function_exists('curl_init')) {
 } else {
     $checks['groqConnectivity'] = [
         'verdict' => $groqKey === ''
-            ? 'NO KEY — GROQ_API_KEY is empty. Edit the .env file on this server (it is NOT deployed from GitHub) and add your key.'
+            ? 'NO KEY — GROQ_API_KEY is empty. Open /api/setup on this site to paste your key, or edit .env manually (it is NOT deployed from GitHub).'
             : 'curl missing',
     ];
 }
