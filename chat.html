@@ -34,7 +34,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="stylesheet" href="/brand.css?v=20260711">
 <link rel="stylesheet" href="/nav.css?v=20260711">
-<link rel="stylesheet" href="/chat.css?v=20260711">
+<link rel="stylesheet" href="/chat.css?v=20260712">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/marked@4/marked.min.js"></script>
@@ -49,24 +49,28 @@
     <div id="chatFeed" class="chat-feed">
       <div id="welcomeScreen" class="chat-welcome">
         <div>
-          <div class="eyebrow" style="justify-content:center;">Ask AI</div>
+          <div class="chat-eyebrow"><span class="hg-live-dot"></span> Ask anything</div>
           <h1>What shall we <span class="hg-gradient-text">explore today?</span></h1>
-          <p>Four AI engines — Reasoner 🟢, Solver 🟠, Explorer 🔵, Storyteller 🟣 — ready to teach your way. Pick one below, or hit ⚡ All 4 and compare answers.</p>
+          <p>Four engines, four teaching styles. Pick one below the composer — or hit <strong>⚡ All 4</strong> and compare every answer.</p>
         </div>
         <div class="quick-prompt-grid">
           <button type="button" class="quick-prompt-card" data-prompt="Explain the physics of light.">
+            <span class="qp-ico">🔦</span>
             <strong>Physics</strong>
             <span>Explain the physics of light.</span>
           </button>
           <button type="button" class="quick-prompt-card" data-prompt="Write a poem about neural networks.">
+            <span class="qp-ico">✒️</span>
             <strong>Creative</strong>
             <span>Write a poem about neural networks.</span>
           </button>
           <button type="button" class="quick-prompt-card" data-prompt="Summarize this lesson in simple steps.">
+            <span class="qp-ico">🧾</span>
             <strong>Summary</strong>
             <span>Summarize this lesson in simple steps.</span>
           </button>
           <button type="button" class="quick-prompt-card" data-prompt="Give me three example problems and solutions.">
+            <span class="qp-ico">🎯</span>
             <strong>Practice</strong>
             <span>Give me three example problems and solutions.</span>
           </button>
@@ -77,15 +81,9 @@
     </div>
 
     <div class="chat-composer">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
-        <div id="modelBadge" class="model-badge">Model: loading…</div>
-        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <button id="pwaInstallBtn" type="button" class="msg-action-btn" style="display:none;border-color:var(--cyan);color:var(--cyan);">📲 Add to Home Screen</button>
-        </div>
-      </div>
-      <div class="engine-picker">
-        <div class="engine-picker-label">Pick an AI engine:</div>
-        <div class="engine-picker-buttons">
+      <div class="composer-shell">
+        <div class="engine-row" role="radiogroup" aria-label="Pick an AI engine">
+          <span class="engine-row-label">Engine</span>
           <button type="button" class="engine-btn" data-engine="auto" title="Smart routing based on question type">🤖 Auto</button>
           <button type="button" class="engine-btn" data-engine="reasoner" title="Deep explanations and reasoning">🟢 Reasoner</button>
           <button type="button" class="engine-btn" data-engine="solver" title="Math, coding, step-by-step">🟠 Solver</button>
@@ -93,17 +91,21 @@
           <button type="button" class="engine-btn" data-engine="storyteller" title="Stories, analogies, creative">🟣 Storyteller</button>
           <button type="button" class="engine-btn" data-engine="all" title="All 4 engines answer">⚡ All 4</button>
         </div>
+        <div class="composer-row">
+          <button id="attachButton" class="attach-btn" type="button" aria-label="Attach file or image" title="Attach file or image">+</button>
+          <input id="fileInput" type="file" accept="image/*,.pdf,.txt,.md,.csv,.json,.js,.ts,.py,.java,.c,.cpp,.html,.css" multiple hidden />
+          <input id="chatInput" type="text" placeholder="Ask anything — math, essays, exam prep…" autocomplete="off" />
+          <button id="sendButton" class="send-btn" type="button" aria-label="Send message">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+        <div id="attachmentTray" class="attachment-tray" aria-live="polite"></div>
+        <div class="composer-meta">
+          <div id="modelBadge" class="model-badge">Connecting…</div>
+          <button id="pwaInstallBtn" type="button" class="msg-action-btn" style="display:none;border-color:var(--cyan);color:var(--cyan);">📲 Add to Home Screen</button>
+          <span class="composer-note">Hungter can make mistakes — verify important answers.</span>
+        </div>
       </div>
-      <div class="composer-row">
-        <button id="attachButton" class="attach-btn" type="button" aria-label="Attach file or image" title="Attach file or image">+</button>
-        <input id="fileInput" type="file" accept="image/*,.pdf,.txt,.md,.csv,.json,.js,.ts,.py,.java,.c,.cpp,.html,.css" multiple hidden />
-        <input id="chatInput" type="text" placeholder="Analyze, create, or learn..." autocomplete="off" />
-        <button id="sendButton" class="send-btn" type="button" aria-label="Send message">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M12 5l7 7-7 7"/></svg>
-        </button>
-      </div>
-      <div id="attachmentTray" class="attachment-tray" aria-live="polite"></div>
-      <p class="composer-note">Hungter can make mistakes. Verify important information and use prompts responsibly.</p>
     </div>
   </div>
 </main>
@@ -709,7 +711,8 @@
     }
   });
 
-  sendButton.addEventListener('click', sendMessage);
+  // Pass no arguments — the click event must not become overrideText.
+  sendButton.addEventListener('click', () => sendMessage());
   attachButton?.addEventListener('click', () => fileInput?.click());
   fileInput?.addEventListener('change', async (event) => {
     await addFiles(Array.from(event.target.files || []));
