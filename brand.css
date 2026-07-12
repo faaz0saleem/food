@@ -127,12 +127,20 @@ main h1 {
   gap: 8px;
   font-family: var(--font-mono);
   font-weight: 700;
-  font-size: 0.8rem;
-  letter-spacing: 0.06em;
+  font-size: 0.72rem;
   text-transform: uppercase;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.2em;
   color: var(--cyan);
   margin-bottom: 12px;
+}
+
+/* Editorial rail after eyebrows — ties inner pages to the landing system */
+.eyebrow::after {
+  content: '';
+  display: inline-block;
+  width: clamp(20px, 3vw, 44px);
+  height: 1px;
+  background: rgba(77, 240, 255, 0.35);
 }
 
 .sec-title {
