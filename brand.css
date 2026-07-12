@@ -170,6 +170,11 @@ main h1 {
   box-shadow: var(--glow-lime), var(--glow-cyan);
 }
 
+.btn-primary:active {
+  transform: translateY(0) scale(0.97);
+  box-shadow: var(--glow-lime);
+}
+
 .btn-ghost {
   color: var(--ink);
   border: 1px solid var(--border);
@@ -298,6 +303,19 @@ button,
 .send-btn:hover {
   transform: translateY(-1px);
   box-shadow: var(--glow-lime), var(--glow-cyan);
+}
+
+.button-primary:active,
+.price-card.featured .price-btn:active,
+.price-btn:active,
+.btn.primary:active,
+.chat-btn:active,
+.send-btn:active,
+button:active,
+.btn:active,
+.button:active {
+  transform: scale(0.96) !important;
+  transition-duration: 0.08s;
 }
 
 .button-secondary,
@@ -770,6 +788,27 @@ textarea:focus {
 
 .hg-levelup-dismiss:hover {
   transform: translateY(-1px);
+}
+
+/* ── Tactile press feedback, sitewide ────────────────────────────────── */
+/* brand.css loads on every page, so this one rule covers every clickable
+   surface across the app without touching each page's own stylesheet. */
+button:active,
+[role="button"]:active,
+.quiz-btn:active,
+.tool-btn:active,
+.engine-btn:active,
+.book-link:active,
+.book-card:active,
+.msg-action-btn:active,
+.attach-btn:active,
+.avatar:active,
+.nav-level-badge:active,
+.opt:active,
+.bq-opt:active,
+.pick-btn:active {
+  transform: scale(0.96);
+  transition-duration: 0.08s !important;
 }
 
 /* ── Futuristic FX layer (fx.js) ─────────────────────────────────────── */

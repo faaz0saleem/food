@@ -245,6 +245,26 @@ el('xpLabel').textContent = `${totalXP} / ${currentLevelDef.max === Infinity ? '
 el('topBar').style.width = progress.pct + '%';
 setTimeout(()=>{ el('xpFill').style.width = progress.pct + '%'; }, 300);
 
+// fx.js (count-up animation) loads asynchronously after this script runs —
+// numbers are correct immediately via textContent either way; this just
+// adds the animated reveal once the helper becomes available.
+function animateStatsWhenReady(attemptsLeft) {
+  if (typeof window.hgCountUp !== 'function') {
+    if (attemptsLeft > 0) setTimeout(() => animateStatsWhenReady(attemptsLeft - 1), 150);
+    return;
+  }
+  [['totalXP', totalXP], ['streakVal', currentStreak], ['subjCount', subjKeys.length]].forEach(([id, value]) => {
+    const node = el(id);
+    if (node) { node.textContent = '0'; window.hgCountUp(node, value); }
+  });
+  if (allScores.length) {
+    const node = el('quizScore');
+    const avg = Math.round(allScores.reduce((a,b)=>a+b,0)/allScores.length);
+    if (node) { node.textContent = '0%'; window.hgCountUp(node, avg, { suffix: '%' }); }
+  }
+}
+animateStatsWhenReady(10);
+
 el('totalXP').textContent = totalXP;
 el('todayDelta').textContent = `today: ${todayCount}`;
 el('xpMessage').textContent = `${xpBreakdown.messageXP} XP`;
@@ -292,8 +312,11 @@ if (xpBreakdownToggle && xpBreakdownPanel) {
   });
 }
 
-const today = new Date().toDateString();
-const last7 = [...Array(7)].map((_,i)=>{const d=new Date();d.setDate(d.getDate()-i);return d.toDateString();}).reverse();
+// mm_streak stores ISO dates (YYYY-MM-DD) via script.js's updateStreak() —
+// must match that format exactly or every day-lookup below silently misses.
+const isoDate = (d) => d.toISOString().slice(0, 10);
+const today = isoDate(new Date());
+const last7 = [...Array(7)].map((_,i)=>{const d=new Date();d.setDate(d.getDate()-i);return isoDate(d);}).reverse();
 const streakDots = el('streakDots');
 last7.forEach(d=>{
   const div=document.createElement('div');
@@ -301,10 +324,35 @@ last7.forEach(d=>{
   div.textContent=new Date(d).toLocaleDateString('en',{weekday:'narrow'});
   streakDots.appendChild(div);
 });
-let currentStreak=0;
-for(let i=last7.length-1;i>=0;i--){if(streak.includes(last7[i]))currentStreak++;else break;}
+// Count backward from the most recent active day (today OR yesterday —
+// a streak isn't "broken" until a full day is missed, so someone who
+// hasn't chatted yet today still sees their real streak, not a scary 0).
+const chattedToday = streak.includes(today);
+const yesterdayIso = isoDate(new Date(Date.now() - 86400000));
+const anchorIndex = chattedToday ? last7.indexOf(today) : (streak.includes(yesterdayIso) ? last7.indexOf(yesterdayIso) : -1);
+let currentStreak = 0;
+if (anchorIndex >= 0) {
+  for (let i = anchorIndex; i >= 0; i--) { if (streak.includes(last7[i])) currentStreak++; else break; }
+}
+const streakAtRisk = currentStreak > 0 && !chattedToday;
 el('streakVal').textContent=currentStreak;
 el('streakBig').textContent=currentStreak+' days';
+
+if (streakAtRisk) {
+  const banner = document.createElement('div');
+  banner.className = 'card hg-holo';
+  banner.style.cssText = 'margin-bottom:24px;border-color:rgba(255,107,74,0.4);background:rgba(255,107,74,0.06);box-shadow:0 0 20px rgba(255,107,74,0.15);';
+  banner.innerHTML = `
+    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+      <span style="font-size:1.8rem;">🔥</span>
+      <div style="flex:1;min-width:200px;">
+        <strong style="color:var(--coral);font-family:var(--font-display);">Your ${currentStreak}-day streak ends at midnight!</strong>
+        <p style="margin:4px 0 0;color:var(--ink-soft);font-size:0.88rem;">Ask one question today to keep it alive.</p>
+      </div>
+      <a href="/chat.html" class="quiz-btn" style="background:var(--coral);">Save my streak →</a>
+    </div>`;
+  el('nameEl').closest('.page-head').insertAdjacentElement('afterend', banner);
+}
 
 const subjKeys = Object.keys(subjectCounts);
 const achievementBadges = [];
