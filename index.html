@@ -34,7 +34,7 @@
   <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="/brand.css?v=20260711">
   <link rel="stylesheet" href="/nav.css?v=20260711">
-  <link rel="stylesheet" href="/landing.css?v=20260711">
+  <link rel="stylesheet" href="/landing.css?v=20260712">
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -48,151 +48,254 @@
   }
   </script>
 </head>
-<body>
+<body data-lp>
   <header class="site-nav"></header>
 
-  <header class="hero">
-    <div class="container hero-grid">
+  <!-- Floating conversion bar -->
+  <div class="lp-topbar" id="lpTopbar">
+    <a class="lp-wordmark" href="/">🧠 Hungter</a>
+    <div class="lp-topbar-actions">
+      <a class="lp-login" href="/dashboard.html">Log in</a>
+      <a class="lp-cta-sm" href="/signup.html">Start free</a>
+    </div>
+  </div>
+
+  <!-- ═══ HERO ═══ -->
+  <header class="lp-hero">
+    <div class="container lp-hero-grid">
       <div>
-        <span class="eyebrow">4 AI ENGINES · 1 TUTOR FOR YOU</span>
-        <h1>The tutor that finally <span class="pop hg-gradient-text">gets you.</span></h1>
-        <p class="lead">Hungter routes every question to the right AI engine — Reasoner, Solver, Explorer, or Storyteller — or lets all four answer at once. Every explanation matches how your brain learns. Free during launch access. No card required.</p>
-        <div class="hero-ctas">
-          <a href="/signup.html" class="btn-primary">Start free →</a>
-          <a href="#how" class="btn-ghost">See how it works</a>
+        <p class="lp-eyebrow"><span class="hg-live-dot"></span> Four AI engines · One tutor</p>
+        <h1>
+          <span class="lp-line"><span>Every brain learns differently.</span></span>
+          <span class="lp-line"><span><em class="lp-grad" style="font-style:normal;">Your tutor finally does too.</em></span></span>
+        </h1>
+        <p class="lp-lead">Hungter routes each question to one of four AI engines — <strong>Reasoner</strong>, <strong>Solver</strong>, <strong>Explorer</strong>, or <strong>Storyteller</strong> — so every explanation lands the way your brain actually works.</p>
+        <div class="lp-hero-ctas">
+          <a href="/signup.html" class="lp-btn-hero">Start learning free <span class="arr">→</span></a>
+          <a href="#console" class="lp-btn-ghost">Watch it think ↓</a>
+        </div>
+        <div class="lp-hero-micro">
+          <span class="lp-chip" data-live-engines><span class="hg-live-dot"></span> All 4 AI engines live</span>
+          <span>No card</span><span class="sep">·</span><span>No install</span><span class="sep">·</span><span>Free during launch</span>
         </div>
       </div>
 
-      <div class="demo-wrap">
-        <div class="demo-card">
-          <div class="demo-head">
-            <div class="orb-cluster">
-              <div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div><div class="orb o4"></div>
-            </div>
-            <span class="who" style="font-family:var(--font-display);font-weight:600;font-size:0.85rem;color:var(--ink-soft);">Hungter · 4 engines live</span>
+      <div class="lp-console-wrap" id="console">
+        <div class="lp-orbit o1"><span class="sat a"></span><span class="sat b"></span></div>
+        <div class="lp-orbit o2"><span class="sat a"></span><span class="sat b"></span></div>
+        <div class="lp-console" aria-label="Live demo of Hungter routing a question between AI engines">
+          <div class="lp-console-bar">
+            <span class="dots"><i></i><i></i><i></i></span>
+            <span class="title">hungter · live engine routing</span>
           </div>
-          <div class="bubble user">I don't get photosynthesis 😭</div>
-          <div class="bubble ai">Think of a leaf like a tiny solar panel — sunlight goes in, food comes out. Want the step-by-step version or a real-world example?</div>
+          <div class="lp-console-body">
+            <div class="lp-route-row" id="demoChips">
+              <span class="lp-engine-chip" data-e="reasoner">🟢 Reasoner</span>
+              <span class="lp-engine-chip" data-e="solver">🟠 Solver</span>
+              <span class="lp-engine-chip" data-e="explorer">🔵 Explorer</span>
+              <span class="lp-engine-chip" data-e="storyteller">🟣 Storyteller</span>
+            </div>
+            <div class="lp-msg user" id="demoQ">I don't get photosynthesis 😭</div>
+            <div class="lp-msg ai"><span id="demoA"></span><span class="lp-caret" id="demoCaret"></span></div>
+            <div class="lp-console-foot">
+              <span id="demoRouteLabel">routing…</span>
+              <span class="lp-xp-pop">+12 XP</span>
+            </div>
+          </div>
         </div>
-        <div class="xp-badge">+12 XP</div>
       </div>
     </div>
 
-    <div class="path-section">
-      <p class="path-eyebrow">YOUR LEARNING PATH</p>
-      <p class="path-title">Every question moves you forward.</p>
-      <div class="path-row">
-        <div class="path-stop active"><div class="badge">🌱</div><div class="label">Newbie</div></div>
-        <div class="path-line"></div>
-        <div class="path-stop"><div class="badge">📖</div><div class="label">Learner</div></div>
-        <div class="path-line"></div>
-        <div class="path-stop"><div class="badge">🧭</div><div class="label">Explorer</div></div>
-        <div class="path-line"></div>
-        <div class="path-stop"><div class="badge">📚</div><div class="label">Scholar</div></div>
-        <div class="path-line"></div>
-        <div class="path-stop"><div class="badge">🏆</div><div class="label">Master</div></div>
+    <div class="container">
+      <div class="pulse-strip" id="pulseStrip" aria-live="polite">
+        <div class="pulse-item">
+          <span class="pulse-num" id="pulseActive">—</span>
+          <span class="pulse-label"><span class="hg-live-dot" style="margin-right:6px;"></span>learning right now</span>
+        </div>
+        <div class="pulse-divider"></div>
+        <div class="pulse-item">
+          <span class="pulse-num" id="pulseChatsToday">—</span>
+          <span class="pulse-label">questions answered today</span>
+        </div>
+        <div class="pulse-divider"></div>
+        <div class="pulse-item">
+          <span class="pulse-num" id="pulseVisitors">—</span>
+          <span class="pulse-label">students visited so far</span>
+        </div>
       </div>
-    </div>
-
-    <div class="stats-row container">
-      <div class="sticker" data-live-engines><span class="hg-live-dot"></span> All 4 AI engines live</div>
-      <div class="sticker">Teaches <span>your</span> way, not the textbook's</div>
-      <div class="sticker"><span>Free</span> during launch access</div>
-    </div>
-
-    <div class="pulse-strip container" id="pulseStrip" aria-live="polite">
-      <div class="pulse-item">
-        <span class="pulse-num" id="pulseActive">—</span>
-        <span class="pulse-label"><span class="hg-live-dot" style="margin-right:5px;"></span>learning right now</span>
-      </div>
-      <div class="pulse-divider"></div>
-      <div class="pulse-item">
-        <span class="pulse-num" id="pulseChatsToday">—</span>
-        <span class="pulse-label">questions answered today</span>
-      </div>
-      <div class="pulse-divider"></div>
-      <div class="pulse-item">
-        <span class="pulse-num" id="pulseVisitors">—</span>
-        <span class="pulse-label">students visited so far</span>
-      </div>
+      <div class="lp-scroll-cue" aria-hidden="true"><span></span></div>
     </div>
   </header>
 
-  <section class="how" id="daily-question">
-    <div class="container">
-      <p class="eyebrow" style="text-align:center;display:block;">QUESTION OF THE DAY</p>
-      <h2 class="sec-title">Start with one sharp question</h2>
-      <div class="how-card" style="max-width:780px;margin:0 auto;text-align:center;">
-        <p id="dailyPrompt" style="font-size:1rem;color:var(--ink);margin-bottom:16px;"></p>
-        <a id="dailyPromptLink" href="/chat.html" class="btn-primary">Open in chat →</a>
+  <!-- ═══ 01 · PROBLEM → SOLUTION ═══ -->
+  <section class="lp-section" id="problem">
+    <div class="container lp-problem-grid">
+      <div>
+        <span class="lp-index">01 — THE PROBLEM</span>
+        <h2 class="lp-problem-title" style="margin-top:18px;">One teacher. One textbook. Thirty different brains.</h2>
+        <div>
+          <div class="lp-pain"><span class="x">✕</span> Generic chatbots hand everyone the same wall of text — whether it clicks or not.</div>
+          <div class="lp-pain"><span class="x">✕</span> Textbooks explain things exactly one way: theirs.</div>
+          <div class="lp-pain"><span class="x">✕</span> Private tutors who adapt to you cost $40+ an hour.</div>
+        </div>
+      </div>
+      <div class="lp-solution">
+        <span class="lp-index">THE FIX</span>
+        <h3>So we built four tutors into one.</h3>
+        <p>Tell Hungter how your brain works — visual, step-by-step, example-led, or story-driven — and it routes every question to the engine that teaches that way. Deep reasoning, worked math, real-world examples, or an analogy you'll never forget.</p>
       </div>
     </div>
   </section>
 
-  <section class="how" id="how">
+  <!-- ═══ 02 · ENGINES ═══ -->
+  <section class="lp-section" id="engines">
     <div class="container">
-      <p class="eyebrow" style="text-align:center;display:block;">THREE STEPS</p>
-      <h2 class="sec-title">Here's exactly how it works</h2>
-      <div class="how-grid">
-        <div class="how-card"><div class="how-num">1</div><h3>Pick what you're learning</h3><p>Any subject, any level — from fractions to organic chemistry.</p></div>
-        <div class="how-card"><div class="how-num">2</div><h3>Tell us how your brain works</h3><p>Visual, story-driven, step-by-step, or example-led. Your call.</p></div>
-        <div class="how-card"><div class="how-num">3</div><h3>Ask your tutor anything</h3><p>Hungter picks the smartest engine and explanation style for you.</p></div>
+      <div class="lp-section-head">
+        <span class="lp-index">02 — THE ENGINES</span>
       </div>
-    </div>
-  </section>
-
-  <section class="engines" id="engines">
-    <div class="container">
-      <p class="eyebrow" style="text-align:center;display:block;">MEET YOUR AI ENGINES</p>
-      <h2 class="sec-title">Four AI engines. <span class="hg-gradient-text">All live.</span> One tutor.</h2>
-      <p style="text-align:center;color:var(--ink-soft);max-width:640px;margin:0 auto 28px;">Pick one engine, let Hungter route automatically, or hit <strong style="color:var(--lime);">⚡ All 4</strong> in chat and get four answers with four different teaching styles at once.</p>
+      <h2 style="font-family:var(--font-display);font-weight:700;font-size:clamp(1.7rem,3.4vw,2.7rem);letter-spacing:-0.02em;line-height:1.12;margin:0;">Four AI engines. <span class="lp-grad">All live.</span> One tutor.</h2>
+      <p class="lp-section-sub" style="margin-bottom:clamp(36px,5vw,56px);">Pick one engine, let Hungter route automatically, or hit <strong style="color:var(--lime);">⚡ All 4</strong> in chat and compare four teaching styles on a single question.</p>
       <div class="engine-status-grid" data-engine-status></div>
     </div>
   </section>
 
-  <section class="how" id="features">
+  <!-- ═══ 03 · TOOLKIT ═══ -->
+  <section class="lp-section" id="toolkit">
     <div class="container">
-      <p class="eyebrow" style="text-align:center;display:block;">WHAT'S INSIDE</p>
-      <h2 class="sec-title">More than a chatbot — a full study toolkit</h2>
-      <div class="how-grid">
-        <a class="how-card" href="/books.html" style="text-decoration:none;color:inherit;display:block;">
-          <div class="how-num">📚</div>
-          <h3>Book Catalog</h3>
-          <p>Real O-Level, A-Level, GCSE, SAT and PSAT study books — with AI quizzes, flashcards, and practice papers generated per chapter.</p>
+      <div class="lp-section-head">
+        <span class="lp-index">03 — THE ARSENAL</span>
+      </div>
+      <h2 style="font-family:var(--font-display);font-weight:700;font-size:clamp(1.7rem,3.4vw,2.7rem);letter-spacing:-0.02em;line-height:1.12;margin:0 0 clamp(36px,5vw,56px);">More than a chatbot —<br>a complete exam machine.</h2>
+
+      <div class="lp-bento">
+        <a class="lp-tile feat-a" href="/guess-papers.html">
+          <span class="go">↗</span>
+          <span class="ico">📝</span>
+          <h3>Solvable Guess Papers</h3>
+          <p>All four engines write an original exam from your real book chapter. Solve it here against the clock, get AI marking, your score, and exactly which topics to fix.</p>
+          <div class="lp-ring-wrap">
+            <div class="lp-ring">87%</div>
+            <div class="lp-weak-chips">
+              <span class="lp-weak-chip warn">⚠ Electromagnetism · 40%</span>
+              <span class="lp-weak-chip ok">✓ Waves &amp; Sound · 95%</span>
+              <span class="lp-weak-chip ok">✓ Motion &amp; Forces · 90%</span>
+            </div>
+          </div>
         </a>
-        <a class="how-card" href="/guess-papers.html" style="text-decoration:none;color:inherit;display:block;">
-          <div class="how-num">📝</div>
-          <h3>Guess Papers</h3>
-          <p>All 4 engines write an original exam from your book chapter — solve it on-site with a timer, then get instant scoring and weak-area analysis.</p>
-        </a>
-        <a class="how-card" href="/chat.html" style="text-decoration:none;color:inherit;display:block;">
-          <div class="how-num">🤖</div>
+
+        <a class="lp-tile feat-b" href="/chat.html">
+          <span class="go">↗</span>
+          <span class="ico">🤖</span>
           <h3>4-Engine AI Chat</h3>
-          <p>Pick Reasoner, Solver, Explorer, or Storyteller — or hit ⚡ All 4 and compare four teaching styles on one question.</p>
+          <p>Pick your engine — or hit ⚡ All 4 and read four different teaching styles answer the same question, side by side.</p>
+          <div class="lp-tile-chips">
+            <span class="c lime">🟢 Reasoner</span>
+            <span class="c coral">🟠 Solver</span>
+            <span class="c cyan">🔵 Explorer</span>
+            <span class="c pink">🟣 Storyteller</span>
+            <span class="c gold">⚡ All 4</span>
+          </div>
         </a>
-        <a class="how-card" href="/flashcards.html" style="text-decoration:none;color:inherit;display:block;">
-          <div class="how-num">🃏</div>
-          <h3>Smart Flashcards</h3>
-          <p>Auto-built from your chats, wrong quiz answers, and books — with review dates so the right card comes back at the right time.</p>
+
+        <a class="lp-tile" href="/books.html">
+          <span class="go">↗</span>
+          <span class="ico">📚</span>
+          <h3>Real Book Store</h3>
+          <p>Actual O-Level, A-Level, GCSE &amp; SAT coursebooks — every chapter wired to AI quizzes, notes, and papers.</p>
         </a>
-        <a class="how-card" href="/quiz.html" style="text-decoration:none;color:inherit;display:block;">
-          <div class="how-num">🎯</div>
+
+        <a class="lp-tile" href="/quiz.html">
+          <span class="go">↗</span>
+          <span class="ico">🎯</span>
           <h3>AI Quizzes</h3>
-          <p>Fresh multiple-choice questions on any subject that never repeat what you've already answered.</p>
+          <p>Fresh questions that never repeat what you've already answered.</p>
         </a>
-        <a class="how-card" href="/learn.html" style="text-decoration:none;color:inherit;display:block;">
-          <div class="how-num">📈</div>
+
+        <a class="lp-tile" href="/flashcards.html">
+          <span class="go">↗</span>
+          <span class="ico">🃏</span>
+          <h3>Smart Flashcards</h3>
+          <p>Auto-built from your chats and wrong answers, resurfaced right before you'd forget them.</p>
+        </a>
+
+        <a class="lp-tile" href="/learn.html">
+          <span class="go">↗</span>
+          <span class="ico">📈</span>
           <h3>Learning Tracks</h3>
-          <p>Your real progress, streaks, weak-topic detection, and XP — computed from what you actually do, not vanity numbers.</p>
+          <p>XP, streaks, daily quests and weak-topic detection — computed from what you actually do.</p>
         </a>
       </div>
     </div>
   </section>
 
-  <section class="pricing" id="pricing">
+  <!-- ═══ 04 · HOW IT WORKS ═══ -->
+  <section class="lp-section" id="how">
     <div class="container">
-      <p class="eyebrow" style="text-align:center;display:block;">PICK YOUR PLAN</p>
-      <h2 class="sec-title">Start free. Upgrade when you're hooked.</h2>
+      <div class="lp-section-head">
+        <span class="lp-index">04 — HOW IT WORKS</span>
+      </div>
+      <h2 style="font-family:var(--font-display);font-weight:700;font-size:clamp(1.7rem,3.4vw,2.7rem);letter-spacing:-0.02em;line-height:1.12;margin:0 0 clamp(48px,6vw,72px);">Thirty seconds to your first<br>explanation that clicks.</h2>
+      <div class="lp-steps">
+        <div class="lp-step">
+          <div class="lp-step-num">01</div>
+          <div>
+            <h3>Tell us how your brain works</h3>
+            <p>Visual, story-driven, step-by-step, or example-led. One question, thirty seconds, no wrong answers.</p>
+          </div>
+        </div>
+        <div class="lp-step">
+          <div class="lp-step-num">02</div>
+          <div>
+            <h3>Ask anything</h3>
+            <p>From fractions to organic chemistry — Hungter routes it to the engine that teaches your way.</p>
+          </div>
+        </div>
+        <div class="lp-step">
+          <div class="lp-step-num">03</div>
+          <div>
+            <h3>Level up, every day</h3>
+            <p>XP, streaks, daily quests, and weak-spot detection turn revision into momentum you can see.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 05 · LIVE PROOF ═══ -->
+  <section class="lp-section" id="proof" style="padding-top:0;">
+    <div class="lp-marquee" aria-hidden="true">
+      <div class="lp-marquee-track">
+        <span>O-Level</span><span>·</span><span><b>Physics</b></span><span>·</span><span>A-Level</span><span>·</span><span><b>Mathematics</b></span><span>·</span><span>GCSE</span><span>·</span><span><b>Chemistry</b></span><span>·</span><span>SAT</span><span>·</span><span><b>Biology</b></span><span>·</span><span>PSAT</span><span>·</span><span><b>Computer Science</b></span><span>·</span><span>IGCSE</span><span>·</span><span><b>Economics</b></span><span>·</span>
+        <span>O-Level</span><span>·</span><span><b>Physics</b></span><span>·</span><span>A-Level</span><span>·</span><span><b>Mathematics</b></span><span>·</span><span>GCSE</span><span>·</span><span><b>Chemistry</b></span><span>·</span><span>SAT</span><span>·</span><span><b>Biology</b></span><span>·</span><span>PSAT</span><span>·</span><span><b>Computer Science</b></span><span>·</span><span>IGCSE</span><span>·</span><span><b>Economics</b></span><span>·</span>
+      </div>
+    </div>
+
+    <div class="container lp-proof-grid">
+      <div class="lp-proof-card">
+        <span class="lp-index">QUESTION OF THE DAY</span>
+        <p id="dailyPrompt"></p>
+        <a id="dailyPromptLink" href="/chat.html" class="lp-btn-hero" style="font-size:0.94rem;padding:14px 26px;">Open in chat <span class="arr">→</span></a>
+      </div>
+      <div class="lp-proof-card">
+        <span class="lp-index">BUILT IN PUBLIC</span>
+        <h3>No fake reviews. No invented numbers.</h3>
+        <p>Hungter is built by a student, for students — and every stat on this page is measured live from the site itself.</p>
+        <ul class="lp-honest">
+          <li><span class="tick">✓</span> Free during launch access — no card, no trial traps</li>
+          <li><span class="tick">✓</span> AI-original practice content, never copied from books or past papers</li>
+          <li><span class="tick">✓</span> Independent — not affiliated with Cambridge, Pearson, or College Board</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 06 · PRICING ═══ -->
+  <section class="lp-section" id="pricing" style="padding-top:0;">
+    <div class="container">
+      <div class="lp-section-head">
+        <span class="lp-index">06 — THE PLANS</span>
+      </div>
+      <h2 style="font-family:var(--font-display);font-weight:700;font-size:clamp(1.7rem,3.4vw,2.7rem);letter-spacing:-0.02em;line-height:1.12;margin:0 0 clamp(40px,5vw,60px);">Start free. Upgrade when<br>you're hooked.</h2>
       <div class="pricing-grid">
         <div class="price-card">
           <div class="price-tag">Free</div>
@@ -200,7 +303,7 @@
           <ul class="price-feats">
             <li>20 messages a day</li>
             <li>3 subjects</li>
-            <li>Progress tracking</li>
+            <li>Progress tracking &amp; daily quests</li>
           </ul>
           <a href="/signup.html" class="price-btn">Start free</a>
         </div>
@@ -221,41 +324,44 @@
           <div class="price-amt">$12<sub>/mo</sub></div>
           <ul class="price-feats">
             <li>Everything in Student</li>
-            <li>Guess Papers (Pro feature)</li>
+            <li>Solvable Guess Papers</li>
             <li>⚡ All-4 engine compare mode</li>
             <li>Priority AI generation queue</li>
           </ul>
           <a href="/signup.html" class="price-btn">Join pro waitlist</a>
         </div>
       </div>
+      <p class="lp-price-note">Billing is not live yet — everything is free during launch access.</p>
     </div>
   </section>
 
-  <section class="how" id="exam-seo-copy">
-    <div class="container">
-      <p class="eyebrow" style="text-align:center;display:block;">WHY STUDENTS STAY</p>
-      <h2 class="sec-title">The free AI tutor built for real exams</h2>
-      <div class="how-card" style="max-width:900px;margin:0 auto;">
-        <p>Hungter is a free AI tutor for students preparing for O-Level, A-Level, GCSE, SAT, and PSAT. Instead of one generic response, you get personalized learning paths with explanations shaped to how you learn best, plus daily momentum through clear progress signals.</p>
-        <p>When it is time to practice, you can move from AI tutor chat into original practice papers, AI quizzes, and smart flashcards without leaving the same study flow. That means one place for understanding concepts, testing yourself, and revising weak areas before exam day.</p>
-      </div>
+  <!-- ═══ 07 · FINAL CTA ═══ -->
+  <section class="lp-final" id="start">
+    <span class="lp-index">07 — YOUR MOVE</span>
+    <h2 style="margin-top:20px;">Your brain deserves a tutor <span class="lp-grad">that gets it.</span></h2>
+    <p>Four AI engines, one tutor, zero cost during launch. The next explanation you read could be the one that finally clicks.</p>
+    <a href="/signup.html" class="lp-btn-hero" style="font-size:1.08rem;padding:19px 42px;">Start learning free <span class="arr">→</span></a>
+    <div class="lp-hero-micro">
+      <span>No card</span><span class="sep">·</span><span>No install</span><span class="sep">·</span><span>30-second setup</span>
     </div>
   </section>
 
-  <section class="final-cta">
-    <div class="container">
-      <div class="final-card">
-        <h2>Ready to level up?</h2>
-        <p>Join the beta today. No credit card, no catch — just a smarter way to learn.</p>
-        <a href="/signup.html" class="btn-primary">Start free →</a>
-      </div>
+  <!-- SEO prose (quiet, for search engines and thorough readers) -->
+  <section class="lp-seo" aria-label="About Hungter">
+    <div class="container lp-seo-inner">
+      <p>Hungter is a free AI tutor for students preparing for O-Level, A-Level, GCSE, SAT, and PSAT. Instead of one generic response, you get personalized learning paths with explanations shaped to how you learn best, plus daily momentum through clear progress signals.</p>
+      <p>When it is time to practice, you can move from AI tutor chat into original practice papers, AI quizzes, and smart flashcards without leaving the same study flow. That means one place for understanding concepts, testing yourself, and revising weak areas before exam day.</p>
     </div>
   </section>
 
   <footer class="site-footer"></footer>
-  <script src="/layout.js?v=20260711" defer></script>
+  <script src="/layout.js?v=20260712" defer></script>
   <script>
     (function () {
+      'use strict';
+      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      // ── Question of the day (kept from previous version) ──────────────
       const prompts = [
         'Why does the sky look blue at noon but orange at sunset?',
         'Explain compound interest like I am 12 years old.',
@@ -274,8 +380,59 @@
       const prompt = prompts[dayOfYear % prompts.length];
       const promptEl = document.getElementById('dailyPrompt');
       const linkEl = document.getElementById('dailyPromptLink');
-      if (promptEl) promptEl.textContent = prompt;
+      if (promptEl) promptEl.textContent = '“' + prompt + '”';
       if (linkEl) linkEl.href = `/chat.html?q=${encodeURIComponent(prompt)}`;
+
+      // ── Floating bar: glass once the page scrolls ──────────────────────
+      const topbar = document.getElementById('lpTopbar');
+      const onScroll = () => topbar && topbar.classList.toggle('scrolled', window.scrollY > 40);
+      window.addEventListener('scroll', onScroll, { passive: true });
+      onScroll();
+
+      // ── Hero console: cycle real routing demos with a typing effect ───
+      const scenes = [
+        { q: "I don't get photosynthesis 😭", e: 'storyteller', label: 'routed → 🟣 storyteller', a: 'Picture a leaf as a tiny solar kitchen: sunlight is the stove, water and CO₂ are the ingredients, sugar is dinner. Want the step-by-step recipe?' },
+        { q: 'Solve 2x + 6 = 18', e: 'solver', label: 'routed → 🟠 solver', a: 'Subtract 6 from both sides → 2x = 12. Divide by 2 → x = 6. Try swapping the 18 for 30 — same moves, new answer.' },
+        { q: "Why don't eclipses happen every month?", e: 'reasoner', label: 'routed → 🟢 reasoner', a: "The Moon's orbit is tilted about 5°, so its shadow usually misses Earth. Eclipses only line up where the orbits cross." },
+        { q: 'Where is trigonometry used in real life?', e: 'explorer', label: 'routed → 🔵 explorer', a: 'GPS triangulation, bridge design, music synthesis, even aiming a basketball shot — angles and ratios everywhere.' },
+      ];
+      const qEl = document.getElementById('demoQ');
+      const aEl = document.getElementById('demoA');
+      const caret = document.getElementById('demoCaret');
+      const routeLabel = document.getElementById('demoRouteLabel');
+      const chips = Array.from(document.querySelectorAll('#demoChips .lp-engine-chip'));
+
+      function setScene(scene, instant) {
+        qEl.textContent = scene.q;
+        chips.forEach((chip) => chip.classList.toggle('on', chip.dataset.e === scene.e));
+        routeLabel.textContent = scene.label;
+        if (instant) { aEl.textContent = scene.a; return Promise.resolve(); }
+        aEl.textContent = '';
+        return new Promise((resolve) => {
+          let i = 0;
+          const tick = () => {
+            i = Math.min(i + 2, scene.a.length);
+            aEl.textContent = scene.a.slice(0, i);
+            if (i < scene.a.length) setTimeout(tick, 18);
+            else resolve();
+          };
+          setTimeout(tick, 550);
+        });
+      }
+
+      if (qEl && aEl) {
+        if (reducedMotion) {
+          caret.style.display = 'none';
+          setScene(scenes[0], true);
+        } else {
+          let index = 0;
+          (async function loop() {
+            await setScene(scenes[index % scenes.length], false);
+            index += 1;
+            setTimeout(loop, 4200);
+          })();
+        }
+      }
     })();
   </script>
 </body>

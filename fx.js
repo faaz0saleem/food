@@ -87,6 +87,8 @@
       return;
     }
 
+    // Generous look-ahead: reveal shortly BEFORE elements enter the
+    // viewport so fast scrollers never see blank sections.
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
@@ -94,14 +96,32 @@
           observer.unobserve(entry.target);
         }
       });
-    }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+    }, { threshold: 0, rootMargin: '0px 0px 25% 0px' });
 
     targets.forEach((el, i) => {
       if (el.classList.contains('hg-revealed')) return;
+      // Anything already on or above the first screen shows instantly —
+      // only content still below the fold gets the scroll-in animation.
+      const rect = el.getBoundingClientRect();
+      if (rect.top < window.innerHeight * 1.1) {
+        el.classList.add('hg-reveal', 'hg-revealed');
+        return;
+      }
       el.classList.add('hg-reveal');
       el.style.transitionDelay = `${Math.min((i % 6) * 60, 300)}ms`;
       observer.observe(el);
     });
+
+    // Belt-and-braces: if anything is still hidden 3s after load (an
+    // observer quirk, prerendering, odd embedder), reveal it — content
+    // must never stay invisible because of a decoration.
+    setTimeout(() => {
+      document.querySelectorAll('.hg-reveal:not(.hg-revealed)').forEach((el) => {
+        if (el.getBoundingClientRect().top < window.innerHeight) {
+          el.classList.add('hg-revealed');
+        }
+      });
+    }, 3000);
   }
 
   // Re-run reveal registration for content injected after load (dashboards,
