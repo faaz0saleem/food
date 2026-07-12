@@ -76,6 +76,8 @@
     const selectors = [
       'section', '.how-card', '.engine-status', '.price-card', '.feature-card',
       '.quick-prompt-card', '.stat-card', '.subject-card', '.book-card',
+      '.q-card', '.bq-card', '.engine-pill', '.milestone', '.review-item',
+      '.similar-card', '.card', '.roundcard', '.topic-bar-row',
     ];
     const targets = document.querySelectorAll(selectors.join(','));
     if (!targets.length) return;
@@ -95,16 +97,78 @@
     }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
 
     targets.forEach((el, i) => {
+      if (el.classList.contains('hg-revealed')) return;
       el.classList.add('hg-reveal');
       el.style.transitionDelay = `${Math.min((i % 6) * 60, 300)}ms`;
       observer.observe(el);
     });
   }
 
+  // Re-run reveal registration for content injected after load (dashboards,
+  // dynamic lists). Cheap: only touches elements not yet observed/revealed.
+  function watchForNewContent() {
+    if (reducedMotion || !('MutationObserver' in window)) return;
+    const mo = new MutationObserver(() => {
+      clearTimeout(watchForNewContent._t);
+      watchForNewContent._t = setTimeout(initScrollReveal, 250);
+    });
+    mo.observe(document.body, { childList: true, subtree: true });
+  }
+
+  // ── Count-up: animate a number from its current value to a target ─────
+  // Usage: window.hgCountUp(element, 1234) or hgCountUp(element, 1234, {suffix:'%'})
+  window.hgCountUp = function hgCountUp(el, target, opts) {
+    if (!el) return;
+    const options = opts || {};
+    const duration = reducedMotion ? 0 : (options.duration || 900);
+    const suffix = options.suffix || '';
+    const prefix = options.prefix || '';
+    const start = Number(String(el.textContent || '0').replace(/[^0-9.-]/g, '')) || 0;
+    const end = Number(target) || 0;
+    if (duration === 0 || start === end) {
+      el.textContent = prefix + end.toLocaleString() + suffix;
+      return;
+    }
+    const startTime = performance.now();
+    function tick(now) {
+      const progress = Math.min(1, (now - startTime) / duration);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const value = Math.round(start + (end - start) * eased);
+      el.textContent = prefix + value.toLocaleString() + suffix;
+      if (progress < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  };
+
+  // ── Magnetic tilt: subtle 3D tilt on holographic cards following cursor ─
+  function initMagneticTilt() {
+    if (reducedMotion || window.matchMedia('(pointer: coarse)').matches) return;
+    document.addEventListener('mousemove', (event) => {
+      const card = event.target.closest && event.target.closest('.hg-holo');
+      if (!card) return;
+      const rect = card.getBoundingClientRect();
+      const x = (event.clientX - rect.left) / rect.width - 0.5;
+      const y = (event.clientY - rect.top) / rect.height - 0.5;
+      card.style.transform = `perspective(600px) rotateY(${x * 6}deg) rotateX(${-y * 6}deg) translateY(-2px)`;
+    });
+    document.addEventListener('mouseout', (event) => {
+      const card = event.target.closest && event.target.closest('.hg-holo');
+      if (!card) return;
+      card.style.transform = '';
+    });
+  }
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => { initStarfield(); initScrollReveal(); });
+    document.addEventListener('DOMContentLoaded', () => {
+      initStarfield();
+      initScrollReveal();
+      watchForNewContent();
+      initMagneticTilt();
+    });
   } else {
     initStarfield();
     initScrollReveal();
+    watchForNewContent();
+    initMagneticTilt();
   }
 })();

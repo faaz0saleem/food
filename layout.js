@@ -293,6 +293,19 @@ if ('serviceWorker' in navigator) {
     return `${count} engine${count === 1 ? '' : 's'} live · ${4 - count} coming soon`;
   }
 
+  function renderLivePulse(stats) {
+    const active = document.getElementById('pulseActive');
+    const chatsToday = document.getElementById('pulseChatsToday');
+    const visitors = document.getElementById('pulseVisitors');
+    if (!active && !chatsToday && !visitors) return;
+    // "Learning right now" reads oddly at 0 — floor it at 1 (you're here).
+    const activeCount = Math.max(1, Number(stats?.activeNow || 0));
+    const countUp = typeof window.hgCountUp === 'function' ? window.hgCountUp : (el, v) => { if (el) el.textContent = String(v); };
+    if (active) countUp(active, activeCount);
+    if (chatsToday) countUp(chatsToday, Number(stats?.chatsToday || 0));
+    if (visitors) countUp(visitors, Number(stats?.totalVisitors || 0));
+  }
+
   async function renderEngineStatus(container) {
     // Fallback chains mean every engine answers as long as one key is set,
     // so default to all-live until /api/status says otherwise.
@@ -313,6 +326,7 @@ if ('serviceWorker' in navigator) {
           sticker.innerHTML = `<span class="hg-live-dot"></span> ${liveEnginesLabel(liveCount)}`;
         }
       }
+      if (data.stats) renderLivePulse(data.stats);
     } catch {
       // keep the all-live fallback render if /api/status is unreachable
       renderFooterStatus(fallbackStatuses);
