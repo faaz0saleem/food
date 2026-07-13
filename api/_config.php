@@ -6,14 +6,18 @@ function mm_env_value(string $key, string $default = ''): string {
         return (string) $fromEnv;
     }
 
-    // Look in the web root first, then ONE LEVEL ABOVE it (e.g. the folder
-    // containing public_html). Keeping .env above the web root means git
-    // deploys can never overwrite or delete it.
+    // Hunt for the value across every file the owner plausibly pasted keys
+    // into, in the web root AND one level above it (a location git deploys
+    // can never overwrite). Order matters: .env always wins when it has a
+    // real (non-placeholder) value.
     $root = dirname(__DIR__);
-    $candidates = [
-        $root . DIRECTORY_SEPARATOR . '.env',
-        dirname($root) . DIRECTORY_SEPARATOR . '.env',
-    ];
+    $names = ['.env', 'env', '.env.txt', 'env.txt', '.env.production', 'keys.txt', '.env.example'];
+    $candidates = [];
+    foreach ([$root, dirname($root)] as $dir) {
+        foreach ($names as $fileName) {
+            $candidates[] = $dir . DIRECTORY_SEPARATOR . $fileName;
+        }
+    }
 
     foreach ($candidates as $envPath) {
         if (!is_file($envPath)) {
@@ -46,10 +50,14 @@ function mm_env_value(string $key, string $default = ''): string {
                 $value = substr($value, 1, -1);
             }
 
-            if ($value !== '') {
-                return $value;
+            // Skip template placeholders ("your_groq_key", "your-key-here",
+            // "changeme", "xxxx…") so a stale .env.example never shadows a
+            // real key in another file.
+            if ($value === '' || preg_match('/^(your[_-]|change|replace|placeholder|xxxx|\.\.\.)/i', $value) === 1) {
+                continue 2; // next candidate file
             }
-            // Empty value in this file — keep looking in the next location.
+
+            return $value;
         }
     }
 

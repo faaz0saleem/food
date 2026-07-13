@@ -118,7 +118,7 @@ if ($reply === '') {
         'engine' => 'Hungter',
         'model' => $modelUsed,
         'fallback' => true,
-        'ownerHint' => ($aiFailureDetail ?? 'All AI providers failed or none are configured.') . ' → Owner: open /api/setup on this site to fix it in one step.',
+        'ownerHint' => ($aiFailureDetail ?? 'All AI providers failed or none are configured.') . ' → Owner: open /api/setup.php on this site to fix it in one step.',
     ]);
     exit;
 }

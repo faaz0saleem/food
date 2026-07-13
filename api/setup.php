@@ -181,7 +181,7 @@ header('X-Robots-Tag: noindex');
     <?php endif; ?>
 
     <div class="foot">
-      <a href="/api/diag">Run server self-check</a>
+      <a href="/api/diag.php">Run server self-check</a>
       <a href="/chat.html">Open chat</a>
     </div>
   </main>

@@ -10,10 +10,11 @@ RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
 RewriteRule ^ https://%1%{REQUEST_URI} [L,R=301]
 
 # Map extensionless API routes to their PHP handlers so the frontend's
-# fetch('/api/status') etc. work on Apache/Hostinger.
+# fetch('/api/status') etc. work on Apache/LiteSpeed/Hostinger.
+# (No DOCUMENT_ROOT condition — it broke on hosts where the docroot
+# variable doesn't match the deployed directory.)
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteCond %{DOCUMENT_ROOT}/api/$1.php -f
 RewriteRule ^api/([a-zA-Z0-9_-]+)$ api/$1.php [L]
 
 ErrorDocument 404 /404.html

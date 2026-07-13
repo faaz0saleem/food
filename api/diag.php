@@ -27,12 +27,24 @@ foreach ($providers as $provider) {
 }
 $checks['apiKeys'] = $keys;
 
-// 3. .env file readable from PHP?
-$envPath = dirname(__DIR__) . DIRECTORY_SEPARATOR . '.env';
-$checks['envFile'] = [
-    'exists' => is_file($envPath),
-    'readable' => is_file($envPath) && is_readable($envPath),
-];
+// 3. Every key-file location the config hunts through — shows exactly
+//    which file the owner's paste landed in (never shows the key itself).
+$root = dirname(__DIR__);
+$checks['keyFiles'] = [];
+foreach ([$root => 'webRoot', dirname($root) => 'aboveWebRoot'] as $dir => $label) {
+    foreach (['.env', 'env', '.env.txt', 'env.txt', '.env.production', 'keys.txt', '.env.example'] as $fileName) {
+        $path = $dir . DIRECTORY_SEPARATOR . $fileName;
+        if (!is_file($path)) {
+            continue;
+        }
+        $content = (string) @file_get_contents($path);
+        $hasReal = preg_match('/^[ \t]*GROQ_API_KEY[ \t]*=[ \t]*(?!your[_-]|change|xxxx)[^\s#]+/mi', $content) === 1;
+        $checks['keyFiles'][$label . '/' . $fileName] = [
+            'readable' => is_readable($path),
+            'hasGroqKeyLine' => $hasReal,
+        ];
+    }
+}
 
 // 4. Live outbound test against Groq (auth check, ~1s). 200 = key valid,
 //    401 = key wrong/expired, status 0 + error = outbound HTTPS blocked.
@@ -63,7 +75,7 @@ if ($groqKey !== '' && function_exists('curl_init')) {
 } else {
     $checks['groqConnectivity'] = [
         'verdict' => $groqKey === ''
-            ? 'NO KEY — GROQ_API_KEY is empty. Open /api/setup on this site to paste your key, or edit .env manually (it is NOT deployed from GitHub).'
+            ? 'NO KEY — GROQ_API_KEY is empty. Open /api/setup.php on this site to paste your key, or edit .env manually (it is NOT deployed from GitHub).'
             : 'curl missing',
     ];
 }
