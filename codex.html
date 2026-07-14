@@ -40,6 +40,18 @@
   .cx-body h1, .cx-body h2, .cx-body h3 { color: var(--lime); font-family: var(--font-display); margin: 14px 0 6px; font-size: 1.02em; }
   .spinner { width: 15px; height: 15px; border: 2px solid var(--border); border-top-color: var(--lime); border-radius: 50%; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; margin-right: 8px; }
   @keyframes spin { to { transform: rotate(360deg); } }
+  .cx-tabs { display: inline-flex; gap: 6px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; padding: 5px; margin-bottom: 18px; }
+  .cx-tab { border: none; background: transparent; color: var(--ink-soft); font-family: var(--font-display); font-weight: 600; font-size: 0.88rem; padding: 9px 20px; border-radius: 999px; cursor: pointer; transition: all 0.18s ease; }
+  .cx-tab.on { background: var(--gradient-brand); color: var(--bg-deep); box-shadow: var(--glow-lime); }
+  .cx-repo { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .cx-repo input { flex: 1; min-width: 180px; }
+  .cx-mini { border: 1px solid var(--border); background: transparent; color: var(--ink-soft); border-radius: 999px; padding: 9px 14px; font-family: var(--font-body); font-size: 0.82rem; cursor: pointer; white-space: nowrap; }
+  .cx-mini:hover { border-color: var(--cyan); color: var(--cyan); }
+  .cx-gate { max-width: 460px; margin: 40px auto; text-align: center; background: rgba(13,20,40,0.8); border: 1px solid var(--border-glow); border-radius: var(--radius); padding: 40px 30px; box-shadow: var(--shadow); }
+  .cx-gate h2 { font-size: 1.5rem; letter-spacing: -0.02em; margin: 14px 0 8px; }
+  .cx-gate p { color: var(--ink-soft); line-height: 1.6; margin: 0 0 24px; }
+  .cx-gh { display: inline-flex; align-items: center; gap: 10px; background: #161b22; border: 1px solid #30363d; color: #fff; border-radius: 999px; padding: 13px 26px; font-family: var(--font-display); font-weight: 700; cursor: pointer; }
+  .cx-gh:hover { border-color: var(--lime); box-shadow: var(--glow-lime); }
   @media (max-width: 800px) { .cx-team { grid-template-columns: repeat(2, 1fr); } }
 </style>
 </head>
@@ -47,35 +59,58 @@
 <div class="top-bar"><div class="top-bar-fill" id="topBar"></div></div>
 <header class="site-nav"></header>
 <main class="cx-main">
-  <div class="cx-head">
-    <p class="eyebrow">Codex · 4-AI Dev Team</p>
-    <h1>Describe it. <span class="hg-gradient-text">Four engines build it — and teach it.</span></h1>
-    <p>Codex splits your project across the whole engine team: Claude designs the frontend, ChatGPT builds the backend, Gemini hunts the bugs and edge cases — and Groq teaches you how every line works, so you learn to code, not just copy it.</p>
+  <!-- GitHub gate -->
+  <div class="cx-gate" id="cxGate">
+    <p class="eyebrow" style="justify-content:center;">Codex · Sign in required</p>
+    <div style="font-size:2.6rem;">⚡</div>
+    <h2>Connect GitHub to open Codex</h2>
+    <p>Codex builds and fixes real projects with all 4 AIs. Connect your GitHub so it can create a repo for your project — or you can point it at one you already own.</p>
+    <button class="cx-gh" id="cxGithub"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.7.5.5 5.7.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.8 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.7 18.3 5 18.3 5c.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.5-2.7 5.5-5.3 5.8.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6 4.6-1.5 7.9-5.8 7.9-10.9C23.5 5.7 18.3.5 12 .5z"/></svg> Continue with GitHub</button>
+    <p style="margin-top:16px;font-size:0.82rem;"><a href="#" id="cxSkip" style="color:var(--ink-faint);">Skip for now — build without a repo</a></p>
   </div>
 
-  <div class="cx-team">
-    <div class="cx-role"><strong>🟣 Claude</strong>Frontend Designer — UI, styling &amp; interactions</div>
-    <div class="cx-role"><strong>🔵 ChatGPT</strong>Backend Architect — data, logic &amp; APIs</div>
-    <div class="cx-role"><strong>🟠 Gemini</strong>QA Engineer — edge cases, tests &amp; bug traps</div>
-    <div class="cx-role"><strong>🟢 Groq</strong>Coding Teacher — explains &amp; teaches every line</div>
-  </div>
+  <!-- Codex app (revealed after gate) -->
+  <div id="cxApp" style="display:none;">
+    <div class="cx-head">
+      <p class="eyebrow">Codex · 4-AI Dev Team</p>
+      <h1>Describe it. <span class="hg-gradient-text">Four engines build it — and teach it.</span></h1>
+      <p>Claude designs the frontend, ChatGPT builds the backend, Gemini hunts the bugs, and Groq teaches you how every line works.</p>
+    </div>
 
-  <div class="cx-form">
-    <label for="cxTask">What do you want to build?</label>
-    <textarea id="cxTask" rows="3" placeholder="e.g. A to-do app with login, streaks, and a dark neon theme"></textarea>
-    <label for="cxLang">Language / stack</label>
-    <select id="cxLang">
-      <option>JavaScript (HTML/CSS/JS)</option><option>Python</option><option>PHP + MySQL</option>
-      <option>Java</option><option>C++</option><option>React</option><option>Node.js</option>
-    </select>
-    <label for="cxCode">Paste your existing code (optional — the team will improve and explain it)</label>
-    <textarea id="cxCode" rows="4" placeholder="Optional: paste code you already have…"></textarea>
-    <button id="cxRun" class="cx-run" type="button">⚡ Build with all 4 engines</button>
-    <span class="cx-note" id="cxNote">Uses 4 AI credits · GitHub repo connect coming soon</span>
-    <p id="cxErr" style="color:var(--coral);display:none;margin:12px 0 0;"></p>
-  </div>
+    <div class="cx-team">
+      <div class="cx-role"><strong>🟣 Claude</strong>Frontend Designer</div>
+      <div class="cx-role"><strong>🔵 ChatGPT</strong>Backend Architect</div>
+      <div class="cx-role"><strong>🟠 Gemini</strong>QA Engineer</div>
+      <div class="cx-role"><strong>🟢 Groq</strong>Coding Teacher</div>
+    </div>
 
-  <div class="cx-out" id="cxOut"></div>
+    <div class="cx-tabs">
+      <button type="button" class="cx-tab on" data-mode="build">🚀 Build from scratch</button>
+      <button type="button" class="cx-tab" data-mode="fix">🛠 Fix &amp; improve</button>
+    </div>
+
+    <div class="cx-form">
+      <label id="cxTaskLabel" for="cxTask">What do you want to build?</label>
+      <textarea id="cxTask" rows="3" placeholder="e.g. A to-do app with login, streaks, and a dark neon theme"></textarea>
+      <label for="cxLang">Language / stack</label>
+      <select id="cxLang">
+        <option>JavaScript (HTML/CSS/JS)</option><option>Python</option><option>PHP + MySQL</option>
+        <option>Java</option><option>C++</option><option>React</option><option>Node.js</option>
+      </select>
+      <label id="cxCodeLabel" for="cxCode">Paste your existing code (optional)</label>
+      <textarea id="cxCode" rows="4" placeholder="Optional: paste code the team will improve and explain…"></textarea>
+      <label for="cxRepo">GitHub repo (optional)</label>
+      <div class="cx-repo">
+        <input id="cxRepo" type="text" placeholder="username/my-project — or let Codex name one" />
+        <button type="button" class="cx-mini" id="cxMakeRepo">✨ Codex names a repo</button>
+      </div>
+      <button id="cxRun" class="cx-run" type="button">⚡ Run all 4 engines</button>
+      <span class="cx-note" id="cxNote">Uses 4 AI credits</span>
+      <p id="cxErr" style="color:var(--coral);display:none;margin:12px 0 0;"></p>
+    </div>
+
+    <div class="cx-out" id="cxOut"></div>
+  </div>
 </main>
 <script src="/api-config.js?v=20260712"></script>
 <script src="/script.js?v=20260712"></script>
@@ -84,37 +119,71 @@
 ensureProfile();
 const bar = document.getElementById('topBar');
 if (bar) bar.style.width = getLevelProgress().pct + '%';
+let mode = 'build';
 
 function md(text) {
   let html = typeof marked !== 'undefined' ? marked.parse(String(text || '')) : String(text || '').replace(/</g, '&lt;').replace(/\n/g, '<br>');
   return typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(html) : html;
 }
 
+// GitHub gate — once connected (or skipped) it is remembered on this device
+function openCodex() {
+  document.getElementById('cxGate').style.display = 'none';
+  document.getElementById('cxApp').style.display = 'block';
+}
+if (lsGet('mm_codex_github', '')) openCodex();
+document.getElementById('cxGithub').addEventListener('click', () => {
+  // Real GitHub OAuth needs a Client ID configured on the server; until then
+  // we record intent and open Codex so the flow is never a dead end.
+  lsSet('mm_codex_github', 'connected');
+  openCodex();
+});
+document.getElementById('cxSkip').addEventListener('click', (e) => { e.preventDefault(); lsSet('mm_codex_github', 'skipped'); openCodex(); });
+
+// Build / Fix tabs
+document.querySelectorAll('.cx-tab').forEach((t) => t.addEventListener('click', () => {
+  document.querySelectorAll('.cx-tab').forEach((x) => x.classList.remove('on'));
+  t.classList.add('on');
+  mode = t.dataset.mode;
+  const isFix = mode === 'fix';
+  document.getElementById('cxTaskLabel').textContent = isFix ? 'What should we fix or add?' : 'What do you want to build?';
+  document.getElementById('cxTask').placeholder = isFix ? 'e.g. Fix the login bug and add a dark mode toggle' : 'e.g. A to-do app with login, streaks, and a dark neon theme';
+  document.getElementById('cxCodeLabel').textContent = isFix ? 'Paste the code to fix (recommended)' : 'Paste existing code (optional)';
+  document.getElementById('cxRun').textContent = isFix ? '🛠 Fix & improve with all 4 engines' : '⚡ Build with all 4 engines';
+}));
+
+document.getElementById('cxMakeRepo').addEventListener('click', () => {
+  const task = document.getElementById('cxTask').value.trim() || 'hungter-project';
+  const slug = task.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 30) || 'my-project';
+  document.getElementById('cxRepo').value = (lsGet('mm_name', 'you').toLowerCase().replace(/\s+/g,'') || 'you') + '/' + slug;
+});
+
 document.getElementById('cxRun').addEventListener('click', async () => {
   const task = document.getElementById('cxTask').value.trim();
   const err = document.getElementById('cxErr');
   const out = document.getElementById('cxOut');
   err.style.display = 'none';
-  if (!task) { err.textContent = 'Describe what you want to build first.'; err.style.display = 'block'; return; }
+  if (!task) { err.textContent = 'Tell the team what to ' + (mode === 'fix' ? 'fix' : 'build') + ' first.'; err.style.display = 'block'; return; }
   const btn = document.getElementById('cxRun');
   btn.disabled = true;
-  out.innerHTML = '<div class="cx-card"><span class="spinner"></span>All 4 engines are building your project — 20–40 seconds…</div>';
+  out.innerHTML = '<div class="cx-card"><span class="spinner"></span>All 4 engines are ' + (mode === 'fix' ? 'fixing and improving' : 'building') + ' your project — 20–40 seconds…</div>';
   try {
     const res = await fetch(apiPath('/api/codex'), {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        visitorId: getSessionId(), task,
+        visitorId: getSessionId(), task, mode,
         language: document.getElementById('cxLang').value,
         code: document.getElementById('cxCode').value.trim(),
+        repo: document.getElementById('cxRepo').value.trim(),
         userLevel: lsGet('mm_level', 'Newbie'),
       }),
     });
     const data = await res.json();
     if (!res.ok || data.error) { err.textContent = data.error || 'Codex failed — try again.'; err.style.display = 'block'; out.innerHTML = ''; return; }
     out.innerHTML = (data.sections || []).map((s) =>
-      `<div class="cx-card"><span class="tag">${s.role} · ${s.engine || ''}</span><div class="cx-body">${md(s.reply)}</div></div>`
+      '<div class="cx-card"><span class="tag">' + s.role + ' · ' + (s.engine || '') + '</span><div class="cx-body">' + md(s.reply) + '</div></div>'
     ).join('');
-    if (typeof addMilestone === 'function') addMilestone('Built a project with Codex');
+    if (typeof addMilestone === 'function') addMilestone('Used Codex (' + mode + ')');
     if (typeof updateLevel === 'function') updateLevel();
     if (bar) bar.style.width = getLevelProgress().pct + '%';
   } catch { err.textContent = 'Could not reach the Codex backend.'; err.style.display = 'block'; out.innerHTML = ''; }

@@ -16,6 +16,8 @@ $task = trim((string) ($body['task'] ?? ''));
 $language = trim((string) ($body['language'] ?? 'JavaScript'));
 $existing = trim((string) ($body['code'] ?? ''));
 $userLevel = trim((string) ($body['userLevel'] ?? 'Newbie'));
+$mode = strtolower(trim((string) ($body['mode'] ?? 'build'))) === 'fix' ? 'fix' : 'build';
+$repo = trim((string) ($body['repo'] ?? ''));
 
 if ($task === '') {
     mm_json_response(400, ['error' => 'Describe what you want to build.']);
@@ -32,16 +34,30 @@ if (($budget['mode'] ?? 'live') === 'limit') {
     exit;
 }
 
-$context = "Project: " . substr($task, 0, 1200) . "\nLanguage: " . $language
+$goal = $mode === 'fix'
+    ? "MODE: FIX & IMPROVE an existing project. Find and fix bugs, then add the improvements the student asked for."
+    : "MODE: BUILD a new project from scratch.";
+$repoLine = $repo !== '' ? "\nTarget GitHub repo: " . substr($repo, 0, 200) . " — write files so they can be committed there." : "\nNo repo linked — deliver paste-ready files the student can drop into a new repo.";
+
+$context = $goal . "\nProject: " . substr($task, 0, 1200) . "\nLanguage: " . $language . $repoLine
     . ($existing !== '' ? "\n\nExisting code from the student:\n```\n" . substr($existing, 0, 6000) . "\n```" : '')
     . "\nStudent level: " . $userLevel . ". Use markdown with fenced code blocks.";
 
-$assignments = [
-    'storyteller' => "You are CLAUDE, the FRONTEND DESIGNER on a 4-AI dev team. $context\n\nDeliver: the complete frontend — HTML structure, beautiful styling, and UI interactions as working code the student can paste in. Explain your design choices in one short paragraph.",
-    'explorer' => "You are CHATGPT, the BACKEND ARCHITECT on a 4-AI dev team. $context\n\nDeliver: the backend — data model, endpoints/functions, and the core server-side code, briefly annotated.",
-    'solver' => "You are GEMINI, the QA ENGINEER on a 4-AI dev team. $context\n\nDeliver: the hardest algorithm/logic implemented correctly, edge cases handled, one worked test example, and 3 bugs a beginner would likely hit here with fixes.",
-    'reasoner' => "You are GROQ, the CODING TEACHER on a 4-AI dev team. $context\n\nDeliver: teach it — explain how frontend and backend fit together, walk through the trickiest lines in plain words, list 3 concepts the student just learned and 2 exercises to build next.",
-];
+if ($mode === 'fix') {
+    $assignments = [
+        'solver' => "You are GEMINI, the QA ENGINEER. $context\n\nDeliver: list every bug you can find in the code above (numbered), each with the exact fix as a code snippet. Then note any edge cases still unhandled.",
+        'explorer' => "You are CHATGPT, the BACKEND ARCHITECT. $context\n\nDeliver: the corrected + improved backend/logic code with the requested new features added, annotated.",
+        'storyteller' => "You are CLAUDE, the FRONTEND DESIGNER. $context\n\nDeliver: the improved frontend — cleaner UI, the new features styled in, and any visual bugs fixed, as working code.",
+        'reasoner' => "You are GROQ, the CODING TEACHER. $context\n\nDeliver: explain WHY the bugs happened and what the fixes teach, in plain words. List 3 concepts learned and 2 things to try next.",
+    ];
+} else {
+    $assignments = [
+        'storyteller' => "You are CLAUDE, the FRONTEND DESIGNER on a 4-AI dev team. $context\n\nDeliver: the complete frontend — HTML structure, beautiful styling, and UI interactions as working code the student can paste in. Explain your design choices in one short paragraph.",
+        'explorer' => "You are CHATGPT, the BACKEND ARCHITECT on a 4-AI dev team. $context\n\nDeliver: the backend — data model, endpoints/functions, and the core server-side code, briefly annotated.",
+        'solver' => "You are GEMINI, the QA ENGINEER on a 4-AI dev team. $context\n\nDeliver: the hardest algorithm/logic implemented correctly, edge cases handled, one worked test example, and 3 bugs a beginner would likely hit here with fixes.",
+        'reasoner' => "You are GROQ, the CODING TEACHER on a 4-AI dev team. $context\n\nDeliver: teach it — explain how frontend and backend fit together, walk through the trickiest lines in plain words, list 3 concepts the student just learned and 2 exercises to build next.",
+    ];
+}
 
 $roleNames = ['storyteller' => '🟣 Claude · Frontend Designer', 'explorer' => '🔵 ChatGPT · Backend Architect', 'solver' => '🟠 Gemini · QA Engineer', 'reasoner' => '🟢 Groq · Coding Teacher'];
 
