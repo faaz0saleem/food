@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Hungter — Local Admin</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/brand.css">
+<style>
+  body { padding: 30px 20px 70px; }
+  .ad-wrap { max-width: 1080px; margin: 0 auto; }
+  .ad-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 22px; }
+  .ad-head h1 { font-size: 1.5rem; letter-spacing: -0.02em; margin: 0; }
+  .ad-head .badge { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--lime); border: 1px solid rgba(200,255,77,0.35); background: rgba(200,255,77,0.07); border-radius: 999px; padding: 6px 12px; }
+  .ad-gate { max-width: 420px; margin: 60px auto; text-align: center; background: rgba(13,20,40,.85); border: 1px solid var(--border-glow); border-radius: var(--radius); padding: 36px; box-shadow: var(--shadow); }
+  .ad-gate input { width: 100%; border: 1px solid var(--border); background: var(--surface-2); color: var(--ink); border-radius: 10px; padding: 12px 14px; margin: 16px 0; font-family: var(--font-mono); }
+  .ad-gate button, .ad-refresh { border: none; border-radius: 999px; padding: 12px 22px; font-family: var(--font-display); font-weight: 700; background: var(--gradient-brand); color: var(--bg-deep); cursor: pointer; box-shadow: var(--glow-lime); }
+  .ad-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; margin-bottom: 24px; }
+  .ad-stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 18px; position: relative; overflow: hidden; }
+  .ad-stat::after { content: ''; position: absolute; left: 0; bottom: 0; right: 0; height: 3px; background: var(--gradient-brand); }
+  .ad-stat b { display: block; font-family: var(--font-display); font-weight: 700; font-size: 2rem; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; background: var(--gradient-brand); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .ad-stat span { font-family: var(--font-mono); font-size: 0.64rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faint); }
+  .ad-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 18px; }
+  .ad-card h2 { font-family: var(--font-display); font-size: 1.05rem; margin: 0 0 18px; }
+  .bar-row { display: grid; grid-template-columns: 130px 1fr 54px; align-items: center; gap: 12px; margin-bottom: 11px; }
+  .bar-label { font-size: 0.86rem; color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar-track { height: 12px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 999px; background: var(--gradient-brand); transition: width 0.8s cubic-bezier(0.22,1,0.36,1); box-shadow: 0 0 10px rgba(200,255,77,0.35); }
+  .bar-val { font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-soft); text-align: right; }
+  .ad-note { color: var(--ink-faint); font-size: 0.82rem; line-height: 1.6; }
+  .ad-note a { color: var(--cyan); }
+  .ad-err { color: var(--coral); margin-top: 10px; }
+</style>
+</head>
+<body>
+<div class="ad-wrap">
+  <div id="gate" class="ad-gate">
+    <div style="font-size:2.4rem;">🔐</div>
+    <h1 style="font-size:1.3rem;margin:12px 0 4px;">Local Admin</h1>
+    <p style="color:var(--ink-soft);font-size:0.9rem;">Enter your <strong>ADMIN_KEY</strong> (from <code>.env</code>).</p>
+    <input id="keyInput" type="password" placeholder="ADMIN_KEY" autocomplete="off">
+    <button id="unlock">Unlock dashboard</button>
+    <p id="gateErr" class="ad-err" style="display:none;"></p>
+    <p class="ad-note" style="margin-top:18px;">Run locally: <code>node server.js</code> → open <code>localhost:3000/admin.html</code></p>
+  </div>
+
+  <div id="panel" style="display:none;">
+    <div class="ad-head">
+      <h1>📊 Hungter Admin</h1>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <span class="badge" id="clock"></span>
+        <button class="ad-refresh" id="refresh">↻ Refresh</button>
+      </div>
+    </div>
+
+    <div class="ad-grid" id="statGrid"></div>
+
+    <div class="ad-card">
+      <h2>📚 Top subjects by activity</h2>
+      <div id="subjects"></div>
+    </div>
+
+    <div class="ad-card">
+      <h2>💰 Revenue &amp; users</h2>
+      <p class="ad-note" id="revNote"></p>
+      <p class="ad-note" style="margin-top:14px;">The full per-user table, revenue and plan controls run on the PHP+MySQL host at <a href="/api/admin.php">/api/admin.php</a> (works only where PHP + database are live). This local dashboard shows the real-time activity metrics your Node server tracks.</p>
+    </div>
+  </div>
+</div>
+
+<script src="/api-config.js"></script>
+<script>
+(function () {
+  const base = String(window.HUNGTER_API_BASE || '').replace(/\/$/, '');
+  const gate = document.getElementById('gate');
+  const panel = document.getElementById('panel');
+  let key = sessionStorage.getItem('mm_admin_key') || '';
+
+  async function fetchStats() {
+    // Try both endpoint shapes (Node dev + PHP host).
+    const urls = [base + '/api/admin-stats?key=' + encodeURIComponent(key), base + '/api/admin-stats.php?key=' + encodeURIComponent(key)];
+    for (const u of urls) {
+      try {
+        const res = await fetch(u, { headers: { 'X-Admin-Key': key } });
+        if (res.ok) return await res.json();
+        if (res.status === 401) throw new Error('Wrong ADMIN_KEY.');
+      } catch (e) { if (e.message.includes('ADMIN_KEY')) throw e; }
+    }
+    throw new Error('Could not reach admin-stats. Run node server.js locally, or open on the PHP host.');
+  }
+
+  function num(n) { return Number(n || 0).toLocaleString(); }
+
+  function render(s) {
+    document.getElementById('clock').textContent = new Date().toLocaleTimeString();
+    const stats = [
+      ['Active now', s.activeNow], ['Active today', s.dailyActiveUsers],
+      ['Active this month', s.monthlyActiveUsers], ['Total visitors', s.totalVisitors],
+      ['Total chats', s.totalChats], ['Chats today', s.chatsToday],
+    ];
+    document.getElementById('statGrid').innerHTML = stats.map(([l, v]) =>
+      '<div class="ad-stat"><b>' + num(v) + '</b><span>' + l + '</span></div>').join('');
+
+    const subs = s.topSubjects || [];
+    const max = Math.max(1, ...subs.map((x) => x.count || 0));
+    document.getElementById('subjects').innerHTML = subs.length ? subs.map((x) =>
+      '<div class="bar-row"><div class="bar-label">' + (x.subject || '—') + '</div>' +
+      '<div class="bar-track"><div class="bar-fill" style="width:' + Math.round((x.count / max) * 100) + '%"></div></div>' +
+      '<div class="bar-val">' + num(x.count) + '</div></div>').join('') : '<p class="ad-note">No chats yet.</p>';
+
+    const p = s.purchases || {};
+    document.getElementById('revNote').textContent = p.status
+      ? ('Payments: ' + p.status + ' · succeeded ' + num(p.succeeded) + ' · processing ' + num(p.processing) + ' · failed ' + num(p.failed))
+      : 'No payment provider connected yet — revenue appears here once billing is live.';
+  }
+
+  async function load() {
+    try {
+      const s = await fetchStats();
+      gate.style.display = 'none';
+      panel.style.display = 'block';
+      sessionStorage.setItem('mm_admin_key', key);
+      render(s);
+    } catch (e) {
+      const err = document.getElementById('gateErr');
+      err.textContent = e.message; err.style.display = 'block';
+      gate.style.display = 'block'; panel.style.display = 'none';
+    }
+  }
+
+  document.getElementById('unlock').addEventListener('click', () => { key = document.getElementById('keyInput').value.trim(); if (key) load(); });
+  document.getElementById('keyInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') document.getElementById('unlock').click(); });
+  document.getElementById('refresh').addEventListener('click', load);
+  if (key) load();
+})();
+</script>
+</body>
+</html>
