@@ -14,13 +14,14 @@ if ('serviceWorker' in navigator) {
   }
 
   const NAV_LINKS = [
-    { label: '💡 Learn', href: '/learn.html' },
-    { label: '📚 Subjects', href: '/subjects.html' },
+    { label: '💬 Chat', href: '/chat.html' },
+    { label: '⚡ Codex', href: '/codex.html' },
+    { label: '📄 Guess Papers', href: '/guess-papers.html' },
     { label: '📖 Books', href: '/books.html' },
     { label: '🧪 Quiz', href: '/quiz.html' },
-    { label: '📄 Guess Papers', href: '/guess-papers.html' },
+    { label: '💡 Learn', href: '/learn.html' },
+    { label: '📚 Subjects', href: '/subjects.html' },
     { label: '📊 Progress', href: '/progress.html' },
-    { label: '💬 Chat', href: '/chat.html' },
   ];
 
   const ENGINES = [

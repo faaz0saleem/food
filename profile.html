@@ -1,92 +1,119 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-<!-- Google tag (gtag.js) -->
+<head>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-FHMTQDLHV2"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag("js", new Date());
-
-  gtag("config", "G-FHMTQDLHV2");
-</script>
-
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Fredoka:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap">
-    <title>Profile | Hungter</title>
-    <meta name="description" content="Manage your Hungter profile, learning style, theme, and progress settings.">
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag("js",new Date());gtag("config","G-FHMTQDLHV2");</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap">
+<title>Your Profile | Hungter</title>
+<meta name="description" content="Manage your Hungter profile, learning style, theme, and progress settings.">
 <meta name="robots" content="noindex, follow">
-    <link rel="canonical" href="https://hungter.com/profile.html">
-    <meta property="og:type" content="website">
-    <meta property="og:title" content="Profile | Hungter">
-    <meta property="og:description" content="Customize your learning preferences and account profile in Hungter.">
-    <link rel="stylesheet" href="/styles.css?v=20260711" />
-  </head>
-  <body data-page="profile">
-    <div class="page-shell fade-in">
-      <header class="site-nav"></header>
-      <main class="page-card profile-card">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">Your profile</p>
-            <h1>Manage your learning preferences.</h1>
-          </div>
+<link rel="canonical" href="https://hungter.com/profile.html">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/brand.css?v=20260712">
+<link rel="stylesheet" href="/nav.css?v=20260712">
+<style>
+  .top-bar { height: 4px; background: var(--surface-2); }
+  .top-bar-fill { height: 100%; background: var(--gradient-brand); width: 0%; }
+  .pf-main { max-width: 760px; margin: 0 auto; padding: 28px 20px 70px; }
+  .pf-card { background: rgba(13,20,40,0.72); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; margin-bottom: 18px; backdrop-filter: blur(14px); box-shadow: var(--shadow-sm); }
+  .pf-card h2 { font-size: 1.05rem; font-family: var(--font-display); margin: 0 0 18px; }
+  .pf-id { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+  .avatar-large { width: 84px; height: 84px; border-radius: 24px; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 700; font-size: 1.7rem; color: var(--bg-deep); box-shadow: var(--glow-lime); flex-shrink: 0; }
+  .pf-fields { flex: 1; min-width: 220px; }
+  label { display: block; font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-faint); margin: 0 0 6px; }
+  input[type="text"], select { width: 100%; border: 1px solid var(--border); background: var(--surface-2); color: var(--ink); border-radius: 10px; padding: 12px; font-family: var(--font-body); font-size: 0.94rem; }
+  input:focus, select:focus { outline: none; border-color: var(--cyan); box-shadow: var(--glow-cyan); }
+  .color-row { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+  .avatar-color { width: 34px; height: 34px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; transition: transform 0.15s ease; }
+  .avatar-color:hover { transform: scale(1.12); }
+  .avatar-color.selected { border-color: var(--ink); box-shadow: 0 0 12px rgba(242,245,255,0.4); }
+  .style-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+  .learning-style-card { border: 1px solid var(--border); background: var(--surface); border-radius: var(--radius-sm); padding: 16px 14px; cursor: pointer; text-align: center; transition: all 0.18s ease; color: var(--ink); font-family: var(--font-body); }
+  .learning-style-card .ic { font-size: 1.4rem; display: block; margin-bottom: 6px; }
+  .learning-style-card strong { font-family: var(--font-display); font-size: 0.9rem; }
+  .learning-style-card small { display: block; color: var(--ink-faint); font-size: 0.74rem; margin-top: 3px; }
+  .learning-style-card:hover { border-color: var(--cyan); }
+  .learning-style-card.selected { border-color: var(--lime); background: rgba(200,255,77,0.07); box-shadow: var(--glow-lime); }
+  .pf-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--border-soft); font-size: 0.92rem; color: var(--ink-soft); }
+  .pf-row:last-child { border-bottom: none; }
+  .switch { position: relative; width: 46px; height: 26px; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch i { position: absolute; inset: 0; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); transition: 0.2s; }
+  .switch i::after { content: ''; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--ink-faint); transition: 0.2s; }
+  .switch input:checked + i { background: rgba(200,255,77,0.2); border-color: var(--lime); }
+  .switch input:checked + i::after { transform: translateX(20px); background: var(--lime); }
+  .button-primary { border: none; border-radius: 999px; padding: 13px 30px; font-family: var(--font-display); font-weight: 700; background: var(--gradient-brand); color: var(--bg-deep); cursor: pointer; box-shadow: var(--glow-lime); }
+  .button-danger { border: 1px solid rgba(255,107,74,0.4); border-radius: 999px; padding: 11px 22px; background: transparent; color: var(--coral); cursor: pointer; font-family: var(--font-display); font-weight: 600; }
+  .toast { display: none; margin-left: 14px; color: var(--lime); font-size: 0.88rem; }
+  .toast.show { display: inline; }
+  .pf-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+</style>
+</head>
+<body data-page="profile">
+<div class="top-bar"><div class="top-bar-fill" id="topBar"></div></div>
+<header class="site-nav"></header>
+<main class="pf-main">
+  <p class="eyebrow">Your Profile</p>
+  <h1 style="font-size:clamp(1.6rem,3vw,2.2rem);letter-spacing:-0.02em;margin:0 0 22px;">Make Hungter <span class="hg-gradient-text">teach your way</span></h1>
+
+  <div class="pf-card">
+    <h2>👤 Identity</h2>
+    <div class="pf-id">
+      <div id="profile-avatar" class="avatar-large">MM</div>
+      <div class="pf-fields">
+        <label for="profile-name">Your name</label>
+        <input id="profile-name" type="text" placeholder="Your first name" />
+        <div class="color-row">
+          <button type="button" class="avatar-color" data-color="#c8ff4d" aria-label="Lime"></button>
+          <button type="button" class="avatar-color" data-color="#4df0ff" aria-label="Cyan"></button>
+          <button type="button" class="avatar-color" data-color="#8b5cff" aria-label="Violet"></button>
+          <button type="button" class="avatar-color" data-color="#ff4de3" aria-label="Pink"></button>
+          <button type="button" class="avatar-color" data-color="#ff6b4a" aria-label="Coral"></button>
+          <button type="button" class="avatar-color" data-color="#ffd14d" aria-label="Gold"></button>
         </div>
-        <section class="profile-header">
-          <div id="profile-avatar" class="avatar-large">MM</div>
-          <div>
-            <label>Name</label>
-            <input id="profile-name" type="text" />
-          </div>
-        </section>
-        <section>
-          <h2>Learning style</h2>
-          <div class="grid-4">
-            <button class="card learning-style-card" data-value="Visual">Visual 👁</button>
-            <button class="card learning-style-card" data-value="Examples">Examples 💡</button>
-            <button class="card learning-style-card" data-value="Step-by-step">Step-by-step 📝</button>
-            <button class="card learning-style-card" data-value="Stories">Stories 📖</button>
-          </div>
-        </section>
-        <section>
-          <label>Favourite subject</label>
-          <select id="profile-subject"></select>
-        </section>
-        <section>
-          <div class="label-row">
-            <span>Theme</span>
-            <label class="toggle-switch">
-              <input id="theme-toggle" type="checkbox" />
-              <span class="slider"></span>
-            </label>
-          </div>
-        </section>
-        <section>
-          <h2>Avatar color</h2>
-          <div class="avatar-colors">
-            <button class="avatar-color" data-color="#7b7cff"></button>
-            <button class="avatar-color" data-color="#74f0d8"></button>
-            <button class="avatar-color" data-color="#ffb572"></button>
-            <button class="avatar-color" data-color="#ff6fbf"></button>
-            <button class="avatar-color" data-color="#6fffe9"></button>
-            <button class="avatar-color" data-color="#d47bff"></button>
-          </div>
-        </section>
-        <section class="danger-zone">
-          <h2>Danger zone</h2>
-          <button id="reset-progress" class="button button-danger">Reset all progress</button>
-        </section>
-        <div class="page-actions">
-          <button id="save-profile" class="button button-primary">Save changes</button>
-          <div id="save-toast" class="toast">Settings saved!</div>
-        </div>
-      </main>
+      </div>
     </div>
-    <script src="/layout.js?v=20260711" defer></script>
-    <script src="/api-config.js?v=20260711"></script>
-<script src="/script.js?v=20260711" defer></script>
-  </body>
+  </div>
+
+  <div class="pf-card">
+    <h2>🧠 How does your brain learn best?</h2>
+    <div class="style-grid">
+      <button type="button" class="learning-style-card" data-value="Visual"><span class="ic">👁️</span><strong>Visual</strong><small>Diagrams &amp; pictures</small></button>
+      <button type="button" class="learning-style-card" data-value="Examples"><span class="ic">🧪</span><strong>Examples</strong><small>Real-world cases</small></button>
+      <button type="button" class="learning-style-card" data-value="Step-by-step"><span class="ic">🪜</span><strong>Step-by-step</strong><small>One move at a time</small></button>
+      <button type="button" class="learning-style-card" data-value="Stories"><span class="ic">📖</span><strong>Stories</strong><small>Analogies that stick</small></button>
+    </div>
+  </div>
+
+  <div class="pf-card">
+    <h2>⚙️ Preferences</h2>
+    <div class="pf-row">
+      <span>Favourite subject</span>
+      <select id="profile-subject" style="max-width:240px;"></select>
+    </div>
+    <div class="pf-row">
+      <span>Dark theme</span>
+      <label class="switch"><input id="theme-toggle" type="checkbox" /><i></i></label>
+    </div>
+  </div>
+
+  <div class="pf-card">
+    <h2>⚠️ Danger zone</h2>
+    <p style="color:var(--ink-soft);font-size:0.88rem;margin:0 0 14px;">This wipes your XP, streaks, quiz history and milestones on this device. There is no undo.</p>
+    <button id="reset-progress" class="button-danger">Reset all progress</button>
+  </div>
+
+  <div class="pf-actions">
+    <button id="save-profile" class="button-primary">Save changes</button>
+    <div id="save-toast" class="toast">Saved ✓</div>
+  </div>
+</main>
+<script src="/api-config.js?v=20260712"></script>
+<script src="/script.js?v=20260712"></script>
+<script src="/layout.js?v=20260712" defer></script>
+</body>
 </html>

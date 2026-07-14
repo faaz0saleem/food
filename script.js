@@ -33,7 +33,8 @@ const navLinks = [
   { label: 'Quiz', href: 'quiz.html' },
   { label: 'Guess Papers', href: 'guess-papers.html' },
   { label: 'Progress', href: 'progress.html' },
-  { label: 'Chat', href: 'chat.html' }
+  { label: 'Chat', href: 'chat.html' },
+  { label: 'Codex', href: 'codex.html' }
 ];
 
 function lsGet(key, fallback) {
@@ -845,7 +846,7 @@ async function initPage() {
   // visitor is sent through onboarding once (to set name/learning style), and
   // paid gating happens per-feature on the server (e.g. /api/guess-paper), not
   // by locking every page behind the checkout simulation.
-  const appPages = ['dashboard', 'learn', 'subjects', 'quiz', 'progress', 'chat', 'roundchat', 'flashcards'];
+  const appPages = ['dashboard', 'learn', 'subjects', 'quiz', 'progress', 'chat', 'codex', 'flashcards'];
   const hasProfile = Boolean((lsGet('mm_name', '') || '').trim());
 
   if (pageId && appPages.includes(pageId) && !hasProfile) {

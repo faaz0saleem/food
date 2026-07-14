@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-FHMTQDLHV2"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag("js",new Date());gtag("config","G-FHMTQDLHV2");</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap">
+<title>Codex — 4 AI Engines Build & Teach Your Code | Hungter</title>
+<meta name="description" content="Describe a project and four AI engines divide the work: backend, logic, frontend — and a mentor that teaches you exactly how the code works.">
+<link rel="canonical" href="https://hungter.com/codex.html">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/brand.css?v=20260712">
+<link rel="stylesheet" href="/nav.css?v=20260712">
+<script defer src="https://cdn.jsdelivr.net/npm/marked@4/marked.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+<style>
+  .top-bar { height: 4px; background: var(--surface-2); }
+  .top-bar-fill { height: 100%; background: var(--gradient-brand); width: 0%; }
+  .cx-main { max-width: 1000px; margin: 0 auto; padding: 28px 20px 70px; }
+  .cx-head h1 { font-size: clamp(1.7rem, 3.2vw, 2.4rem); letter-spacing: -0.02em; margin: 0 0 8px; }
+  .cx-head p { color: var(--ink-soft); max-width: 46em; margin: 0 0 24px; line-height: 1.65; }
+  .cx-form { background: rgba(13,20,40,0.75); border: 1px solid var(--border-glow); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow-sm); }
+  .cx-form label { display: block; font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-faint); margin: 14px 0 6px; }
+  .cx-form textarea, .cx-form select { width: 100%; border: 1px solid var(--border); background: var(--surface-2); color: var(--ink); border-radius: 10px; padding: 12px; font-family: var(--font-body); font-size: 0.94rem; resize: vertical; }
+  .cx-form textarea:focus, .cx-form select:focus { outline: none; border-color: var(--cyan); box-shadow: var(--glow-cyan); }
+  .cx-run { margin-top: 18px; border: none; border-radius: 999px; padding: 14px 30px; font-family: var(--font-display); font-weight: 700; font-size: 1rem; background: var(--gradient-brand); color: var(--bg-deep); cursor: pointer; box-shadow: var(--glow-lime); }
+  .cx-note { display: inline-flex; align-items: center; gap: 8px; margin: 14px 0 0 14px; color: var(--gold); font-size: 0.82rem; }
+  .cx-team { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 20px 0; }
+  .cx-role { border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); padding: 12px 14px; font-size: 0.8rem; color: var(--ink-soft); }
+  .cx-role strong { display: block; font-family: var(--font-display); color: var(--ink); margin-bottom: 3px; }
+  .cx-out { margin-top: 26px; display: grid; gap: 16px; }
+  .cx-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; }
+  .cx-card .tag { display: inline-flex; gap: 6px; font-family: var(--font-mono); font-size: 0.66rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--cyan); border: 1px solid rgba(77,240,255,0.25); background: rgba(77,240,255,0.06); border-radius: 999px; padding: 4px 11px; margin-bottom: 12px; }
+  .cx-body { color: var(--ink-soft); line-height: 1.65; font-size: 0.93rem; }
+  .cx-body pre { background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 10px; padding: 14px; overflow-x: auto; }
+  .cx-body code { font-family: var(--font-mono); font-size: 0.85em; }
+  .cx-body h1, .cx-body h2, .cx-body h3 { color: var(--lime); font-family: var(--font-display); margin: 14px 0 6px; font-size: 1.02em; }
+  .spinner { width: 15px; height: 15px; border: 2px solid var(--border); border-top-color: var(--lime); border-radius: 50%; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; margin-right: 8px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (max-width: 800px) { .cx-team { grid-template-columns: repeat(2, 1fr); } }
+</style>
+</head>
+<body data-page="codex">
+<div class="top-bar"><div class="top-bar-fill" id="topBar"></div></div>
+<header class="site-nav"></header>
+<main class="cx-main">
+  <div class="cx-head">
+    <p class="eyebrow">Codex · 4-AI Dev Team</p>
+    <h1>Describe it. <span class="hg-gradient-text">Four engines build it — and teach it.</span></h1>
+    <p>Codex splits your project across the whole engine team: the Architect writes the backend, the Engineer solves the hard logic, the Designer builds the UI — and the Mentor walks you through every piece so you actually learn to code, not just copy it.</p>
+  </div>
+
+  <div class="cx-team">
+    <div class="cx-role"><strong>🟢 Architect</strong>Backend, data model & structure</div>
+    <div class="cx-role"><strong>🟠 Engineer</strong>Hardest logic + edge cases</div>
+    <div class="cx-role"><strong>🔵 Designer</strong>Frontend & styling</div>
+    <div class="cx-role"><strong>🟣 Mentor</strong>Explains it all & teaches you</div>
+  </div>
+
+  <div class="cx-form">
+    <label for="cxTask">What do you want to build?</label>
+    <textarea id="cxTask" rows="3" placeholder="e.g. A to-do app with login, streaks, and a dark neon theme"></textarea>
+    <label for="cxLang">Language / stack</label>
+    <select id="cxLang">
+      <option>JavaScript (HTML/CSS/JS)</option><option>Python</option><option>PHP + MySQL</option>
+      <option>Java</option><option>C++</option><option>React</option><option>Node.js</option>
+    </select>
+    <label for="cxCode">Paste your existing code (optional — the team will improve and explain it)</label>
+    <textarea id="cxCode" rows="4" placeholder="Optional: paste code you already have…"></textarea>
+    <button id="cxRun" class="cx-run" type="button">⚡ Build with all 4 engines</button>
+    <span class="cx-note" id="cxNote">Uses 4 AI credits · GitHub repo connect coming soon</span>
+    <p id="cxErr" style="color:var(--coral);display:none;margin:12px 0 0;"></p>
+  </div>
+
+  <div class="cx-out" id="cxOut"></div>
+</main>
+<script src="/api-config.js?v=20260712"></script>
+<script src="/script.js?v=20260712"></script>
+<script src="/layout.js?v=20260712" defer></script>
+<script>
+ensureProfile();
+const bar = document.getElementById('topBar');
+if (bar) bar.style.width = getLevelProgress().pct + '%';
+
+function md(text) {
+  let html = typeof marked !== 'undefined' ? marked.parse(String(text || '')) : String(text || '').replace(/</g, '&lt;').replace(/\n/g, '<br>');
+  return typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(html) : html;
+}
+
+document.getElementById('cxRun').addEventListener('click', async () => {
+  const task = document.getElementById('cxTask').value.trim();
+  const err = document.getElementById('cxErr');
+  const out = document.getElementById('cxOut');
+  err.style.display = 'none';
+  if (!task) { err.textContent = 'Describe what you want to build first.'; err.style.display = 'block'; return; }
+  const btn = document.getElementById('cxRun');
+  btn.disabled = true;
+  out.innerHTML = '<div class="cx-card"><span class="spinner"></span>All 4 engines are building your project — 20–40 seconds…</div>';
+  try {
+    const res = await fetch(apiPath('/api/codex'), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        visitorId: getSessionId(), task,
+        language: document.getElementById('cxLang').value,
+        code: document.getElementById('cxCode').value.trim(),
+        userLevel: lsGet('mm_level', 'Newbie'),
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) { err.textContent = data.error || 'Codex failed — try again.'; err.style.display = 'block'; out.innerHTML = ''; return; }
+    out.innerHTML = (data.sections || []).map((s) =>
+      `<div class="cx-card"><span class="tag">${s.role} · ${s.engine || ''}</span><div class="cx-body">${md(s.reply)}</div></div>`
+    ).join('');
+    if (typeof addMilestone === 'function') addMilestone('Built a project with Codex');
+    if (typeof updateLevel === 'function') updateLevel();
+    if (bar) bar.style.width = getLevelProgress().pct + '%';
+  } catch { err.textContent = 'Could not reach the Codex backend.'; err.style.display = 'block'; out.innerHTML = ''; }
+  finally { btn.disabled = false; }
+});
+</script>
+</body>
+</html>
