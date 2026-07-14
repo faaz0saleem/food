@@ -37,13 +37,13 @@ $context = "Project: " . substr($task, 0, 1200) . "\nLanguage: " . $language
     . "\nStudent level: " . $userLevel . ". Use markdown with fenced code blocks.";
 
 $assignments = [
-    'reasoner' => "You are the ARCHITECT on a 4-AI dev team. $context\n\nDeliver: the backend/structure — data model, main functions or endpoints, and the core backend code, briefly annotated.",
-    'solver' => "You are the ENGINEER on a 4-AI dev team. $context\n\nDeliver: the hardest logic/algorithm implemented as working code, plus edge cases handled and one test example.",
-    'explorer' => "You are the DESIGNER on a 4-AI dev team. $context\n\nDeliver: the frontend/UI — layout and styling as working code the student can paste in.",
-    'storyteller' => "You are the MENTOR on a 4-AI dev team. $context\n\nDeliver: teach it — explain how the pieces fit together, walk through the trickiest lines in plain words, list 3 concepts the student just learned and 2 small exercises to try next.",
+    'storyteller' => "You are CLAUDE, the FRONTEND DESIGNER on a 4-AI dev team. $context\n\nDeliver: the complete frontend — HTML structure, beautiful styling, and UI interactions as working code the student can paste in. Explain your design choices in one short paragraph.",
+    'explorer' => "You are CHATGPT, the BACKEND ARCHITECT on a 4-AI dev team. $context\n\nDeliver: the backend — data model, endpoints/functions, and the core server-side code, briefly annotated.",
+    'solver' => "You are GEMINI, the QA ENGINEER on a 4-AI dev team. $context\n\nDeliver: the hardest algorithm/logic implemented correctly, edge cases handled, one worked test example, and 3 bugs a beginner would likely hit here with fixes.",
+    'reasoner' => "You are GROQ, the CODING TEACHER on a 4-AI dev team. $context\n\nDeliver: teach it — explain how frontend and backend fit together, walk through the trickiest lines in plain words, list 3 concepts the student just learned and 2 exercises to build next.",
 ];
 
-$roleNames = ['reasoner' => '🟢 Architect', 'solver' => '🟠 Engineer', 'explorer' => '🔵 Designer', 'storyteller' => '🟣 Mentor'];
+$roleNames = ['storyteller' => '🟣 Claude · Frontend Designer', 'explorer' => '🔵 ChatGPT · Backend Architect', 'solver' => '🟠 Gemini · QA Engineer', 'reasoner' => '🟢 Groq · Coding Teacher'];
 
 if (($budget['mode'] ?? 'live') === 'demo') {
     $sections = [];
@@ -60,7 +60,7 @@ $sections = [];
 foreach ($results as $result) {
     $engineKeyGuess = strtolower((string) ($result['engine'] ?? ''));
     $roleKey = null;
-    $brandToRole = ['groq' => 'reasoner', 'gemini' => 'solver', 'chatgpt' => 'explorer', 'claude' => 'storyteller'];
+    $brandToRole = ['claude' => 'storyteller', 'chatgpt' => 'explorer', 'gemini' => 'solver', 'groq' => 'reasoner'];
     foreach ($brandToRole as $brand => $k) {
         if (stripos($engineKeyGuess, $brand) !== false) { $roleKey = $k; break; }
     }
