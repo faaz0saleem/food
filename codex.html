@@ -175,7 +175,7 @@ document.getElementById('cxRun').addEventListener('click', async () => {
   btn.disabled = true;
   out.innerHTML = '<div class="cx-card"><span class="spinner"></span>All 4 engines are ' + (mode === 'fix' ? 'fixing and improving' : 'building') + ' your project — 20–40 seconds…</div>';
   try {
-    const res = await fetch(apiPath('/api/codex'), {
+    const res = await fetch(apiPath('/api/codex.php'), {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         visitorId: getSessionId(), task, mode,
@@ -186,7 +186,9 @@ document.getElementById('cxRun').addEventListener('click', async () => {
       }),
     });
     const data = await res.json();
-    if (!res.ok || data.error) { err.textContent = data.error || 'Codex failed — try again.'; err.style.display = 'block'; out.innerHTML = ''; return; }
+    if (data.requiresSignup) { err.innerHTML = 'Codex needs an account. <a href="/signup.html" style="color:var(--cyan)">Create a free account →</a>'; err.style.display = 'block'; out.innerHTML = ''; return; }
+    if (data.dailyLimitReached) { err.textContent = data.error || 'Daily AI credits used up — come back tomorrow.'; err.style.display = 'block'; out.innerHTML = ''; return; }
+    if (!res.ok || data.error) { err.textContent = data.error || 'Codex hit an error — try again.'; err.style.display = 'block'; out.innerHTML = ''; return; }
     out.innerHTML = (data.sections || []).map((s) =>
       '<div class="cx-card"><span class="tag">' + s.role + ' · ' + (s.engine || '') + '</span><div class="cx-body">' + md(s.reply) + '</div></div>'
     ).join('');

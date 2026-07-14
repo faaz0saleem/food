@@ -24,7 +24,25 @@ if ($task === '') {
     exit;
 }
 
+// A GitHub-connected visitor (signed cookie set by github-callback.php) is
+// treated as authorized so the GitHub gate actually unlocks Codex.
+$githubOk = false;
+$ghCookie = (string) ($_COOKIE['mm_github'] ?? '');
+if ($ghCookie !== '' && strpos($ghCookie, '.') !== false) {
+    [$b64, $sig] = explode('.', $ghCookie, 2);
+    $payload = base64_decode($b64, true);
+    if ($payload !== false) {
+        $salt = mm_env_value('ADMIN_KEY', '') . '|hungter-gh';
+        if (hash_equals(hash_hmac('sha256', $payload, $salt), $sig)) {
+            $githubOk = true;
+        }
+    }
+}
+
 $budget = mm_ai_budget_decision($body, 4);
+if ($githubOk && (($budget['mode'] ?? 'live') === 'signup')) {
+    $budget['mode'] = 'live'; // GitHub sign-in counts as an account for Codex
+}
 if (($budget['mode'] ?? 'live') === 'signup') {
     mm_json_response(403, ['error' => 'Codex runs all 4 engines — create a free account first.', 'requiresSignup' => true]);
     exit;
