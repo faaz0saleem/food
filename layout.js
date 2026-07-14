@@ -25,10 +25,10 @@ if ('serviceWorker' in navigator) {
   ];
 
   const ENGINES = [
-    { id: 'reasoner', name: 'The Reasoner', provider: 'Groq', status: 'live', color: 'var(--lime)', desc: 'Step-by-step explanations tuned to your level.' },
-    { id: 'solver', name: 'The Solver', provider: 'Gemini', status: 'live', color: 'var(--coral)', desc: 'Math and code walkthroughs with worked solutions.' },
-    { id: 'explorer', name: 'The Explorer', provider: 'OpenAI', status: 'live', color: 'var(--blue)', desc: 'Real-world examples and visual learning paths.' },
-    { id: 'storyteller', name: 'The Storyteller', provider: 'Claude', status: 'live', color: 'var(--pink)', desc: 'Analogies and narratives that make ideas stick.' },
+    { id: 'reasoner', name: 'Groq', provider: 'The Reasoner', status: 'live', color: 'var(--lime)', desc: 'Step-by-step explanations tuned to your level.' },
+    { id: 'solver', name: 'Gemini', provider: 'The Solver', status: 'live', color: 'var(--coral)', desc: 'Math and code walkthroughs with worked solutions.' },
+    { id: 'explorer', name: 'ChatGPT', provider: 'The Explorer', status: 'live', color: 'var(--blue)', desc: 'Real-world examples and visual learning paths.' },
+    { id: 'storyteller', name: 'Claude', provider: 'The Storyteller', status: 'live', color: 'var(--pink)', desc: 'Analogies and narratives that make ideas stick.' },
   ];
 
   function lsGet(key, fallback) {
@@ -247,7 +247,7 @@ if ('serviceWorker' in navigator) {
           </div>
           <div class="footer-col" data-footer-status>
             <h4>Status</h4>
-            <p>Reasoner, Solver, Explorer, Storyteller: live</p>
+            <p>Groq, Gemini, ChatGPT, Claude: live</p>
             <p>Billing: testing phase</p>
           </div>
         </div>

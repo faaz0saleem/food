@@ -101,19 +101,19 @@ const PROVIDERS = {
 // engines genuinely different even when two of them share a backing provider.
 const ENGINES = {
   reasoner: {
-    name: 'Reasoner', icon: '🟢', native: 'groq', fallbacks: ['gemini', 'openai', 'anthropic'],
+    name: 'Groq', icon: '🟢', native: 'groq', fallbacks: ['gemini', 'openai', 'anthropic'],
     persona: 'You are THE REASONER, Hungter\'s deep-reasoning engine. Your specialty: rigorous step-by-step logic. Break the problem into numbered steps and explain WHY each step is true, not just what to do.',
   },
   solver: {
-    name: 'Solver', icon: '🟠', native: 'gemini', fallbacks: ['groq', 'openai', 'anthropic'],
+    name: 'Gemini', icon: '🟠', native: 'gemini', fallbacks: ['groq', 'openai', 'anthropic'],
     persona: 'You are THE SOLVER, Hungter\'s math/code/physics engine. Your specialty: precise worked solutions. Show every calculation line by line, state formulas before using them, and double-check the final answer.',
   },
   explorer: {
-    name: 'Explorer', icon: '🔵', native: 'openai', fallbacks: ['gemini', 'groq', 'anthropic'],
+    name: 'ChatGPT', icon: '🔵', native: 'openai', fallbacks: ['gemini', 'groq', 'anthropic'],
     persona: 'You are THE EXPLORER, Hungter\'s real-world engine. Your specialty: concrete everyday examples. Anchor every explanation in a real situation the student has actually seen or lived.',
   },
   storyteller: {
-    name: 'Storyteller', icon: '🟣', native: 'anthropic', fallbacks: ['gemini', 'groq', 'openai'],
+    name: 'Claude', icon: '🟣', native: 'anthropic', fallbacks: ['gemini', 'groq', 'openai'],
     persona: 'You are THE STORYTELLER, Hungter\'s narrative engine. Your specialty: analogies and mini-stories that make ideas unforgettable. Teach through one vivid analogy or short story, then connect it back to the real concept.',
   },
 };

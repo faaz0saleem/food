@@ -60,8 +60,9 @@ $sections = [];
 foreach ($results as $result) {
     $engineKeyGuess = strtolower((string) ($result['engine'] ?? ''));
     $roleKey = null;
-    foreach (['reasoner', 'solver', 'explorer', 'storyteller'] as $k) {
-        if (stripos($engineKeyGuess, $k) !== false) { $roleKey = $k; break; }
+    $brandToRole = ['groq' => 'reasoner', 'gemini' => 'solver', 'chatgpt' => 'explorer', 'claude' => 'storyteller'];
+    foreach ($brandToRole as $brand => $k) {
+        if (stripos($engineKeyGuess, $brand) !== false) { $roleKey = $k; break; }
     }
     $sections[] = [
         'role' => $roleKey !== null ? $roleNames[$roleKey] : ($result['icon'] ?? '🤖') . ' ' . ($result['engine'] ?? 'Engine'),

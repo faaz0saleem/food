@@ -69,7 +69,7 @@
           <span class="lp-line"><span>Every brain learns differently.</span></span>
           <span class="lp-line"><span><em class="lp-grad" style="font-style:normal;">Your tutor finally does too.</em></span></span>
         </h1>
-        <p class="lp-lead">Hungter routes each question to one of four AI engines — <strong>Reasoner</strong>, <strong>Solver</strong>, <strong>Explorer</strong>, or <strong>Storyteller</strong> — so every explanation lands the way your brain actually works.</p>
+        <p class="lp-lead">Hungter routes each question to one of four AI engines — <strong>Groq</strong>, <strong>Gemini</strong>, <strong>ChatGPT</strong>, or <strong>Claude</strong> — so every explanation lands the way your brain actually works.</p>
         <div class="lp-hero-ctas">
           <a href="/signup.html" class="lp-btn-hero">Start learning free <span class="arr">→</span></a>
           <a href="#console" class="lp-btn-ghost">Watch it think ↓</a>
@@ -90,10 +90,10 @@
           </div>
           <div class="lp-console-body">
             <div class="lp-route-row" id="demoChips">
-              <span class="lp-engine-chip" data-e="reasoner">🟢 Reasoner</span>
-              <span class="lp-engine-chip" data-e="solver">🟠 Solver</span>
-              <span class="lp-engine-chip" data-e="explorer">🔵 Explorer</span>
-              <span class="lp-engine-chip" data-e="storyteller">🟣 Storyteller</span>
+              <span class="lp-engine-chip" data-e="reasoner">🟢 Groq</span>
+              <span class="lp-engine-chip" data-e="solver">🟠 Gemini</span>
+              <span class="lp-engine-chip" data-e="explorer">🔵 ChatGPT</span>
+              <span class="lp-engine-chip" data-e="storyteller">🟣 Claude</span>
             </div>
             <div class="lp-msg user" id="demoQ">I don't get photosynthesis 😭</div>
             <div class="lp-msg ai"><span id="demoA"></span><span class="lp-caret" id="demoCaret"></span></div>
@@ -189,10 +189,10 @@
           <h3>4-Engine AI Chat</h3>
           <p>Pick your engine — or hit ⚡ All 4 and read four different teaching styles answer the same question, side by side.</p>
           <div class="lp-tile-chips">
-            <span class="c lime">🟢 Reasoner</span>
-            <span class="c coral">🟠 Solver</span>
-            <span class="c cyan">🔵 Explorer</span>
-            <span class="c pink">🟣 Storyteller</span>
+            <span class="c lime">🟢 Groq</span>
+            <span class="c coral">🟠 Gemini</span>
+            <span class="c cyan">🔵 ChatGPT</span>
+            <span class="c pink">🟣 Claude</span>
             <span class="c gold">⚡ All 4</span>
           </div>
         </a>
@@ -398,10 +398,10 @@
 
       // ── Hero console: cycle real routing demos with a typing effect ───
       const scenes = [
-        { q: "I don't get photosynthesis 😭", e: 'storyteller', label: 'routed → 🟣 storyteller', a: 'Picture a leaf as a tiny solar kitchen: sunlight is the stove, water and CO₂ are the ingredients, sugar is dinner. Want the step-by-step recipe?' },
-        { q: 'Solve 2x + 6 = 18', e: 'solver', label: 'routed → 🟠 solver', a: 'Subtract 6 from both sides → 2x = 12. Divide by 2 → x = 6. Try swapping the 18 for 30 — same moves, new answer.' },
-        { q: "Why don't eclipses happen every month?", e: 'reasoner', label: 'routed → 🟢 reasoner', a: "The Moon's orbit is tilted about 5°, so its shadow usually misses Earth. Eclipses only line up where the orbits cross." },
-        { q: 'Where is trigonometry used in real life?', e: 'explorer', label: 'routed → 🔵 explorer', a: 'GPS triangulation, bridge design, music synthesis, even aiming a basketball shot — angles and ratios everywhere.' },
+        { q: "I don't get photosynthesis 😭", e: 'storyteller', label: 'routed → 🟣 claude', a: 'Picture a leaf as a tiny solar kitchen: sunlight is the stove, water and CO₂ are the ingredients, sugar is dinner. Want the step-by-step recipe?' },
+        { q: 'Solve 2x + 6 = 18', e: 'solver', label: 'routed → 🟠 gemini', a: 'Subtract 6 from both sides → 2x = 12. Divide by 2 → x = 6. Try swapping the 18 for 30 — same moves, new answer.' },
+        { q: "Why don't eclipses happen every month?", e: 'reasoner', label: 'routed → 🟢 groq', a: "The Moon's orbit is tilted about 5°, so its shadow usually misses Earth. Eclipses only line up where the orbits cross." },
+        { q: 'Where is trigonometry used in real life?', e: 'explorer', label: 'routed → 🔵 chatgpt', a: 'GPS triangulation, bridge design, music synthesis, even aiming a basketball shot — angles and ratios everywhere.' },
       ];
       const qEl = document.getElementById('demoQ');
       const aEl = document.getElementById('demoA');
