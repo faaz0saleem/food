@@ -23,9 +23,9 @@
 <meta property="og:title" content="Hungter — Dashboard">
 <meta property="og:description" content="Track your XP, streaks, badges, and learning insights in one place.">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/brand.css?v=20260711">
-<link rel="stylesheet" href="/nav.css?v=20260711">
-<link rel="stylesheet" href="/dashboard.css?v=20260711">
+<link rel="stylesheet" href="/brand.css?v=20260713">
+<link rel="stylesheet" href="/nav.css?v=20260713">
+<link rel="stylesheet" href="/dashboard.css?v=20260713">
 </head>
 <body>
 <div class="top-bar"><div class="top-bar-fill" id="topBar" style="width:0%"></div></div>
@@ -205,9 +205,9 @@
 </div>
 </main>
 <footer class="site-footer"></footer>
-<script src="/api-config.js?v=20260711"></script>
-<script src="/script.js?v=20260711"></script>
-<script src="/layout.js?v=20260711" defer></script>
+<script src="/api-config.js?v=20260713"></script>
+<script src="/script.js?v=20260713"></script>
+<script src="/layout.js?v=20260713" defer></script>
 <script>
 // ---- helpers ----
 const get = (k) => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } };
@@ -225,7 +225,6 @@ const streak = get('mm_streak') || [];
 const quizScores = get('mm_quiz_scores') || {};
 const wrongAnswers = get('mm_wrong_answers') || [];
 const explainChecks = get('mm_explain_checks') || [];
-const roundchatPicks = Number(get('mm_roundchat_picks') || 0);
 const todayCount = get('mm_today_count') || 0;
 const plan = get('mm_plan') || 'Free';
 const allScores = Object.values(quizScores).flat();
