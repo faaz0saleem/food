@@ -14,14 +14,14 @@ if ('serviceWorker' in navigator) {
   }
 
   const NAV_LINKS = [
-    { label: '💬 Chat', href: '/chat.html' },
-    { label: '⚡ Codex', href: '/codex.html' },
-    { label: '📄 Guess Papers', href: '/guess-papers.html' },
-    { label: '📖 Books', href: '/books.html' },
-    { label: '🧪 Quiz', href: '/quiz.html' },
-    { label: '💡 Learn', href: '/learn.html' },
-    { label: '📚 Subjects', href: '/subjects.html' },
-    { label: '📊 Progress', href: '/progress.html' },
+    { label: '💬 Chat', href: '/chat' },
+    { label: '⚡ Codex', href: '/codex' },
+    { label: '📄 Guess Papers', href: '/guess-papers' },
+    { label: '📖 Books', href: '/books' },
+    { label: '🧪 Quiz', href: '/quiz' },
+    { label: '💡 Learn', href: '/learn' },
+    { label: '📚 Subjects', href: '/subjects' },
+    { label: '📊 Progress', href: '/progress' },
   ];
 
   const ENGINES = [
@@ -57,8 +57,9 @@ if ('serviceWorker' in navigator) {
   }
 
   function isActive(href) {
-    const path = window.location.pathname;
-    return path === href || path.endsWith(href.replace(/^\//, ''));
+    const path = window.location.pathname.replace(/\.html$/, '');
+    const clean = href.replace(/\.html$/, '');
+    return path === clean || path.endsWith(clean.replace(/^\//, ''));
   }
 
   function getLevelMeta() {
