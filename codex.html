@@ -52,6 +52,12 @@
   .cx-gate p { color: var(--ink-soft); line-height: 1.6; margin: 0 0 24px; }
   .cx-gh { display: inline-flex; align-items: center; gap: 10px; background: #161b22; border: 1px solid #30363d; color: #fff; border-radius: 999px; padding: 13px 26px; font-family: var(--font-display); font-weight: 700; cursor: pointer; }
   .cx-gh:hover { border-color: var(--lime); box-shadow: var(--glow-lime); }
+  .cx-result { border-color: var(--border-glow); box-shadow: var(--shadow-sm); }
+  .cx-repo-link { display: inline-block; color: var(--cyan); font-weight: 700; font-family: var(--font-display); margin-bottom: 10px; }
+  .cx-files { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .cx-file { font-family: var(--font-mono); font-size: 0.76rem; background: var(--surface-2); border: 1px solid var(--border); color: var(--ink-soft); border-radius: 6px; padding: 3px 8px; }
+  .cx-console { background: var(--bg-deep); border-color: var(--border-soft); }
+  .cx-log { font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-soft); padding: 3px 0; }
   @media (max-width: 800px) { .cx-team { grid-template-columns: repeat(2, 1fr); } }
 </style>
 </head>
@@ -66,7 +72,7 @@
     <h2>Connect GitHub to open Codex</h2>
     <p>Codex builds and fixes real projects with all 4 AIs. Connect your GitHub so it can create a repo for your project — or you can point it at one you already own.</p>
     <button class="cx-gh" id="cxGithub"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.7.5.5 5.7.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.8 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.7 18.3 5 18.3 5c.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.5-2.7 5.5-5.3 5.8.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6 4.6-1.5 7.9-5.8 7.9-10.9C23.5 5.7 18.3.5 12 .5z"/></svg> Continue with GitHub</button>
-    <p style="margin-top:16px;font-size:0.82rem;"><a href="#" id="cxSkip" style="color:var(--ink-faint);">Skip for now — build without a repo</a></p>
+    <p style="margin-top:16px;font-size:0.82rem;"><a href="#" id="cxSkip" style="color:var(--ink-faint);">Look around first — you'll connect GitHub to build</a></p>
   </div>
 
   <!-- Codex app (revealed after gate) -->
@@ -74,7 +80,7 @@
     <div class="cx-head">
       <p class="eyebrow">Codex · 4-AI Dev Team</p>
       <h1>Describe it. <span class="hg-gradient-text">Four engines build it — and teach it.</span></h1>
-      <p>Claude designs the frontend, ChatGPT builds the backend, Gemini hunts the bugs, and Groq teaches you how every line works.</p>
+      <p>Claude designs the frontend, ChatGPT builds the backend, Gemini hunts the bugs, and Groq teaches you how every line works — then Codex commits it all straight to your GitHub repo.</p>
     </div>
 
     <div class="cx-team">
@@ -105,7 +111,7 @@
         <button type="button" class="cx-mini" id="cxMakeRepo">✨ Codex names a repo</button>
       </div>
       <button id="cxRun" class="cx-run" type="button">⚡ Run all 4 engines</button>
-      <span class="cx-note" id="cxNote">Uses 4 AI credits</span>
+      <span class="cx-note" id="cxNote">Uses 4 AI credits · commits straight to your repo</span>
       <p id="cxErr" style="color:var(--coral);display:none;margin:12px 0 0;"></p>
     </div>
 
@@ -197,12 +203,43 @@ document.getElementById('cxRun').addEventListener('click', async () => {
       } catch (e) { lastErr = e; }
     }
     if (!res || !data) throw (lastErr || new Error('No backend reachable'));
+    if (data.needsRepoScope) {
+      out.innerHTML = '';
+      err.innerHTML = (data.error || 'Connect GitHub so Codex can build into your repo.') +
+        ' <a href="/api/github-callback.php" style="color:var(--cyan);font-weight:700;">Connect GitHub →</a>';
+      err.style.display = 'block'; return;
+    }
     if (data.requiresSignup) { err.innerHTML = 'Codex needs an account. <a href="/signup.html" style="color:var(--cyan)">Create a free account →</a>'; err.style.display = 'block'; out.innerHTML = ''; return; }
     if (data.dailyLimitReached) { err.textContent = data.error || 'Daily AI credits used up — come back tomorrow.'; err.style.display = 'block'; out.innerHTML = ''; return; }
     if (!res.ok || data.error) { err.textContent = data.error || 'Codex hit an error — try again.'; err.style.display = 'block'; out.innerHTML = ''; return; }
-    out.innerHTML = (data.sections || []).map((s) =>
-      '<div class="cx-card"><span class="tag">' + s.role + ' · ' + (s.engine || '') + '</span><div class="cx-body">' + md(s.reply) + '</div></div>'
-    ).join('');
+
+    // Autonomous build result: repo header + build console + per-agent files + teacher.
+    let html = '';
+    if (data.repoUrl) {
+      const fileList = (data.committed || []).map((f) => '<code class="cx-file">' + f + '</code>').join('');
+      html += '<div class="cx-card cx-result">' +
+        '<span class="tag">' + (data.built ? '✅ Codex shipped it' : '⚙️ Codex ran') + '</span>' +
+        '<h3 style="margin:6px 0 4px;">' + (data.repo || 'your repo') + '</h3>' +
+        '<a class="cx-repo-link" href="' + data.repoUrl + '" target="_blank" rel="noopener">Open the repo on GitHub →</a>' +
+        (fileList ? '<div class="cx-files">' + fileList + '</div>' : '') +
+        '</div>';
+    }
+    if ((data.log || []).length) {
+      html += '<div class="cx-card cx-console">' + data.log.map((l) =>
+        '<div class="cx-log">' + String(l).replace(/</g, '&lt;') + '</div>').join('') + '</div>';
+    }
+    (data.sections || []).forEach((s) => {
+      const built = (s.files || []).length
+        ? 'wrote ' + s.files.map((f) => '<code class="cx-file">' + f + '</code>').join(' ')
+        : (s.reply ? '' : 'no files this run');
+      html += '<div class="cx-card"><span class="tag">' + s.role + ' · ' + (s.engine || '') + '</span>' +
+        '<div class="cx-body">' + (s.reply ? md(s.reply) : built) + '</div></div>';
+    });
+    if (data.teacher) {
+      html += '<div class="cx-card"><span class="tag">🟢 Groq · Coding Teacher</span>' +
+        '<div class="cx-body">' + md(data.teacher) + '</div></div>';
+    }
+    out.innerHTML = html || '<div class="cx-card">Codex ran but returned nothing — try a more specific request.</div>';
     if (typeof addMilestone === 'function') addMilestone('Used Codex (' + mode + ')');
     if (typeof updateLevel === 'function') updateLevel();
     if (bar) bar.style.width = getLevelProgress().pct + '%';

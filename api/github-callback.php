@@ -23,7 +23,9 @@ if ($code === '') {
     $url = 'https://github.com/login/oauth/authorize?' . http_build_query([
         'client_id' => $clientId,
         'redirect_uri' => $redirectUri,
-        'scope' => 'read:user user:email',
+        // 'repo' lets Codex create repositories and commit files on the
+        // user's behalf — that is what makes it an autonomous builder.
+        'scope' => 'repo read:user user:email',
         'state' => $state,
     ]);
     header('Location: ' . $url);
@@ -81,6 +83,13 @@ $payload = json_encode(['login' => $login, 'name' => (string) ($profile['name'] 
 $sig = hash_hmac('sha256', $payload, $salt);
 $cookie = base64_encode($payload) . '.' . $sig;
 setcookie('mm_github', $cookie, ['expires' => time() + 30 * 86400, 'path' => '/', 'secure' => $scheme === 'https', 'httponly' => false, 'samesite' => 'Lax']);
+
+// The access token itself goes in a SEPARATE httponly cookie the browser JS
+// can never read — only the server reads it, to create repos and push files.
+// HMAC-signed so it cannot be forged or tampered with.
+$tokenPayload = json_encode(['token' => $token, 'login' => $login, 'ts' => time()]);
+$tokenSig = hash_hmac('sha256', $tokenPayload, $salt);
+setcookie('mm_gh_token', base64_encode($tokenPayload) . '.' . $tokenSig, ['expires' => time() + 30 * 86400, 'path' => '/', 'secure' => $scheme === 'https', 'httponly' => true, 'samesite' => 'Lax']);
 
 header('Location: /codex.html?github=connected');
 exit;
