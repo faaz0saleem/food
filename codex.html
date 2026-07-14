@@ -175,17 +175,28 @@ document.getElementById('cxRun').addEventListener('click', async () => {
   btn.disabled = true;
   out.innerHTML = '<div class="cx-card"><span class="spinner"></span>All 4 engines are ' + (mode === 'fix' ? 'fixing and improving' : 'building') + ' your project — 20–40 seconds…</div>';
   try {
-    const res = await fetch(apiPath('/api/codex.php'), {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        visitorId: getSessionId(), task, mode,
-        language: document.getElementById('cxLang').value,
-        code: document.getElementById('cxCode').value.trim(),
-        repo: document.getElementById('cxRepo').value.trim(),
-        userLevel: lsGet('mm_level', 'Newbie'),
-      }),
+    const payload = JSON.stringify({
+      visitorId: getSessionId(), task, mode,
+      language: document.getElementById('cxLang').value,
+      code: document.getElementById('cxCode').value.trim(),
+      repo: document.getElementById('cxRepo').value.trim(),
+      userLevel: lsGet('mm_level', 'Newbie'),
     });
-    const data = await res.json();
+    // Try every backend shape the host might serve: PHP, same-origin JS route,
+    // and a Netlify function. Keep the first response that is real JSON so a
+    // 404 HTML page from the wrong host doesn't look like a network failure.
+    const base = String(window.HUNGTER_API_BASE || '').replace(/\/$/, '');
+    const candidates = [base + '/api/codex.php', base + '/api/codex', '/.netlify/functions/api/codex'];
+    let res = null, data = null, lastErr = null;
+    for (const url of candidates) {
+      try {
+        const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload });
+        const ct = String(r.headers.get('content-type') || '');
+        if (r.ok || ct.includes('application/json')) { res = r; data = await r.json(); break; }
+        lastErr = new Error('HTTP ' + r.status);
+      } catch (e) { lastErr = e; }
+    }
+    if (!res || !data) throw (lastErr || new Error('No backend reachable'));
     if (data.requiresSignup) { err.innerHTML = 'Codex needs an account. <a href="/signup.html" style="color:var(--cyan)">Create a free account →</a>'; err.style.display = 'block'; out.innerHTML = ''; return; }
     if (data.dailyLimitReached) { err.textContent = data.error || 'Daily AI credits used up — come back tomorrow.'; err.style.display = 'block'; out.innerHTML = ''; return; }
     if (!res.ok || data.error) { err.textContent = data.error || 'Codex hit an error — try again.'; err.style.display = 'block'; out.innerHTML = ''; return; }
