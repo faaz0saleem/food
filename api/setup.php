@@ -11,6 +11,7 @@ $PROVIDERS = [
     'gemini' => ['title' => 'Gemini', 'env' => 'GEMINI_API_KEY', 'ph' => 'AIza…', 'console' => 'aistudio.google.com/apikey', 'engine' => '🟠 Gemini engine'],
     'openai' => ['title' => 'ChatGPT (OpenAI)', 'env' => 'OPENAI_API_KEY', 'ph' => 'sk-…', 'console' => 'platform.openai.com → API keys', 'engine' => '🔵 ChatGPT engine'],
     'anthropic' => ['title' => 'Claude (Anthropic)', 'env' => 'ANTHROPIC_API_KEY', 'ph' => 'sk-ant-…', 'console' => 'console.anthropic.com → API Keys', 'engine' => '🟣 Claude engine'],
+    'github' => ['title' => 'GitHub (Codex login)', 'env' => 'GITHUB_CLIENT_SECRET', 'ph' => 'client secret', 'console' => 'github.com → Settings → Developer settings → OAuth Apps', 'engine' => '🐙 GitHub sign-in for Codex'],
 ];
 $provider = strtolower(trim((string) ($_GET['provider'] ?? 'groq')));
 if (!isset($PROVIDERS[$provider])) { $provider = 'groq'; }
@@ -54,7 +55,7 @@ function setup_write_env(array $pairs): array {
     return ['ok' => true, 'message' => 'Saved to .env ✓'];
 }
 
-$locked = mm_provider_api_key($provider) !== '';
+$locked = $provider === 'github' ? mm_env_value('GITHUB_CLIENT_SECRET','') !== '' : mm_provider_api_key($provider) !== '';
 $notice = null;
 
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
@@ -71,6 +72,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     if ($notice === null) {
         if (strlen($key) < 15) {
             $notice = ['ok' => false, 'message' => 'Paste the full API key.'];
+        } elseif ($provider === 'github') {
+            $notice = array_merge(setup_write_env(['GITHUB_CLIENT_ID' => 'Ov23lippGfF9FsZ0QUMm', 'GITHUB_CLIENT_SECRET' => $key]), ['ok' => true]);
+            $notice['message'] = 'Saved. GitHub sign-in is now live on Codex!';
+            $locked = mm_provider_api_key('github') !== '' || mm_env_value('GITHUB_CLIENT_SECRET','') !== '';
         } else {
             $check = setup_validate($provider, $key);
             $notice = $check['ok'] ? array_merge(setup_write_env([$meta['env'] => $key]), ['ok' => true]) : $check;
@@ -119,7 +124,7 @@ header('X-Robots-Tag: noindex');
   <main class="setup-card">
     <h1>🔑 <?php echo h($meta['title']); ?> API Key</h1>
     <div class="tabs">
-      <?php foreach ($PROVIDERS as $pk => $pm): $has = mm_provider_api_key($pk) !== ''; ?>
+      <?php foreach ($PROVIDERS as $pk => $pm): $has = $pk === 'github' ? mm_env_value('GITHUB_CLIENT_SECRET','') !== '' : mm_provider_api_key($pk) !== ''; ?>
         <a href="/api/setup.php?provider=<?php echo h($pk); ?>" class="<?php echo $pk === $provider ? 'on' : ''; ?>"><span class="dot <?php echo $has ? 'ok' : ''; ?>"></span><?php echo h($pm['title']); ?></a>
       <?php endforeach; ?>
     </div>

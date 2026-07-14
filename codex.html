@@ -133,11 +133,18 @@ function openCodex() {
 }
 if (lsGet('mm_codex_github', '')) openCodex();
 document.getElementById('cxGithub').addEventListener('click', () => {
-  // Real GitHub OAuth needs a Client ID configured on the server; until then
-  // we record intent and open Codex so the flow is never a dead end.
-  lsSet('mm_codex_github', 'connected');
-  openCodex();
+  // Real GitHub OAuth — bounce to the server, which redirects to GitHub.
+  window.location.href = '/api/github-callback.php';
 });
+// Returning from a successful GitHub sign-in
+function ghCookie() { return (document.cookie.match(/(?:^|; )mm_github=([^;]+)/) || [])[1] || ''; }
+if (new URLSearchParams(location.search).get('github') === 'connected' || ghCookie()) {
+  lsSet('mm_codex_github', 'connected');
+  try {
+    const raw = ghCookie();
+    if (raw) { const p = JSON.parse(atob(decodeURIComponent(raw).split('.')[0])); if (p.name && !lsGet('mm_name','')) lsSet('mm_name', p.name); }
+  } catch {}
+}
 document.getElementById('cxSkip').addEventListener('click', (e) => { e.preventDefault(); lsSet('mm_codex_github', 'skipped'); openCodex(); });
 
 // Build / Fix tabs
