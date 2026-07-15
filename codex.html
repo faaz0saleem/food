@@ -8,11 +8,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap">
-<title>Codex — 4 AI Engines Build & Teach Your Code | Hungter</title>
-<meta name="description" content="Describe a project and four AI engines divide the work: backend, logic, frontend — and a mentor that teaches you exactly how the code works.">
+<title>Codex — Chat, Build & Preview with 4 AI Engines | Hungter</title>
+<meta name="description" content="Chat to Codex and watch four AI engines build your app — code on the left, a live preview on the right. Claude, ChatGPT, Gemini and Groq, one dev team.">
 <link rel="canonical" href="https://hungter.com/codex.html">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/brand.css?v=20260713">
+<link rel="stylesheet" href="/brand.css?v=20260718">
 <link rel="stylesheet" href="/nav.css?v=20260713">
 <script defer src="https://cdn.jsdelivr.net/npm/marked@4/marked.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
@@ -20,148 +20,182 @@
 <style>
   .top-bar { height: 4px; background: var(--surface-2); }
   .top-bar-fill { height: 100%; background: var(--gradient-brand); width: 0%; }
-  .cx-main { max-width: 1000px; margin: 0 auto; padding: 28px 20px 70px; }
-  .cx-head h1 { font-size: clamp(1.7rem, 3.2vw, 2.4rem); letter-spacing: -0.02em; margin: 0 0 8px; }
-  .cx-head p { color: var(--ink-soft); max-width: 46em; margin: 0 0 24px; line-height: 1.65; }
-  .cx-form { background: rgba(13,20,40,0.75); border: 1px solid var(--border-glow); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow-sm); }
-  .cx-form label { display: block; font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-faint); margin: 14px 0 6px; }
-  .cx-form textarea, .cx-form select { width: 100%; border: 1px solid var(--border); background: var(--surface-2); color: var(--ink); border-radius: 10px; padding: 12px; font-family: var(--font-body); font-size: 0.94rem; resize: vertical; }
-  .cx-form textarea:focus, .cx-form select:focus { outline: none; border-color: var(--cyan); box-shadow: var(--glow-cyan); }
-  .cx-run { margin-top: 18px; border: none; border-radius: 999px; padding: 14px 30px; font-family: var(--font-display); font-weight: 700; font-size: 1rem; background: var(--gradient-brand); color: var(--bg-deep); cursor: pointer; box-shadow: var(--glow-lime); }
-  .cx-note { display: inline-flex; align-items: center; gap: 8px; margin: 14px 0 0 14px; color: var(--gold); font-size: 0.82rem; }
-  .cx-team { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 20px 0; }
-  .cx-role { border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); padding: 12px 14px; font-size: 0.8rem; color: var(--ink-soft); }
-  .cx-role strong { display: block; font-family: var(--font-display); color: var(--ink); margin-bottom: 3px; }
-  .cx-out { margin-top: 26px; display: grid; gap: 16px; }
-  .cx-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; }
-  .cx-card .tag { display: inline-flex; gap: 6px; font-family: var(--font-mono); font-size: 0.66rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--cyan); border: 1px solid rgba(77,240,255,0.25); background: rgba(77,240,255,0.06); border-radius: 999px; padding: 4px 11px; margin-bottom: 12px; }
-  .cx-body { color: var(--ink-soft); line-height: 1.65; font-size: 0.93rem; }
-  .cx-body pre { background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 10px; padding: 14px; overflow-x: auto; }
-  .cx-body code { font-family: var(--font-mono); font-size: 0.85em; }
-  .cx-body h1, .cx-body h2, .cx-body h3 { color: var(--lime); font-family: var(--font-display); margin: 14px 0 6px; font-size: 1.02em; }
-  .spinner { width: 15px; height: 15px; border: 2px solid var(--border); border-top-color: var(--lime); border-radius: 50%; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; margin-right: 8px; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .cx-tabs { display: inline-flex; gap: 6px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; padding: 5px; margin-bottom: 18px; }
-  .cx-tab { border: none; background: transparent; color: var(--ink-soft); font-family: var(--font-display); font-weight: 600; font-size: 0.88rem; padding: 9px 20px; border-radius: 999px; cursor: pointer; transition: all 0.18s ease; }
-  .cx-tab.on { background: var(--gradient-brand); color: var(--bg-deep); box-shadow: var(--glow-lime); }
-  .cx-repo { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-  .cx-repo input { flex: 1; min-width: 180px; }
-  .cx-mini { border: 1px solid var(--border); background: transparent; color: var(--ink-soft); border-radius: 999px; padding: 9px 14px; font-family: var(--font-body); font-size: 0.82rem; cursor: pointer; white-space: nowrap; }
-  .cx-mini:hover { border-color: var(--cyan); color: var(--cyan); }
-  .cx-gate { max-width: 460px; margin: 40px auto; text-align: center; background: rgba(13,20,40,0.8); border: 1px solid var(--border-glow); border-radius: var(--radius); padding: 40px 30px; box-shadow: var(--shadow); }
+
+  /* Gate */
+  .cx-gate { max-width: 460px; margin: 48px auto; text-align: center; background: rgba(13,20,40,0.8); border: 1px solid var(--border-glow); border-radius: var(--radius); padding: 40px 30px; box-shadow: var(--shadow); }
   .cx-gate h2 { font-size: 1.5rem; letter-spacing: -0.02em; margin: 14px 0 8px; }
   .cx-gate p { color: var(--ink-soft); line-height: 1.6; margin: 0 0 24px; }
   .cx-gh { display: inline-flex; align-items: center; gap: 10px; background: #161b22; border: 1px solid #30363d; color: #fff; border-radius: 999px; padding: 13px 26px; font-family: var(--font-display); font-weight: 700; cursor: pointer; }
   .cx-gh:hover { border-color: var(--lime); box-shadow: var(--glow-lime); }
-  .cx-result { border-color: var(--border-glow); box-shadow: var(--shadow-sm); }
-  .cx-result-links { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
-  .cx-repo-link { display: inline-block; color: var(--cyan); font-weight: 700; font-family: var(--font-display); }
-  .cx-deploy { border: 1px solid var(--border-glow); background: rgba(200,255,77,0.08); color: var(--lime); border-radius: 999px; padding: 8px 16px; font-family: var(--font-display); font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: all 0.16s ease; }
-  .cx-deploy:hover { box-shadow: var(--glow-lime); }
-  .cx-deploy:disabled { opacity: 0.7; cursor: default; }
-  .celebrate-share { display: flex; align-items: center; gap: 14px; background: rgba(139,92,255,0.1); border: 1px solid rgba(139,92,255,0.35); border-radius: var(--radius); padding: 16px 18px; margin-bottom: 16px; }
-  .celebrate-emoji { font-size: 1.8rem; }
-  .celebrate-copy { display: flex; flex-direction: column; flex: 1; }
-  .celebrate-copy strong { font-family: var(--font-display); color: var(--ink); }
-  .celebrate-copy span { color: var(--ink-soft); font-size: 0.84rem; }
-  .celebrate-btn { border: none; border-radius: 999px; padding: 10px 18px; font-family: var(--font-display); font-weight: 700; background: var(--gradient-brand); color: var(--bg-deep); cursor: pointer; box-shadow: var(--glow-lime); white-space: nowrap; }
-  .cx-files { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
-  .cx-file { font-family: var(--font-mono); font-size: 0.76rem; background: var(--surface-2); border: 1px solid var(--border); color: var(--ink-soft); border-radius: 6px; padding: 3px 8px; }
-  .cx-console { background: var(--bg-deep); border-color: var(--border-soft); }
-  .cx-log { font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-soft); padding: 3px 0; }
-  .cx-continue { border-color: var(--border-glow); }
-  .cx-cont-row { display: flex; gap: 8px; margin: 10px 0; flex-wrap: wrap; }
-  .cx-cont-row input { flex: 1; min-width: 200px; }
-  .cx-auto { width: 100%; border: 1px dashed var(--border-glow); background: transparent; color: var(--lime); border-radius: 12px; padding: 11px; font-family: var(--font-display); font-weight: 600; cursor: pointer; transition: all 0.16s ease; }
-  .cx-auto:hover { background: rgba(200,255,77,0.07); box-shadow: var(--glow-lime); }
-  /* Templates gallery */
-  .cx-templates { margin-bottom: 16px; }
-  .cx-templates-label { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-faint); }
-  .cx-template-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
-  .cx-template { border: 1px solid var(--border); background: var(--surface); color: var(--ink-soft); border-radius: 999px; padding: 8px 14px; font-size: 0.82rem; cursor: pointer; transition: all 0.16s ease; }
+
+  /* Workspace split */
+  .cxw { display: grid; grid-template-columns: minmax(0, 440px) minmax(0, 1fr); gap: 0; height: calc(100vh - 4px - 62px); min-height: 520px; }
+  .cxw.solo { grid-template-columns: minmax(0, 1fr); }
+  .cxw-chat { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--border); background: rgba(4,6,15,0.4); }
+  .cxw-head { padding: 16px 18px 10px; }
+  .cxw-head .eyebrow { color: var(--lime); font-family: var(--font-mono); font-size: 0.64rem; letter-spacing: 0.16em; text-transform: uppercase; }
+  .cxw-head h1 { font-size: 1.15rem; margin: 4px 0 2px; letter-spacing: -0.01em; }
+  .cxw-head p { color: var(--ink-soft); font-size: 0.82rem; margin: 0; }
+  .cxw-team { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 18px 0; }
+  .cxw-role { font-size: 0.68rem; color: var(--ink-soft); border: 1px solid var(--border-soft); border-radius: 999px; padding: 4px 9px; }
+
+  .cxw-thread { flex: 1; overflow-y: auto; padding: 14px 18px; display: flex; flex-direction: column; gap: 14px; }
+  .cxw-empty { color: var(--ink-faint); text-align: center; margin: auto 0; }
+  .cxw-empty .big { font-size: 2.4rem; }
+  .cx-templates { margin-top: 14px; }
+  .cx-templates-label { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-faint); }
+  .cx-template-row { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 8px; justify-content: center; }
+  .cx-template { border: 1px solid var(--border); background: var(--surface); color: var(--ink-soft); border-radius: 999px; padding: 7px 13px; font-size: 0.78rem; cursor: pointer; transition: all 0.16s ease; }
   .cx-template:hover { border-color: var(--violet); color: var(--ink); box-shadow: 0 0 14px rgba(139,92,255,0.28); }
-  /* IDE panel */
-  .cx-ide { padding: 0; overflow: hidden; }
-  .cx-ide-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 14px 16px; border-bottom: 1px solid var(--border); }
-  .cx-ide-head .tag { margin-bottom: 0; }
-  .cx-ide-tabs { display: inline-flex; gap: 5px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; padding: 4px; }
-  .cx-ide-tab { border: none; background: transparent; color: var(--ink-soft); font-family: var(--font-display); font-weight: 600; font-size: 0.8rem; padding: 6px 14px; border-radius: 999px; cursor: pointer; }
-  .cx-ide-tab.on { background: var(--gradient-brand); color: var(--bg-deep); }
-  .cx-ide-head .cx-zip { margin-left: auto; }
-  .cx-ide-body { min-height: 240px; }
-  .cx-preview { width: 100%; height: 460px; border: 0; background: #fff; display: block; }
-  .cx-code-wrap { display: grid; grid-template-columns: 200px 1fr; min-height: 240px; }
-  .cx-tree { border-right: 1px solid var(--border); background: var(--bg-deep); padding: 8px; overflow-y: auto; max-height: 460px; }
+
+  .cx-msg { display: flex; gap: 10px; }
+  .cx-ava { width: 30px; height: 30px; flex: 0 0 30px; border-radius: 9px; display: grid; place-items: center; font-size: 0.95rem; background: var(--surface-2); border: 1px solid var(--border); }
+  .cx-msg.user .cx-ava { background: rgba(77,240,255,0.12); border-color: rgba(77,240,255,0.3); }
+  .cx-bubble { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; font-size: 0.9rem; color: var(--ink); max-width: 100%; overflow: hidden; }
+  .cx-msg.user .cx-bubble { background: rgba(77,240,255,0.06); }
+  .cx-bubble .cx-body { color: var(--ink-soft); line-height: 1.6; font-size: 0.86rem; }
+  .cx-bubble .cx-body pre { background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 8px; padding: 10px; overflow-x: auto; }
+  .cx-bubble .cx-body code { font-family: var(--font-mono); font-size: 0.82em; }
+  .cx-bubble h4 { margin: 2px 0 6px; font-size: 0.82rem; color: var(--lime); font-family: var(--font-display); }
+  .cx-log { font-family: var(--font-mono); font-size: 0.76rem; color: var(--ink-soft); padding: 2px 0; }
+  .cx-agents { display: flex; flex-direction: column; gap: 4px; margin: 8px 0 2px; }
+  .cx-agent { font-size: 0.74rem; color: var(--ink-soft); }
+  .cx-agent b { color: var(--ink); font-weight: 600; }
+  .cx-files { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
+  .cx-file { font-family: var(--font-mono); font-size: 0.72rem; background: var(--surface-2); border: 1px solid var(--border); color: var(--ink-soft); border-radius: 6px; padding: 2px 7px; }
+  .spinner { width: 13px; height: 13px; border: 2px solid var(--border); border-top-color: var(--lime); border-radius: 50%; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; margin-right: 7px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Composer */
+  .cxw-composer { border-top: 1px solid var(--border); padding: 12px 16px 16px; background: rgba(13,20,40,0.55); }
+  .cxw-modes { display: inline-flex; gap: 5px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; padding: 4px; margin-bottom: 10px; }
+  .cxw-mode { border: none; background: transparent; color: var(--ink-soft); font-family: var(--font-display); font-weight: 600; font-size: 0.78rem; padding: 6px 14px; border-radius: 999px; cursor: pointer; }
+  .cxw-mode.on { background: var(--gradient-brand); color: var(--bg-deep); }
+  .cxw-composer textarea { width: 100%; border: 1px solid var(--border); background: var(--surface-2); color: var(--ink); border-radius: 12px; padding: 11px 12px; font-family: var(--font-body); font-size: 0.9rem; resize: none; }
+  .cxw-composer textarea:focus { outline: none; border-color: var(--cyan); box-shadow: var(--glow-cyan); }
+  .cxw-opts { display: flex; gap: 8px; margin: 8px 0; flex-wrap: wrap; }
+  .cxw-opts input, .cxw-opts select { border: 1px solid var(--border); background: var(--surface-2); color: var(--ink); border-radius: 9px; padding: 8px 10px; font-family: var(--font-body); font-size: 0.8rem; }
+  .cxw-opts input { flex: 1; min-width: 140px; }
+  .cxw-send { width: 100%; border: none; border-radius: 12px; padding: 12px; font-family: var(--font-display); font-weight: 700; font-size: 0.95rem; background: var(--gradient-brand); color: var(--bg-deep); cursor: pointer; box-shadow: var(--glow-lime); }
+  .cxw-send:disabled { opacity: 0.6; cursor: default; }
+  .cxw-hint { font-size: 0.72rem; color: var(--ink-faint); margin: 8px 2px 0; }
+  .cxw-hint a { color: var(--cyan); }
+  .cxw-err { color: var(--coral); font-size: 0.82rem; margin-top: 8px; display: none; }
+
+  /* Artifact (right) */
+  .cxw-art { display: flex; flex-direction: column; min-height: 0; background: var(--bg-deep); }
+  .cxw-art.hidden { display: none; }
+  .cxw-art-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+  .cxw-art-tabs { display: inline-flex; gap: 5px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; padding: 4px; }
+  .cxw-art-tab { border: none; background: transparent; color: var(--ink-soft); font-family: var(--font-display); font-weight: 600; font-size: 0.8rem; padding: 6px 15px; border-radius: 999px; cursor: pointer; }
+  .cxw-art-tab.on { background: var(--gradient-brand); color: var(--bg-deep); }
+  .cxw-art-repo { font-family: var(--font-mono); font-size: 0.74rem; color: var(--ink-soft); }
+  .cxw-art-actions { margin-left: auto; display: flex; gap: 7px; flex-wrap: wrap; }
+  .cxw-abtn { border: 1px solid var(--border); background: var(--surface); color: var(--ink-soft); border-radius: 999px; padding: 7px 13px; font-family: var(--font-display); font-weight: 600; font-size: 0.78rem; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; }
+  .cxw-abtn:hover { border-color: var(--cyan); color: var(--cyan); }
+  .cxw-abtn.deploy { border-color: var(--border-glow); color: var(--lime); background: rgba(200,255,77,0.08); }
+  .cxw-abtn.deploy:hover { box-shadow: var(--glow-lime); }
+  .cxw-art-body { flex: 1; min-height: 0; position: relative; }
+  .cxw-preview { width: 100%; height: 100%; border: 0; background: #fff; display: block; }
+  .cx-code-wrap { display: grid; grid-template-columns: 210px 1fr; height: 100%; }
+  .cx-tree { border-right: 1px solid var(--border); background: rgba(4,6,15,0.6); padding: 8px; overflow-y: auto; }
   .cx-tree-file { display: block; width: 100%; text-align: left; border: none; background: transparent; color: var(--ink-soft); font-family: var(--font-mono); font-size: 0.74rem; padding: 6px 8px; border-radius: 7px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .cx-tree-file:hover { background: var(--surface-2); color: var(--ink); }
   .cx-tree-file.on { background: rgba(77,240,255,0.1); color: var(--cyan); }
-  .cx-code { margin: 0; padding: 16px; overflow: auto; max-height: 460px; background: rgba(0,0,0,0.35); }
+  .cx-code { margin: 0; padding: 16px; overflow: auto; height: 100%; background: rgba(0,0,0,0.3); }
   .cx-code code { font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink); white-space: pre; }
-  @media (max-width: 800px) { .cx-team { grid-template-columns: repeat(2, 1fr); } .cx-code-wrap { grid-template-columns: 1fr; } .cx-tree { max-height: 140px; border-right: none; border-bottom: 1px solid var(--border); } }
+
+  /* Celebration */
+  .celebrate-share { display: flex; align-items: center; gap: 12px; background: rgba(139,92,255,0.1); border: 1px solid rgba(139,92,255,0.35); border-radius: 12px; padding: 12px 14px; }
+  .celebrate-emoji { font-size: 1.5rem; }
+  .celebrate-copy { display: flex; flex-direction: column; flex: 1; }
+  .celebrate-copy strong { font-family: var(--font-display); color: var(--ink); font-size: 0.86rem; }
+  .celebrate-copy span { color: var(--ink-soft); font-size: 0.76rem; }
+  .celebrate-btn { border: none; border-radius: 999px; padding: 8px 14px; font-family: var(--font-display); font-weight: 700; font-size: 0.78rem; background: var(--gradient-brand); color: var(--bg-deep); cursor: pointer; }
+
+  @media (max-width: 860px) {
+    .cxw, .cxw.solo { grid-template-columns: 1fr; height: auto; }
+    .cxw-chat { border-right: none; border-bottom: 1px solid var(--border); }
+    .cxw-thread { max-height: 46vh; }
+    .cxw-art { min-height: 60vh; }
+    .cx-code-wrap { grid-template-columns: 1fr; }
+    .cx-tree { max-height: 120px; border-right: none; border-bottom: 1px solid var(--border); }
+    .cxw-preview { min-height: 50vh; }
+  }
 </style>
 </head>
 <body data-page="codex">
 <div class="top-bar"><div class="top-bar-fill" id="topBar"></div></div>
 <header class="site-nav"></header>
-<main class="cx-main">
-  <!-- GitHub gate -->
-  <div class="cx-gate" id="cxGate">
-    <p class="eyebrow" style="justify-content:center;">Codex · Sign in required</p>
-    <div style="font-size:2.6rem;">⚡</div>
-    <h2>Connect GitHub to open Codex</h2>
-    <p>Codex builds and fixes real projects with all 4 AIs. Connect your GitHub so it can create a repo for your project — or you can point it at one you already own.</p>
-    <button class="cx-gh" id="cxGithub"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.7.5.5 5.7.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.8 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.7 18.3 5 18.3 5c.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.5-2.7 5.5-5.3 5.8.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6 4.6-1.5 7.9-5.8 7.9-10.9C23.5 5.7 18.3.5 12 .5z"/></svg> Continue with GitHub</button>
-    <p style="margin-top:16px;font-size:0.82rem;"><a href="#" id="cxSkip" style="color:var(--ink-faint);">Look around first — you'll connect GitHub to build</a></p>
-  </div>
 
-  <!-- Codex app (revealed after gate) -->
-  <div id="cxApp" style="display:none;">
-    <div class="cx-head">
-      <p class="eyebrow">Codex · 4-AI Dev Team</p>
-      <h1>Describe it. <span class="hg-gradient-text">Four engines read, build, and ship it.</span></h1>
-      <p>Like Claude Code, but with all 4 AIs. In Fix mode it reads your repo's real files first, then Claude designs the frontend, ChatGPT builds the backend, Gemini hunts the bugs, and Groq teaches every line — and Codex commits it all straight to your GitHub.</p>
-    </div>
+<!-- GitHub gate -->
+<div class="cx-gate" id="cxGate">
+  <p class="eyebrow" style="justify-content:center;">Codex · Sign in required</p>
+  <div style="font-size:2.6rem;">⚡</div>
+  <h2>Connect GitHub to open Codex</h2>
+  <p>Codex chats with you and builds real projects with 4 AIs — then commits and deploys them. Connect GitHub so it can create your repo (or point it at one you own).</p>
+  <button class="cx-gh" id="cxGithub"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.7.5.5 5.7.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.8 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.7 18.3 5 18.3 5c.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.5-2.7 5.5-5.3 5.8.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6 4.6-1.5 7.9-5.8 7.9-10.9C23.5 5.7 18.3.5 12 .5z"/></svg> Continue with GitHub</button>
+  <p style="margin-top:16px;font-size:0.82rem;"><a href="#" id="cxSkip" style="color:var(--ink-faint);">Look around first — you'll connect GitHub to build</a></p>
+</div>
 
-    <div class="cx-team">
-      <div class="cx-role"><strong>🟣 Claude</strong>Frontend Designer</div>
-      <div class="cx-role"><strong>🔵 ChatGPT</strong>Backend Architect</div>
-      <div class="cx-role"><strong>🟠 Gemini</strong>QA Engineer</div>
-      <div class="cx-role"><strong>🟢 Groq</strong>Coding Teacher</div>
-    </div>
-
-    <div class="cx-tabs">
-      <button type="button" class="cx-tab on" data-mode="build">🚀 Build from scratch</button>
-      <button type="button" class="cx-tab" data-mode="fix">🛠 Fix &amp; improve</button>
-    </div>
-
-    <div class="cx-templates" id="cxTemplates">
-      <span class="cx-templates-label">Start from a template</span>
-      <div class="cx-template-row" id="cxTemplateRow"></div>
-    </div>
-
-    <div class="cx-form">
-      <label id="cxTaskLabel" for="cxTask">What do you want to build?</label>
-      <textarea id="cxTask" rows="3" placeholder="e.g. A to-do app with login, streaks, and a dark neon theme"></textarea>
-      <label for="cxLang">Language / stack</label>
-      <select id="cxLang">
-        <option>JavaScript (HTML/CSS/JS)</option><option>Python</option><option>PHP + MySQL</option>
-        <option>Java</option><option>C++</option><option>React</option><option>Node.js</option>
-      </select>
-      <label id="cxCodeLabel" for="cxCode">Paste your existing code (optional)</label>
-      <textarea id="cxCode" rows="4" placeholder="Optional: paste code the team will improve and explain…"></textarea>
-      <label for="cxRepo">GitHub repo (optional)</label>
-      <div class="cx-repo">
-        <input id="cxRepo" type="text" placeholder="username/my-project — or let Codex name one" />
-        <button type="button" class="cx-mini" id="cxMakeRepo">✨ Codex names a repo</button>
+<!-- Workspace -->
+<main class="cxw solo" id="cxApp" style="display:none;">
+  <section class="cxw-chat">
+    <div class="cxw-head">
+      <span class="eyebrow">Codex · 4-AI Dev Team</span>
+      <h1>Chat. Build. <span class="hg-gradient-text">Watch it come alive.</span></h1>
+      <p>Describe an app — code appears here, a live preview on the right.</p>
+      <div class="cxw-team">
+        <span class="cxw-role">🟣 Claude · Frontend</span>
+        <span class="cxw-role">🔵 ChatGPT · Backend</span>
+        <span class="cxw-role">🟠 Gemini · QA</span>
+        <span class="cxw-role">🟢 Groq · Teacher</span>
       </div>
-      <button id="cxRun" class="cx-run" type="button">⚡ Run all 4 engines</button>
-      <span class="cx-note" id="cxNote">Uses 4 AI credits · commits straight to your repo</span>
-      <p id="cxErr" style="color:var(--coral);display:none;margin:12px 0 0;"></p>
     </div>
 
-    <div class="cx-out" id="cxOut"></div>
-  </div>
+    <div class="cxw-thread" id="cxThread">
+      <div class="cxw-empty" id="cxEmpty">
+        <div class="big">⚡</div>
+        <p>Tell the team what to build.</p>
+        <div class="cx-templates">
+          <span class="cx-templates-label">Or start from a template</span>
+          <div class="cx-template-row" id="cxTemplateRow"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cxw-composer">
+      <div class="cxw-modes">
+        <button type="button" class="cxw-mode on" data-mode="build">🚀 Build new</button>
+        <button type="button" class="cxw-mode" data-mode="fix">🛠 Improve</button>
+      </div>
+      <textarea id="cxTask" rows="2" placeholder="e.g. A to-do app with dark neon theme, categories, and streaks"></textarea>
+      <div class="cxw-opts">
+        <input id="cxRepo" type="text" placeholder="repo (optional) — Codex names one" />
+        <select id="cxLang">
+          <option>JavaScript (HTML/CSS/JS)</option><option>Python</option><option>PHP + MySQL</option>
+          <option>Java</option><option>C++</option><option>React</option><option>Node.js</option>
+        </select>
+      </div>
+      <button id="cxSend" class="cxw-send" type="button">⚡ Build with all 4 engines</button>
+      <p id="cxErr" class="cxw-err"></p>
+      <p class="cxw-hint">Real Claude &amp; GPT need their API keys — owner: <a href="/api/setup.php">add keys</a>. Otherwise engines fall back to what's available.</p>
+    </div>
+  </section>
+
+  <section class="cxw-art hidden" id="cxArt">
+    <div class="cxw-art-head">
+      <div class="cxw-art-tabs">
+        <button type="button" class="cxw-art-tab on" data-t="preview">▶ Preview</button>
+        <button type="button" class="cxw-art-tab" data-t="code">📄 Code</button>
+      </div>
+      <span class="cxw-art-repo" id="cxArtRepo"></span>
+      <div class="cxw-art-actions" id="cxArtActions"></div>
+    </div>
+    <div class="cxw-art-body" id="cxArtBody"></div>
+  </section>
 </main>
+
 <script src="/api-config.js?v=20260713"></script>
 <script src="/script.js?v=20260713"></script>
 <script src="/convos.js?v=20260716"></script>
@@ -171,69 +205,60 @@
 ensureProfile();
 const bar = document.getElementById('topBar');
 if (bar) bar.style.width = getLevelProgress().pct + '%';
-let mode = 'build';
+
 const CODEX_KEY = 'mm_codex_threads';
+let mode = 'build';
 let currentCodexId = Convo.newId();
+let sessionRepo = '';       // repo the current conversation targets
+let lastFiles = null;       // latest generated files for the artifact
 let codexDrawer = null;
+let busy = false;
 
-function md(text) {
-  let html = typeof marked !== 'undefined' ? marked.parse(String(text || '')) : String(text || '').replace(/</g, '&lt;').replace(/\n/g, '<br>');
-  return typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(html) : html;
+const thread = document.getElementById('cxThread');
+const emptyEl = document.getElementById('cxEmpty');
+const errEl = document.getElementById('cxErr');
+const artEl = document.getElementById('cxArt');
+const appEl = document.getElementById('cxApp');
+
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+function md(t) {
+  const h = typeof marked !== 'undefined' ? marked.parse(String(t || '')) : esc(t).replace(/\n/g, '<br>');
+  return typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(h) : h;
 }
 
-// GitHub gate — once connected (or skipped) it is remembered on this device
-function openCodex() {
+// ── Gate / GitHub ────────────────────────────────────────────────────────────
+function openWorkspace() {
   document.getElementById('cxGate').style.display = 'none';
-  document.getElementById('cxApp').style.display = 'block';
-  mountCodexHistory();
+  appEl.style.display = 'grid';
   mountTemplates();
+  mountHistory();
+  restoreSession();
 }
-document.getElementById('cxGithub').addEventListener('click', () => {
-  // Real GitHub OAuth — bounce to the server, which redirects to GitHub.
-  window.location.href = '/api/github-callback.php';
-});
-// Returning from a successful GitHub sign-in
+document.getElementById('cxGithub').addEventListener('click', () => { window.location.href = '/api/github-callback.php'; });
+document.getElementById('cxSkip').addEventListener('click', (e) => { e.preventDefault(); lsSet('mm_codex_github', 'skipped'); openWorkspace(); });
 function ghCookie() { return (document.cookie.match(/(?:^|; )mm_github=([^;]+)/) || [])[1] || ''; }
 if (new URLSearchParams(location.search).get('github') === 'connected' || ghCookie()) {
   lsSet('mm_codex_github', 'connected');
-  try {
-    const raw = ghCookie();
-    if (raw) { const p = JSON.parse(atob(decodeURIComponent(raw).split('.')[0])); if (p.name && !lsGet('mm_name','')) lsSet('mm_name', p.name); }
-  } catch {}
+  try { const raw = ghCookie(); if (raw) { const p = JSON.parse(atob(decodeURIComponent(raw).split('.')[0])); if (p.name && !lsGet('mm_name', '')) lsSet('mm_name', p.name); } } catch {}
 }
-document.getElementById('cxSkip').addEventListener('click', (e) => { e.preventDefault(); lsSet('mm_codex_github', 'skipped'); openCodex(); });
 
-// Build / Fix tabs
-document.querySelectorAll('.cx-tab').forEach((t) => t.addEventListener('click', () => {
-  document.querySelectorAll('.cx-tab').forEach((x) => x.classList.remove('on'));
-  t.classList.add('on');
-  mode = t.dataset.mode;
-  const isFix = mode === 'fix';
-  document.getElementById('cxTaskLabel').textContent = isFix ? 'What should we fix or add?' : 'What do you want to build?';
-  document.getElementById('cxTask').placeholder = isFix ? 'e.g. Fix the login bug and add a dark mode toggle' : 'e.g. A to-do app with login, streaks, and a dark neon theme';
-  document.getElementById('cxCodeLabel').textContent = isFix ? 'Paste the code to fix (recommended)' : 'Paste existing code (optional)';
-  document.getElementById('cxRun').textContent = isFix ? '🛠 Fix & improve with all 4 engines' : '⚡ Build with all 4 engines';
+// ── Mode + templates ─────────────────────────────────────────────────────────
+document.querySelectorAll('.cxw-mode').forEach((b) => b.addEventListener('click', () => {
+  document.querySelectorAll('.cxw-mode').forEach((x) => x.classList.toggle('on', x === b));
+  mode = b.dataset.mode;
+  document.getElementById('cxSend').textContent = mode === 'fix' ? '🛠 Improve with all 4 engines' : '⚡ Build with all 4 engines';
+  document.getElementById('cxTask').placeholder = mode === 'fix'
+    ? 'e.g. Fix the mobile layout and add a dark mode toggle'
+    : 'e.g. A to-do app with dark neon theme, categories, and streaks';
 }));
 
-document.getElementById('cxMakeRepo').addEventListener('click', () => {
-  const task = document.getElementById('cxTask').value.trim() || 'hungter-project';
-  const slug = task.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 30) || 'my-project';
-  document.getElementById('cxRepo').value = (lsGet('mm_name', 'you').toLowerCase().replace(/\s+/g,'') || 'you') + '/' + slug;
-});
-
-const cxOut = document.getElementById('cxOut');
-const cxErr = document.getElementById('cxErr');
-
-function esc(s) { return String(s == null ? '' : s).replace(/</g, '&lt;'); }
-
-// ── Templates gallery ────────────────────────────────────────────────────────
 const CX_TEMPLATES = [
-  ['🎨 Portfolio', 'A personal portfolio website with a hero, an about section, a projects grid, and a contact form — modern, animated, and fully responsive.', 'JavaScript (HTML/CSS/JS)'],
-  ['✅ To-do app', 'A to-do app: add, edit, complete and delete tasks, filter by status, and save to localStorage. Clean dark neon theme.', 'JavaScript (HTML/CSS/JS)'],
-  ['🌦 Weather app', 'A weather app UI showing current conditions and a 5-day forecast in nice cards, with a search box for a city.', 'JavaScript (HTML/CSS/JS)'],
-  ['🎮 Quiz game', 'A multiple-choice quiz game with score, timer, progress bar, and a results screen.', 'JavaScript (HTML/CSS/JS)'],
-  ['🔗 URL shortener', 'A URL shortener with a small backend API to create and resolve short links, plus a simple frontend.', 'Node.js'],
-  ['📊 Notes REST API', 'A REST API with full CRUD endpoints for a notes resource, input validation, and clear error handling.', 'Python'],
+  ['🎨 Portfolio', 'A personal portfolio site with a hero, about, projects grid and contact form — modern, animated, responsive.', 'JavaScript (HTML/CSS/JS)'],
+  ['✅ To-do app', 'A to-do app: add, edit, complete, delete, filter, and save to localStorage. Clean dark neon theme.', 'JavaScript (HTML/CSS/JS)'],
+  ['🌦 Weather', 'A weather app UI with current conditions and a 5-day forecast in cards, plus a city search.', 'JavaScript (HTML/CSS/JS)'],
+  ['🎮 Quiz game', 'A multiple-choice quiz game with score, timer, progress bar and a results screen.', 'JavaScript (HTML/CSS/JS)'],
+  ['🧮 Calculator', 'A sleek calculator with keyboard support and a neon glass theme.', 'JavaScript (HTML/CSS/JS)'],
+  ['📊 Landing page', 'A polished SaaS landing page with hero, features, pricing and a footer.', 'JavaScript (HTML/CSS/JS)'],
 ];
 function mountTemplates() {
   const row = document.getElementById('cxTemplateRow');
@@ -242,41 +267,18 @@ function mountTemplates() {
     const b = document.createElement('button');
     b.type = 'button'; b.className = 'cx-template'; b.textContent = label;
     b.addEventListener('click', () => {
-      // Templates are build-from-scratch starters.
-      document.querySelectorAll('.cx-tab').forEach((x) => x.classList.toggle('on', x.dataset.mode === 'build'));
-      mode = 'build';
       document.getElementById('cxTask').value = prompt;
       const sel = document.getElementById('cxLang');
-      for (const o of sel.options) { if (o.value === lang) { sel.value = lang; break; } }
-      document.getElementById('cxTask').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      for (const o of sel.options) if (o.value === lang) sel.value = lang;
+      document.getElementById('cxTask').focus();
     });
     row.appendChild(b);
   });
 }
 
-// ── Live build narration (while the 4 engines work) ──────────────────────────
-function startNarration(runMode) {
-  const steps = runMode === 'fix'
-    ? ['🔍 Reading your repo…', '🟠 Gemini is hunting bugs…', '🔵 ChatGPT is repairing the backend…', '🟣 Claude is fixing the UI…', '🟢 Groq is explaining the fixes…', '📦 Committing changes to GitHub…']
-    : ['🧠 Planning the project…', '🟣 Claude is designing the frontend…', '🔵 ChatGPT is building the backend…', '🟠 Gemini is writing tests & catching bugs…', '🟢 Groq is preparing your lesson…', '📦 Creating the repo & committing…'];
-  cxOut.innerHTML = '<div class="cx-card cx-console" id="cxNarr"></div>';
-  const el = document.getElementById('cxNarr');
-  let i = 0;
-  const push = () => {
-    if (!el || i >= steps.length) return;
-    const d = document.createElement('div');
-    d.className = 'cx-log';
-    d.innerHTML = '<span class="spinner" style="width:11px;height:11px;margin-right:6px;"></span>' + steps[i];
-    el.appendChild(d); i++;
-  };
-  push();
-  const timer = setInterval(push, 3200);
-  return () => clearInterval(timer);
-}
-
-// ── IDE panel: live preview + file tree/code viewer + ZIP download ───────────
-function cxResolveKey(files, entry, ref) {
-  if (/^(https?:)?\/\//i.test(ref) || ref.startsWith('data:')) return null; // external
+// ── Preview assembly ─────────────────────────────────────────────────────────
+function resolveKey(files, entry, ref) {
+  if (/^(https?:)?\/\//i.test(ref) || ref.startsWith('data:')) return null;
   const r = ref.replace(/^\.\//, '').replace(/^\//, '').split(/[?#]/)[0];
   if (files[r] != null) return r;
   const dir = entry.includes('/') ? entry.slice(0, entry.lastIndexOf('/') + 1) : '';
@@ -290,294 +292,249 @@ function assemblePreview(files) {
   if (!entry) return null;
   let html = String(files[entry] || '');
   html = html.replace(/<link\b[^>]*\bhref=["']([^"']+)["'][^>]*>/gi, (m, href) => {
-    const key = cxResolveKey(files, entry, href);
-    return key && /\.css$/i.test(key) ? '<style>\n' + files[key] + '\n</style>' : m;
+    const k = resolveKey(files, entry, href); return k && /\.css$/i.test(k) ? '<style>\n' + files[k] + '\n</style>' : m;
   });
   html = html.replace(/<script\b[^>]*\bsrc=["']([^"']+)["'][^>]*><\/script>/gi, (m, src) => {
-    const key = cxResolveKey(files, entry, src);
-    return key ? '<scr' + 'ipt>\n' + files[key] + '\n</scr' + 'ipt>' : m;
+    const k = resolveKey(files, entry, src); return k ? '<scr' + 'ipt>\n' + files[k] + '\n</scr' + 'ipt>' : m;
   });
   return html;
 }
-function renderIde(files, repoName) {
-  const paths = Object.keys(files || {});
-  if (!paths.length) return null;
-  const hasHtml = paths.some((p) => /\.html$/i.test(p));
-  const card = document.createElement('div');
-  card.className = 'cx-card cx-ide';
-  card.innerHTML =
-    '<div class="cx-ide-head"><span class="tag">🖥 Your project</span>' +
-    '<div class="cx-ide-tabs">' +
-    (hasHtml ? '<button type="button" class="cx-ide-tab on" data-t="preview">▶ Preview</button>' : '') +
-    '<button type="button" class="cx-ide-tab' + (hasHtml ? '' : ' on') + '" data-t="code">📄 Code</button>' +
-    '</div><button type="button" class="cx-mini cx-zip">⬇ Download ZIP</button></div>' +
-    '<div class="cx-ide-body"></div>';
-  const body = card.querySelector('.cx-ide-body');
 
-  function showPreview() {
+// ── Artifact panel (right) ───────────────────────────────────────────────────
+let artState = { files: null, repo: '', repoUrl: '', tab: 'preview' };
+function showArtifact(files, repo, repoUrl) {
+  artState.files = files; artState.repo = repo || ''; artState.repoUrl = repoUrl || '';
+  lastFiles = files;
+  appEl.classList.remove('solo');
+  artEl.classList.remove('hidden');
+  document.getElementById('cxArtRepo').textContent = repo || '';
+  // Actions
+  const actions = document.getElementById('cxArtActions');
+  actions.innerHTML = '';
+  const paths = Object.keys(files || {});
+  if (paths.length) {
+    const zip = document.createElement('button'); zip.className = 'cxw-abtn'; zip.type = 'button'; zip.innerHTML = '⬇ ZIP';
+    zip.addEventListener('click', () => downloadZip(files, repo)); actions.appendChild(zip);
+  }
+  if (repoUrl) {
+    const gh = document.createElement('a'); gh.className = 'cxw-abtn'; gh.href = repoUrl; gh.target = '_blank'; gh.rel = 'noopener'; gh.textContent = 'GitHub'; actions.appendChild(gh);
+  }
+  if (repo && paths.some((p) => /\.html$/i.test(p))) {
+    const dep = document.createElement('button'); dep.className = 'cxw-abtn deploy'; dep.type = 'button'; dep.textContent = '🚀 Deploy';
+    dep.addEventListener('click', () => runDeploy(repo, dep)); actions.appendChild(dep);
+  }
+  paintArtifact();
+}
+function paintArtifact() {
+  const body = document.getElementById('cxArtBody');
+  const files = artState.files || {};
+  const hasHtml = Object.keys(files).some((p) => /\.html$/i.test(p));
+  document.querySelectorAll('.cxw-art-tab').forEach((t) => t.classList.toggle('on', t.dataset.t === artState.tab));
+  if (artState.tab === 'preview' && hasHtml) {
     const assembled = assemblePreview(files);
     body.innerHTML = '';
-    if (assembled == null) { body.innerHTML = '<p class="cx-body" style="padding:14px;">No HTML entry file to preview — see the Code tab.</p>'; return; }
-    const frame = document.createElement('iframe');
-    frame.className = 'cx-preview';
-    frame.setAttribute('sandbox', 'allow-scripts allow-forms allow-modals allow-popups');
-    frame.srcdoc = assembled;
-    body.appendChild(frame);
-  }
-  function showCode() {
+    const f = document.createElement('iframe');
+    f.className = 'cxw-preview';
+    f.setAttribute('sandbox', 'allow-scripts allow-forms allow-modals allow-popups');
+    f.srcdoc = assembled || '<p style="font-family:sans-serif;padding:20px">No HTML entry to preview.</p>';
+    body.appendChild(f);
+  } else {
     body.innerHTML = '<div class="cx-code-wrap"><div class="cx-tree"></div><pre class="cx-code"><code></code></pre></div>';
-    const tree = body.querySelector('.cx-tree');
-    const codeEl = body.querySelector('.cx-code code');
-    paths.forEach((p, idx) => {
-      const f = document.createElement('button');
-      f.type = 'button'; f.className = 'cx-tree-file' + (idx === 0 ? ' on' : ''); f.textContent = p;
-      f.addEventListener('click', () => {
-        tree.querySelectorAll('.cx-tree-file').forEach((x) => x.classList.remove('on'));
-        f.classList.add('on');
-        codeEl.textContent = files[p];
-      });
+    const tree = body.querySelector('.cx-tree'), codeEl = body.querySelector('.cx-code code');
+    const paths = Object.keys(files);
+    paths.forEach((p, i) => {
+      const f = document.createElement('button'); f.type = 'button'; f.className = 'cx-tree-file' + (i === 0 ? ' on' : ''); f.textContent = p;
+      f.addEventListener('click', () => { tree.querySelectorAll('.cx-tree-file').forEach((x) => x.classList.remove('on')); f.classList.add('on'); codeEl.textContent = files[p]; });
       tree.appendChild(f);
     });
-    codeEl.textContent = files[paths[0]];
+    if (paths.length) codeEl.textContent = files[paths[0]];
   }
+}
+document.querySelectorAll('.cxw-art-tab').forEach((t) => t.addEventListener('click', () => { artState.tab = t.dataset.t; paintArtifact(); }));
 
-  card.querySelectorAll('.cx-ide-tab').forEach((tab) => tab.addEventListener('click', () => {
-    card.querySelectorAll('.cx-ide-tab').forEach((x) => x.classList.remove('on'));
-    tab.classList.add('on');
-    if (tab.dataset.t === 'preview') showPreview(); else showCode();
-  }));
-  card.querySelector('.cx-zip').addEventListener('click', async () => {
-    if (typeof JSZip === 'undefined') { alert('ZIP tool is still loading — try again in a second.'); return; }
-    const zip = new JSZip();
-    Object.entries(files).forEach(([p, c]) => zip.file(p, c));
-    const blob = await zip.generateAsync({ type: 'blob' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = String(repoName || 'hungter-project').replace(/[^a-z0-9._-]/gi, '-') + '.zip';
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 3000);
-  });
-
-  if (hasHtml) showPreview(); else showCode();
-  return card;
+async function downloadZip(files, repoName) {
+  if (typeof JSZip === 'undefined') { alert('ZIP tool still loading — try again in a second.'); return; }
+  const zip = new JSZip();
+  Object.entries(files).forEach(([p, c]) => zip.file(p, c));
+  const blob = await zip.generateAsync({ type: 'blob' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = String(repoName || 'hungter-project').replace(/[^a-z0-9._-]/gi, '-') + '.zip';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 3000);
 }
 
-// One-click deploy: ask the backend to enable GitHub Pages and show the URL.
 async function runDeploy(repo, btn) {
   if (!repo) return;
-  btn.disabled = true;
-  const original = btn.textContent;
-  btn.textContent = '🚀 Deploying…';
+  btn.disabled = true; const original = btn.textContent; btn.textContent = '🚀 Deploying…';
   try {
-    const base = String(window.HUNGTER_API_BASE || '').replace(/\/$/, '');
-    const candidates = [base + '/api/codex.php', base + '/api/codex', '/.netlify/functions/api/codex'];
-    let data = null;
-    for (const url of candidates) {
-      try {
-        const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'deploy', repo, visitorId: getSessionId() }) });
-        const ct = String(r.headers.get('content-type') || '');
-        if (r.ok || ct.includes('application/json')) { data = await r.json(); break; }
-      } catch {}
-    }
-    if (data && data.needsRepoScope) {
-      btn.outerHTML = '<a class="cx-repo-link" href="/api/github-callback.php">Reconnect GitHub to deploy →</a>';
-      return;
-    }
-    if (data && data.url) {
-      btn.outerHTML = '<a class="cx-repo-link" href="' + data.url.replace(/"/g, '') + '" target="_blank" rel="noopener">🌐 Live site → ' + data.url.replace(/</g, '&lt;') +
-        '</a><div class="cx-body" style="font-size:0.78rem;margin-top:4px;">First build can take a minute to go live.</div>';
-    } else {
-      btn.disabled = false;
-      btn.textContent = (data && data.error) ? '🚀 ' + data.error : '🚀 Deploy failed — retry';
-      setTimeout(() => { btn.textContent = original; }, 4000);
-    }
-  } catch {
-    btn.disabled = false;
-    btn.textContent = '🚀 Deploy failed — retry';
-  }
+    const data = await postCodex({ action: 'deploy', repo });
+    if (data && data.needsRepoScope) { btn.outerHTML = '<a class="cxw-abtn" href="/api/github-callback.php">Reconnect →</a>'; return; }
+    if (data && data.url) { btn.outerHTML = '<a class="cxw-abtn deploy" href="' + esc(data.url) + '" target="_blank" rel="noopener">🌐 Live site</a>'; }
+    else { btn.disabled = false; btn.textContent = '🚀 Retry'; }
+  } catch { btn.disabled = false; btn.textContent = '🚀 Retry'; }
 }
 
-// Render a Codex result (used for a fresh run AND for reopening saved sessions).
-function renderResult(data, runMode, fresh) {
-  const allPaths = Object.keys(data.files || {}).concat(data.committed || []);
-  const hasHtml = allPaths.some((p) => /\.html$/i.test(p));
-  let html = '';
-  if (data.repoUrl) {
-    const fileList = (data.committed || []).map((f) => '<code class="cx-file">' + esc(f) + '</code>').join('');
-    html += '<div class="cx-card cx-result">' +
-      '<span class="tag">' + (data.built ? '✅ Codex shipped it' : '⚙️ Codex ran') + '</span>' +
-      '<h3 style="margin:6px 0 4px;">' + esc(data.repo || 'your repo') + '</h3>' +
-      '<div class="cx-result-links">' +
-      '<a class="cx-repo-link" href="' + esc(data.repoUrl) + '" target="_blank" rel="noopener">Open the repo on GitHub →</a>' +
-      (hasHtml && data.repo ? '<button type="button" class="cx-deploy" data-repo="' + esc(data.repo) + '">🚀 Deploy live site</button>' : '') +
-      '</div>' +
-      (fileList ? '<div class="cx-files">' + fileList + '</div>' : '') +
-      '</div>';
+// ── Networking ───────────────────────────────────────────────────────────────
+async function postCodex(payload) {
+  const base = String(window.HUNGTER_API_BASE || '').replace(/\/$/, '');
+  const candidates = [base + '/api/codex.php', base + '/api/codex', '/.netlify/functions/api/codex'];
+  let lastErr = null;
+  for (const url of candidates) {
+    try {
+      const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ visitorId: getSessionId() }, payload)) });
+      const ct = String(r.headers.get('content-type') || '');
+      if (r.ok || ct.includes('application/json')) return await r.json();
+      lastErr = new Error('HTTP ' + r.status);
+    } catch (e) { lastErr = e; }
   }
-  if ((data.log || []).length) {
-    html += '<div class="cx-card cx-console">' + data.log.map((l) => '<div class="cx-log">' + esc(l) + '</div>').join('') + '</div>';
-  }
-  (data.sections || []).forEach((s) => {
-    const built = (s.files || []).length
-      ? 'wrote ' + s.files.map((f) => '<code class="cx-file">' + esc(f) + '</code>').join(' ')
-      : (s.reply ? '' : 'no files this run');
-    html += '<div class="cx-card"><span class="tag">' + esc(s.role) + ' · ' + esc(s.engine || '') + '</span>' +
-      '<div class="cx-body">' + (s.reply ? md(s.reply) : built) + '</div></div>';
-  });
-  if (data.teacher) {
-    html += '<div class="cx-card"><span class="tag">🟢 Groq · Coding Teacher</span><div class="cx-body">' + md(data.teacher) + '</div></div>';
-  }
-  cxOut.innerHTML = html || '<div class="cx-card">Codex ran but returned nothing — try a more specific request.</div>';
+  throw (lastErr || new Error('No backend reachable'));
+}
 
-  // Deploy button → live GitHub Pages site.
-  const deployBtn = cxOut.querySelector('.cx-deploy');
-  if (deployBtn) deployBtn.addEventListener('click', () => runDeploy(deployBtn.dataset.repo, deployBtn));
-
-  // Celebrate a successful build (confetti on a fresh ship; share card always).
+// ── Thread rendering ─────────────────────────────────────────────────────────
+function scrollThread() { thread.scrollTop = thread.scrollHeight; }
+function addUserMsg(text) {
+  if (emptyEl) emptyEl.style.display = 'none';
+  const row = document.createElement('div'); row.className = 'cx-msg user';
+  row.innerHTML = '<div class="cx-ava">🧑‍💻</div><div class="cx-bubble">' + esc(text) + '</div>';
+  thread.appendChild(row); scrollThread();
+}
+function addThinking(runMode) {
+  const steps = runMode === 'fix'
+    ? ['Reading your repo…', 'Gemini is hunting bugs…', 'ChatGPT is repairing the backend…', 'Claude is fixing the UI…', 'Groq is explaining…', 'Committing…']
+    : ['Planning the project…', 'Claude is designing the frontend…', 'ChatGPT is building the backend…', 'Gemini is writing tests…', 'Groq is preparing your lesson…', 'Creating the repo & committing…'];
+  const row = document.createElement('div'); row.className = 'cx-msg codex';
+  row.innerHTML = '<div class="cx-ava">⚡</div><div class="cx-bubble"><div class="cx-log" id="cxNarrLine"><span class="spinner"></span>' + steps[0] + '</div></div>';
+  thread.appendChild(row); scrollThread();
+  let i = 1;
+  const line = row.querySelector('#cxNarrLine');
+  const timer = setInterval(() => { if (line && i < steps.length) { line.innerHTML = '<span class="spinner"></span>' + steps[i]; i++; } }, 3000);
+  return { row, stop: () => clearInterval(timer) };
+}
+function agentLine(s) {
+  const files = (s.files || []).length ? ' · ' + s.files.map((f) => esc(f)).join(', ') : '';
+  return '<div class="cx-agent"><b>' + esc(s.role) + '</b> <span style="color:var(--ink-faint)">(' + esc(s.engine || '') + ')</span>' + files + '</div>';
+}
+function addCodexMsg(data, fresh) {
+  const row = document.createElement('div'); row.className = 'cx-msg codex';
+  let inner = '<div class="cx-ava">⚡</div><div class="cx-bubble">';
+  if ((data.log || []).length) inner += '<div>' + data.log.map((l) => '<div class="cx-log">' + esc(l) + '</div>').join('') + '</div>';
+  if ((data.sections || []).length) inner += '<div class="cx-agents">' + data.sections.map(agentLine).join('') + '</div>';
+  if (data.teacher) inner += '<h4>How it works</h4><div class="cx-body">' + md(data.teacher) + '</div>';
+  if (data.files && Object.keys(data.files).length) inner += '<div class="cx-body" style="margin-top:8px;color:var(--cyan)">→ See it live on the right. Ask for changes below.</div>';
+  inner += '</div>';
+  row.innerHTML = inner;
+  thread.appendChild(row);
   if (data.built && window.Celebrate) {
     if (fresh) window.Celebrate.confetti();
-    window.Celebrate.mountShareButton(cxOut, {
-      kind: 'codex',
-      title: 'I built ' + (data.repo || 'a project') + ' with Hungter Codex',
+    window.Celebrate.mountShareButton(row.querySelector('.cx-bubble'), {
+      kind: 'codex', title: 'I built ' + (data.repo || 'a project') + ' with Hungter Codex',
       subtitle: '4 AIs — one project. Frontend, backend, tests & a lesson.',
       stat: (data.committed || []).length + ' files shipped',
     });
   }
-
-  // IDE panel: live preview + file tree/code viewer + ZIP (needs file contents).
-  if (data.files && Object.keys(data.files).length) {
-    const ide = renderIde(data.files, data.repo);
-    if (ide) cxOut.appendChild(ide);
-  }
-
-  // Continue / iterate composer — keeps working on the same repo.
-  if (data.repo) {
-    const cont = document.createElement('div');
-    cont.className = 'cx-card cx-continue';
-    cont.innerHTML =
-      '<span class="tag">🔁 Keep going on ' + esc(data.repo) + '</span>' +
-      '<div class="cx-cont-row"><input id="cxFollow" type="text" placeholder="Tell Codex what to change or add next…" />' +
-      '<button type="button" class="cx-mini" id="cxFollowGo">Continue →</button></div>' +
-      '<button type="button" class="cx-auto" id="cxAuto">✨ Auto-improve — apply the QA fixes &amp; harden it</button>';
-    cxOut.appendChild(cont);
-    const repo = data.repo;
-    document.getElementById('cxFollowGo').addEventListener('click', () => {
-      const f = document.getElementById('cxFollow').value.trim();
-      if (f) runCodex(f, { mode: 'fix', repo });
-    });
-    document.getElementById('cxFollow').addEventListener('keypress', (e) => { if (e.key === 'Enter') document.getElementById('cxFollowGo').click(); });
-    document.getElementById('cxAuto').addEventListener('click', () =>
-      runCodex('Apply the QA engineer’s bug fixes from the last pass, handle the edge cases, and polish the UI.', { mode: 'fix', repo }));
-  }
+  scrollThread();
 }
 
-function saveCodexSession(task, runMode, data) {
-  const prev = Convo.get(CODEX_KEY, currentCodexId);
-  Convo.save(CODEX_KEY, {
-    id: currentCodexId,
-    title: (prev && prev.title) || task.slice(0, 48), // keep the original build's name across iterations
-    mode: runMode,
-    repo: data.repo || (prev && prev.repo) || '',
-    lang: document.getElementById('cxLang').value,
-    data,
-  });
-  if (codexDrawer) codexDrawer.refresh();
-}
-
-// The one build/fix driver. followText overrides the textarea; opts can pin
-// mode + repo so "Continue" always targets the same project.
-async function runCodex(followText, opts) {
-  opts = opts || {};
-  const runMode = opts.mode || mode;
-  const task = (followText != null ? followText : document.getElementById('cxTask').value).trim();
-  cxErr.style.display = 'none';
-  if (!task) { cxErr.textContent = 'Tell the team what to ' + (runMode === 'fix' ? 'fix' : 'build') + ' first.'; cxErr.style.display = 'block'; return; }
-  const btn = document.getElementById('cxRun');
-  btn.disabled = true;
-  const stopNarration = startNarration(runMode);
+// ── Send ─────────────────────────────────────────────────────────────────────
+async function send() {
+  if (busy) return;
+  const ta = document.getElementById('cxTask');
+  const text = ta.value.trim();
+  errEl.style.display = 'none';
+  // Once a repo exists in this chat, follow-ups are improvements on it.
+  const runMode = sessionRepo ? 'fix' : mode;
+  if (!text) { errEl.textContent = 'Tell the team what to ' + (runMode === 'fix' ? 'change' : 'build') + ' first.'; errEl.style.display = 'block'; return; }
+  busy = true;
+  const btn = document.getElementById('cxSend'); btn.disabled = true;
+  addUserMsg(text); ta.value = '';
+  const think = addThinking(runMode);
   try {
-    const payload = JSON.stringify({
-      visitorId: getSessionId(), task, mode: runMode,
+    const data = await postCodex({
+      task: text, mode: runMode,
       language: document.getElementById('cxLang').value,
-      code: document.getElementById('cxCode').value.trim(),
-      repo: (opts.repo || document.getElementById('cxRepo').value).trim(),
+      repo: (sessionRepo || document.getElementById('cxRepo').value).trim(),
       userLevel: lsGet('mm_level', 'Newbie'),
     });
-    // Try every backend shape the host might serve — keep the first real JSON.
-    const base = String(window.HUNGTER_API_BASE || '').replace(/\/$/, '');
-    const candidates = [base + '/api/codex.php', base + '/api/codex', '/.netlify/functions/api/codex'];
-    let res = null, data = null, lastErr = null;
-    for (const url of candidates) {
-      try {
-        const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload });
-        const ct = String(r.headers.get('content-type') || '');
-        if (r.ok || ct.includes('application/json')) { res = r; data = await r.json(); break; }
-        lastErr = new Error('HTTP ' + r.status);
-      } catch (e) { lastErr = e; }
-    }
-    if (!res || !data) throw (lastErr || new Error('No backend reachable'));
-    if (data.needsRepoScope) {
-      cxOut.innerHTML = '';
-      cxErr.innerHTML = (data.error || 'Connect GitHub so Codex can build into your repo.') +
-        ' <a href="/api/github-callback.php" style="color:var(--cyan);font-weight:700;">Connect GitHub →</a>';
-      cxErr.style.display = 'block'; return;
-    }
-    if (data.requiresSignup) { cxErr.innerHTML = 'Codex needs an account. <a href="/signup.html" style="color:var(--cyan)">Create a free account →</a>'; cxErr.style.display = 'block'; cxOut.innerHTML = ''; return; }
-    if (data.dailyLimitReached) { cxErr.textContent = data.error || 'Daily AI credits used up — come back tomorrow.'; cxErr.style.display = 'block'; cxOut.innerHTML = ''; return; }
-    if (!res.ok || data.error) { cxErr.textContent = data.error || 'Codex hit an error — try again.'; cxErr.style.display = 'block'; cxOut.innerHTML = ''; return; }
+    think.stop(); think.row.remove();
+    if (data.needsRepoScope) { errEl.innerHTML = (data.error || 'Connect GitHub to build.') + ' <a href="/api/github-callback.php" style="color:var(--cyan)">Connect →</a>'; errEl.style.display = 'block'; return; }
+    if (data.requiresSignup) { errEl.innerHTML = 'Codex needs an account. <a href="/signup.html" style="color:var(--cyan)">Create one →</a>'; errEl.style.display = 'block'; return; }
+    if (data.dailyLimitReached) { errEl.textContent = data.error || 'Daily AI credits used up — come back tomorrow.'; errEl.style.display = 'block'; return; }
+    if (data.error) { errEl.textContent = data.error; errEl.style.display = 'block'; return; }
 
-    renderResult(data, runMode, true);
-    if (data.repo && document.getElementById('cxRepo')) document.getElementById('cxRepo').value = data.repo;
-    saveCodexSession(task, runMode, data);
+    addCodexMsg(data, true);
+    if (data.repo) { sessionRepo = data.repo; document.getElementById('cxRepo').value = data.repo; }
+    if (data.files && Object.keys(data.files).length) { artState.tab = 'preview'; showArtifact(data.files, data.repo, data.repoUrl); }
+    // After the first build, the composer becomes an "ask for changes" box.
+    btn.textContent = '🛠 Improve with all 4 engines';
+    ta.placeholder = 'Ask for a change… (e.g. add a dark mode toggle)';
+    saveSession(text, data);
     if (typeof addMilestone === 'function') addMilestone('Used Codex (' + runMode + ')');
     if (typeof updateLevel === 'function') updateLevel();
     if (bar) bar.style.width = getLevelProgress().pct + '%';
-  } catch { cxErr.textContent = 'Could not reach the Codex backend.'; cxErr.style.display = 'block'; cxOut.innerHTML = ''; }
-  finally { stopNarration(); btn.disabled = false; }
+  } catch {
+    think.stop(); think.row.remove();
+    errEl.textContent = 'Could not reach the Codex backend.'; errEl.style.display = 'block';
+  } finally { busy = false; btn.disabled = false; }
 }
+document.getElementById('cxSend').addEventListener('click', send);
+document.getElementById('cxTask').addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); send(); } });
 
-document.getElementById('cxRun').addEventListener('click', () => runCodex());
-
-// New project — fresh session id, clear the form and output.
-function newCodex() {
-  currentCodexId = Convo.newId();
-  document.getElementById('cxTask').value = '';
-  document.getElementById('cxCode').value = '';
-  document.getElementById('cxRepo').value = '';
-  cxOut.innerHTML = '';
-  cxErr.style.display = 'none';
-  document.getElementById('cxTask').focus();
+// ── Sessions / history ───────────────────────────────────────────────────────
+function saveSession(lastText, data) {
+  const prev = Convo.get(CODEX_KEY, currentCodexId);
+  const turns = (prev && prev.turns) || [];
+  turns.push({ role: 'user', text: lastText });
+  turns.push({ role: 'codex', sum: { repo: data.repo, repoUrl: data.repoUrl, built: data.built, committed: data.committed || [], log: data.log || [], teacher: data.teacher || '', sections: data.sections || [] } });
+  Convo.save(CODEX_KEY, {
+    id: currentCodexId,
+    title: (prev && prev.title) || lastText.slice(0, 48),
+    repo: sessionRepo, lang: document.getElementById('cxLang').value,
+    turns: turns.slice(-40),
+    files: data.files || (prev && prev.files) || null,
+    repoUrl: data.repoUrl || (prev && prev.repoUrl) || '',
+  });
+  if (codexDrawer) codexDrawer.refresh();
 }
-
-// Reopen a saved build — re-render its stored result and target the same repo.
-function openCodexSession(id) {
+function newChat() {
+  currentCodexId = Convo.newId(); sessionRepo = ''; lastFiles = null;
+  thread.querySelectorAll('.cx-msg, .celebrate-share').forEach((n) => n.remove());
+  if (emptyEl) emptyEl.style.display = '';
+  artEl.classList.add('hidden'); appEl.classList.add('solo');
+  document.getElementById('cxTask').value = ''; document.getElementById('cxRepo').value = '';
+  document.getElementById('cxSend').textContent = mode === 'fix' ? '🛠 Improve with all 4 engines' : '⚡ Build with all 4 engines';
+  errEl.style.display = 'none';
+}
+function openSession(id) {
   const t = Convo.get(CODEX_KEY, id);
-  if (!t || !t.data) return;
-  currentCodexId = id;
-  mode = t.mode || 'build';
-  if (t.repo) document.getElementById('cxRepo').value = t.repo;
+  if (!t) return;
+  currentCodexId = id; sessionRepo = t.repo || '';
   if (t.lang) document.getElementById('cxLang').value = t.lang;
-  if (t.title) document.getElementById('cxTask').value = t.title;
-  renderResult(t.data, t.mode);
-  window.scrollTo({ top: document.getElementById('cxOut').offsetTop - 80, behavior: 'smooth' });
+  if (t.repo) document.getElementById('cxRepo').value = t.repo;
+  thread.querySelectorAll('.cx-msg, .celebrate-share').forEach((n) => n.remove());
+  if (emptyEl) emptyEl.style.display = 'none';
+  (t.turns || []).forEach((turn) => {
+    if (turn.role === 'user') addUserMsg(turn.text);
+    else if (turn.sum) addCodexMsg(Object.assign({ files: null }, turn.sum), false);
+  });
+  if (t.files && Object.keys(t.files).length) { artState.tab = 'preview'; showArtifact(t.files, t.repo, t.repoUrl); }
+  else { artEl.classList.add('hidden'); appEl.classList.add('solo'); }
+  if (sessionRepo) { document.getElementById('cxSend').textContent = '🛠 Improve with all 4 engines'; document.getElementById('cxTask').placeholder = 'Ask for a change…'; }
 }
-
-// Mount Codex history once the app is open.
-function mountCodexHistory() {
+function restoreSession() {
+  const list = Convo.list(CODEX_KEY);
+  if (list.length) openSession(list[0].id);
+}
+function mountHistory() {
   if (codexDrawer) return;
   codexDrawer = Convo.mountDrawer({
-    key: CODEX_KEY,
-    title: '⚡ Your Codex builds',
-    newLabel: '＋ New project',
-    onNew: newCodex,
-    onSelect: openCodexSession,
-    itemLabel: (t) => ({ title: t.title || 'Untitled build', sub: (t.repo ? t.repo + ' · ' : '') + (t.mode === 'fix' ? 'fix · ' : 'build · ') + Convo.ago(t.updatedAt) }),
+    key: CODEX_KEY, title: '⚡ Your Codex chats', newLabel: '＋ New project',
+    onNew: newChat, onSelect: openSession,
+    itemLabel: (t) => ({ title: t.title || 'Untitled', sub: (t.repo ? t.repo + ' · ' : '') + Convo.ago(t.updatedAt) }),
   });
 }
 
-// Auto-open the app if already connected/skipped — run last so every function
-// and const (CX_TEMPLATES etc.) is defined before openCodex touches them.
-if (lsGet('mm_codex_github', '')) openCodex();
+if (lsGet('mm_codex_github', '')) openWorkspace();
 </script>
 </body>
 </html>
