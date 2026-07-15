@@ -1129,3 +1129,53 @@ label {
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Saved conversation history drawer (Chat + Codex) ────────────────────── */
+.convo-fab {
+  position: fixed; top: 84px; left: 18px; z-index: 60;
+  display: inline-flex; align-items: center; gap: 7px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  color: var(--ink-soft); border-radius: 999px; padding: 8px 15px;
+  font-family: var(--font-display); font-weight: 600; font-size: 0.82rem;
+  cursor: pointer; backdrop-filter: blur(10px); transition: all 0.18s ease;
+}
+.convo-fab:hover { border-color: var(--cyan); color: var(--cyan); box-shadow: var(--glow-cyan); }
+.convo-fab span { font-size: 0.95rem; }
+.convo-overlay {
+  position: fixed; inset: 0; background: rgba(4, 6, 15, 0.55);
+  backdrop-filter: blur(2px); opacity: 0; pointer-events: none;
+  transition: opacity 0.22s ease; z-index: 70;
+}
+.convo-overlay.open { opacity: 1; pointer-events: auto; }
+.convo-panel {
+  position: fixed; top: 0; left: 0; bottom: 0; width: 320px; max-width: 86vw;
+  background: var(--surface-solid); border-right: 1px solid var(--border-glow);
+  box-shadow: var(--shadow); z-index: 80; padding: 20px 16px;
+  transform: translateX(-104%); transition: transform 0.26s cubic-bezier(0.22,1,0.36,1);
+  display: flex; flex-direction: column; gap: 14px;
+}
+.convo-panel.open { transform: translateX(0); }
+.convo-head { display: flex; align-items: center; justify-content: space-between; }
+.convo-head strong { font-family: var(--font-display); font-size: 1.05rem; }
+.convo-x { background: transparent; border: none; color: var(--ink-faint); font-size: 1.1rem; cursor: pointer; }
+.convo-x:hover { color: var(--ink); }
+.convo-new {
+  border: 1px solid var(--border-glow); background: var(--surface);
+  color: var(--lime); border-radius: 12px; padding: 11px; font-family: var(--font-display);
+  font-weight: 700; cursor: pointer; transition: all 0.18s ease;
+}
+.convo-new:hover { background: rgba(200,255,77,0.08); box-shadow: var(--glow-lime); }
+.convo-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin: 0 -4px; padding: 0 4px; }
+.convo-item {
+  display: flex; align-items: center; gap: 8px; background: var(--surface);
+  border: 1px solid var(--border-soft); border-radius: 12px; padding: 11px 12px;
+  cursor: pointer; transition: all 0.16s ease;
+}
+.convo-item:hover { border-color: var(--cyan); background: var(--surface-2); }
+.convo-item-main { flex: 1; min-width: 0; }
+.convo-item-title { font-size: 0.88rem; color: var(--ink); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.convo-item-sub { font-family: var(--font-mono); font-size: 0.68rem; color: var(--ink-faint); margin-top: 3px; }
+.convo-del { background: transparent; border: none; cursor: pointer; opacity: 0.55; font-size: 0.9rem; transition: opacity 0.16s ease; }
+.convo-del:hover { opacity: 1; }
+.convo-empty { color: var(--ink-faint); font-size: 0.85rem; text-align: center; margin-top: 30px; }
+@media (max-width: 720px) { .convo-fab { top: 76px; left: 12px; padding: 7px 12px; font-size: 0.76rem; } }

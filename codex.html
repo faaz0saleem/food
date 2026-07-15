@@ -58,6 +58,11 @@
   .cx-file { font-family: var(--font-mono); font-size: 0.76rem; background: var(--surface-2); border: 1px solid var(--border); color: var(--ink-soft); border-radius: 6px; padding: 3px 8px; }
   .cx-console { background: var(--bg-deep); border-color: var(--border-soft); }
   .cx-log { font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink-soft); padding: 3px 0; }
+  .cx-continue { border-color: var(--border-glow); }
+  .cx-cont-row { display: flex; gap: 8px; margin: 10px 0; flex-wrap: wrap; }
+  .cx-cont-row input { flex: 1; min-width: 200px; }
+  .cx-auto { width: 100%; border: 1px dashed var(--border-glow); background: transparent; color: var(--lime); border-radius: 12px; padding: 11px; font-family: var(--font-display); font-weight: 600; cursor: pointer; transition: all 0.16s ease; }
+  .cx-auto:hover { background: rgba(200,255,77,0.07); box-shadow: var(--glow-lime); }
   @media (max-width: 800px) { .cx-team { grid-template-columns: repeat(2, 1fr); } }
 </style>
 </head>
@@ -120,12 +125,16 @@
 </main>
 <script src="/api-config.js?v=20260713"></script>
 <script src="/script.js?v=20260713"></script>
+<script src="/convos.js?v=20260715"></script>
 <script src="/layout.js?v=20260713" defer></script>
 <script>
 ensureProfile();
 const bar = document.getElementById('topBar');
 if (bar) bar.style.width = getLevelProgress().pct + '%';
 let mode = 'build';
+const CODEX_KEY = 'mm_codex_threads';
+let currentCodexId = Convo.newId();
+let codexDrawer = null;
 
 function md(text) {
   let html = typeof marked !== 'undefined' ? marked.parse(String(text || '')) : String(text || '').replace(/</g, '&lt;').replace(/\n/g, '<br>');
@@ -136,6 +145,7 @@ function md(text) {
 function openCodex() {
   document.getElementById('cxGate').style.display = 'none';
   document.getElementById('cxApp').style.display = 'block';
+  mountCodexHistory();
 }
 if (lsGet('mm_codex_github', '')) openCodex();
 document.getElementById('cxGithub').addEventListener('click', () => {
@@ -171,26 +181,92 @@ document.getElementById('cxMakeRepo').addEventListener('click', () => {
   document.getElementById('cxRepo').value = (lsGet('mm_name', 'you').toLowerCase().replace(/\s+/g,'') || 'you') + '/' + slug;
 });
 
-document.getElementById('cxRun').addEventListener('click', async () => {
-  const task = document.getElementById('cxTask').value.trim();
-  const err = document.getElementById('cxErr');
-  const out = document.getElementById('cxOut');
-  err.style.display = 'none';
-  if (!task) { err.textContent = 'Tell the team what to ' + (mode === 'fix' ? 'fix' : 'build') + ' first.'; err.style.display = 'block'; return; }
+const cxOut = document.getElementById('cxOut');
+const cxErr = document.getElementById('cxErr');
+
+function esc(s) { return String(s == null ? '' : s).replace(/</g, '&lt;'); }
+
+// Render a Codex result (used for a fresh run AND for reopening saved sessions).
+function renderResult(data, runMode) {
+  let html = '';
+  if (data.repoUrl) {
+    const fileList = (data.committed || []).map((f) => '<code class="cx-file">' + esc(f) + '</code>').join('');
+    html += '<div class="cx-card cx-result">' +
+      '<span class="tag">' + (data.built ? '✅ Codex shipped it' : '⚙️ Codex ran') + '</span>' +
+      '<h3 style="margin:6px 0 4px;">' + esc(data.repo || 'your repo') + '</h3>' +
+      '<a class="cx-repo-link" href="' + esc(data.repoUrl) + '" target="_blank" rel="noopener">Open the repo on GitHub →</a>' +
+      (fileList ? '<div class="cx-files">' + fileList + '</div>' : '') +
+      '</div>';
+  }
+  if ((data.log || []).length) {
+    html += '<div class="cx-card cx-console">' + data.log.map((l) => '<div class="cx-log">' + esc(l) + '</div>').join('') + '</div>';
+  }
+  (data.sections || []).forEach((s) => {
+    const built = (s.files || []).length
+      ? 'wrote ' + s.files.map((f) => '<code class="cx-file">' + esc(f) + '</code>').join(' ')
+      : (s.reply ? '' : 'no files this run');
+    html += '<div class="cx-card"><span class="tag">' + esc(s.role) + ' · ' + esc(s.engine || '') + '</span>' +
+      '<div class="cx-body">' + (s.reply ? md(s.reply) : built) + '</div></div>';
+  });
+  if (data.teacher) {
+    html += '<div class="cx-card"><span class="tag">🟢 Groq · Coding Teacher</span><div class="cx-body">' + md(data.teacher) + '</div></div>';
+  }
+  cxOut.innerHTML = html || '<div class="cx-card">Codex ran but returned nothing — try a more specific request.</div>';
+
+  // Continue / iterate composer — keeps working on the same repo.
+  if (data.repo) {
+    const cont = document.createElement('div');
+    cont.className = 'cx-card cx-continue';
+    cont.innerHTML =
+      '<span class="tag">🔁 Keep going on ' + esc(data.repo) + '</span>' +
+      '<div class="cx-cont-row"><input id="cxFollow" type="text" placeholder="Tell Codex what to change or add next…" />' +
+      '<button type="button" class="cx-mini" id="cxFollowGo">Continue →</button></div>' +
+      '<button type="button" class="cx-auto" id="cxAuto">✨ Auto-improve — apply the QA fixes &amp; harden it</button>';
+    cxOut.appendChild(cont);
+    const repo = data.repo;
+    document.getElementById('cxFollowGo').addEventListener('click', () => {
+      const f = document.getElementById('cxFollow').value.trim();
+      if (f) runCodex(f, { mode: 'fix', repo });
+    });
+    document.getElementById('cxFollow').addEventListener('keypress', (e) => { if (e.key === 'Enter') document.getElementById('cxFollowGo').click(); });
+    document.getElementById('cxAuto').addEventListener('click', () =>
+      runCodex('Apply the QA engineer’s bug fixes from the last pass, handle the edge cases, and polish the UI.', { mode: 'fix', repo }));
+  }
+}
+
+function saveCodexSession(task, runMode, data) {
+  const prev = Convo.get(CODEX_KEY, currentCodexId);
+  Convo.save(CODEX_KEY, {
+    id: currentCodexId,
+    title: (prev && prev.title) || task.slice(0, 48), // keep the original build's name across iterations
+    mode: runMode,
+    repo: data.repo || (prev && prev.repo) || '',
+    lang: document.getElementById('cxLang').value,
+    data,
+  });
+  if (codexDrawer) codexDrawer.refresh();
+}
+
+// The one build/fix driver. followText overrides the textarea; opts can pin
+// mode + repo so "Continue" always targets the same project.
+async function runCodex(followText, opts) {
+  opts = opts || {};
+  const runMode = opts.mode || mode;
+  const task = (followText != null ? followText : document.getElementById('cxTask').value).trim();
+  cxErr.style.display = 'none';
+  if (!task) { cxErr.textContent = 'Tell the team what to ' + (runMode === 'fix' ? 'fix' : 'build') + ' first.'; cxErr.style.display = 'block'; return; }
   const btn = document.getElementById('cxRun');
   btn.disabled = true;
-  out.innerHTML = '<div class="cx-card"><span class="spinner"></span>All 4 engines are ' + (mode === 'fix' ? 'fixing and improving' : 'building') + ' your project — 20–40 seconds…</div>';
+  cxOut.innerHTML = '<div class="cx-card"><span class="spinner"></span>All 4 engines are ' + (runMode === 'fix' ? 'fixing and improving' : 'building') + ' your project — 20–40 seconds…</div>';
   try {
     const payload = JSON.stringify({
-      visitorId: getSessionId(), task, mode,
+      visitorId: getSessionId(), task, mode: runMode,
       language: document.getElementById('cxLang').value,
       code: document.getElementById('cxCode').value.trim(),
-      repo: document.getElementById('cxRepo').value.trim(),
+      repo: (opts.repo || document.getElementById('cxRepo').value).trim(),
       userLevel: lsGet('mm_level', 'Newbie'),
     });
-    // Try every backend shape the host might serve: PHP, same-origin JS route,
-    // and a Netlify function. Keep the first response that is real JSON so a
-    // 404 HTML page from the wrong host doesn't look like a network failure.
+    // Try every backend shape the host might serve — keep the first real JSON.
     const base = String(window.HUNGTER_API_BASE || '').replace(/\/$/, '');
     const candidates = [base + '/api/codex.php', base + '/api/codex', '/.netlify/functions/api/codex'];
     let res = null, data = null, lastErr = null;
@@ -204,48 +280,63 @@ document.getElementById('cxRun').addEventListener('click', async () => {
     }
     if (!res || !data) throw (lastErr || new Error('No backend reachable'));
     if (data.needsRepoScope) {
-      out.innerHTML = '';
-      err.innerHTML = (data.error || 'Connect GitHub so Codex can build into your repo.') +
+      cxOut.innerHTML = '';
+      cxErr.innerHTML = (data.error || 'Connect GitHub so Codex can build into your repo.') +
         ' <a href="/api/github-callback.php" style="color:var(--cyan);font-weight:700;">Connect GitHub →</a>';
-      err.style.display = 'block'; return;
+      cxErr.style.display = 'block'; return;
     }
-    if (data.requiresSignup) { err.innerHTML = 'Codex needs an account. <a href="/signup.html" style="color:var(--cyan)">Create a free account →</a>'; err.style.display = 'block'; out.innerHTML = ''; return; }
-    if (data.dailyLimitReached) { err.textContent = data.error || 'Daily AI credits used up — come back tomorrow.'; err.style.display = 'block'; out.innerHTML = ''; return; }
-    if (!res.ok || data.error) { err.textContent = data.error || 'Codex hit an error — try again.'; err.style.display = 'block'; out.innerHTML = ''; return; }
+    if (data.requiresSignup) { cxErr.innerHTML = 'Codex needs an account. <a href="/signup.html" style="color:var(--cyan)">Create a free account →</a>'; cxErr.style.display = 'block'; cxOut.innerHTML = ''; return; }
+    if (data.dailyLimitReached) { cxErr.textContent = data.error || 'Daily AI credits used up — come back tomorrow.'; cxErr.style.display = 'block'; cxOut.innerHTML = ''; return; }
+    if (!res.ok || data.error) { cxErr.textContent = data.error || 'Codex hit an error — try again.'; cxErr.style.display = 'block'; cxOut.innerHTML = ''; return; }
 
-    // Autonomous build result: repo header + build console + per-agent files + teacher.
-    let html = '';
-    if (data.repoUrl) {
-      const fileList = (data.committed || []).map((f) => '<code class="cx-file">' + f + '</code>').join('');
-      html += '<div class="cx-card cx-result">' +
-        '<span class="tag">' + (data.built ? '✅ Codex shipped it' : '⚙️ Codex ran') + '</span>' +
-        '<h3 style="margin:6px 0 4px;">' + (data.repo || 'your repo') + '</h3>' +
-        '<a class="cx-repo-link" href="' + data.repoUrl + '" target="_blank" rel="noopener">Open the repo on GitHub →</a>' +
-        (fileList ? '<div class="cx-files">' + fileList + '</div>' : '') +
-        '</div>';
-    }
-    if ((data.log || []).length) {
-      html += '<div class="cx-card cx-console">' + data.log.map((l) =>
-        '<div class="cx-log">' + String(l).replace(/</g, '&lt;') + '</div>').join('') + '</div>';
-    }
-    (data.sections || []).forEach((s) => {
-      const built = (s.files || []).length
-        ? 'wrote ' + s.files.map((f) => '<code class="cx-file">' + f + '</code>').join(' ')
-        : (s.reply ? '' : 'no files this run');
-      html += '<div class="cx-card"><span class="tag">' + s.role + ' · ' + (s.engine || '') + '</span>' +
-        '<div class="cx-body">' + (s.reply ? md(s.reply) : built) + '</div></div>';
-    });
-    if (data.teacher) {
-      html += '<div class="cx-card"><span class="tag">🟢 Groq · Coding Teacher</span>' +
-        '<div class="cx-body">' + md(data.teacher) + '</div></div>';
-    }
-    out.innerHTML = html || '<div class="cx-card">Codex ran but returned nothing — try a more specific request.</div>';
-    if (typeof addMilestone === 'function') addMilestone('Used Codex (' + mode + ')');
+    renderResult(data, runMode);
+    if (data.repo && document.getElementById('cxRepo')) document.getElementById('cxRepo').value = data.repo;
+    saveCodexSession(task, runMode, data);
+    if (typeof addMilestone === 'function') addMilestone('Used Codex (' + runMode + ')');
     if (typeof updateLevel === 'function') updateLevel();
     if (bar) bar.style.width = getLevelProgress().pct + '%';
-  } catch { err.textContent = 'Could not reach the Codex backend.'; err.style.display = 'block'; out.innerHTML = ''; }
+  } catch { cxErr.textContent = 'Could not reach the Codex backend.'; cxErr.style.display = 'block'; cxOut.innerHTML = ''; }
   finally { btn.disabled = false; }
-});
+}
+
+document.getElementById('cxRun').addEventListener('click', () => runCodex());
+
+// New project — fresh session id, clear the form and output.
+function newCodex() {
+  currentCodexId = Convo.newId();
+  document.getElementById('cxTask').value = '';
+  document.getElementById('cxCode').value = '';
+  document.getElementById('cxRepo').value = '';
+  cxOut.innerHTML = '';
+  cxErr.style.display = 'none';
+  document.getElementById('cxTask').focus();
+}
+
+// Reopen a saved build — re-render its stored result and target the same repo.
+function openCodexSession(id) {
+  const t = Convo.get(CODEX_KEY, id);
+  if (!t || !t.data) return;
+  currentCodexId = id;
+  mode = t.mode || 'build';
+  if (t.repo) document.getElementById('cxRepo').value = t.repo;
+  if (t.lang) document.getElementById('cxLang').value = t.lang;
+  if (t.title) document.getElementById('cxTask').value = t.title;
+  renderResult(t.data, t.mode);
+  window.scrollTo({ top: document.getElementById('cxOut').offsetTop - 80, behavior: 'smooth' });
+}
+
+// Mount Codex history once the app is open.
+function mountCodexHistory() {
+  if (codexDrawer) return;
+  codexDrawer = Convo.mountDrawer({
+    key: CODEX_KEY,
+    title: '⚡ Your Codex builds',
+    newLabel: '＋ New project',
+    onNew: newCodex,
+    onSelect: openCodexSession,
+    itemLabel: (t) => ({ title: t.title || 'Untitled build', sub: (t.repo ? t.repo + ' · ' : '') + (t.mode === 'fix' ? 'fix · ' : 'build · ') + Convo.ago(t.updatedAt) }),
+  });
+}
 </script>
 </body>
 </html>

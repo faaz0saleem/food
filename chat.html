@@ -112,6 +112,7 @@
 
 <script src="/api-config.js?v=20260713"></script>
 <script src="/script.js?v=20260713"></script>
+<script src="/convos.js?v=20260715"></script>
 <script src="/layout.js?v=20260713" defer></script>
 <script>
 (function () {
@@ -134,6 +135,54 @@
   const MAX_ATTACHMENT_BYTES = 3 * 1024 * 1024;
   const MAX_TEXT_CHARS = 12000;
   const pendingAttachments = [];
+
+  // ── Saved chat threads ────────────────────────────────────────────────────
+  const CHAT_KEY = 'mm_chat_threads';
+  let currentChatId = lsGet('mm_current_chat', '') || Convo.newId();
+  lsSet('mm_current_chat', currentChatId);
+  let historyDrawer = null;
+
+  function currentThread() {
+    return Convo.get(CHAT_KEY, currentChatId) || { id: currentChatId, title: '', subject: 'General', messages: [] };
+  }
+  function saveTurn(userText, aiReply, engine) {
+    const t = currentThread();
+    if (!t.title && userText) t.title = userText.slice(0, 48);
+    t.subject = lsGet('mm_subject', 'General');
+    t.messages = t.messages || [];
+    t.messages.push({ role: 'user', content: userText });
+    t.messages.push({ role: 'ai', content: aiReply, engine: engine || '' });
+    if (t.messages.length > 60) t.messages = t.messages.slice(-60);
+    Convo.save(CHAT_KEY, t);
+    if (historyDrawer) historyDrawer.refresh();
+  }
+  function startNewChat() {
+    currentChatId = Convo.newId();
+    lsSet('mm_current_chat', currentChatId);
+    messages.innerHTML = '';
+    messages.style.display = 'none';
+    welcomeScreen.style.display = '';
+    welcomeScreen.classList.remove('hidden-perm');
+    chatInput.value = '';
+    chatInput.focus();
+  }
+  function openThread(id) {
+    const t = Convo.get(CHAT_KEY, id);
+    if (!t) return;
+    currentChatId = id;
+    lsSet('mm_current_chat', id);
+    messages.innerHTML = '';
+    (t.messages || []).forEach((m) => {
+      if (m.role === 'user') appendMessage(m.content, 'user');
+      else messages.appendChild(formatMessage(m.content, 'ai', m.engine, ''));
+    });
+    if ((t.messages || []).length) {
+      welcomeScreen.style.display = 'none';
+      welcomeScreen.classList.add('hidden-perm');
+      messages.style.display = 'flex';
+      messages.scrollTop = messages.scrollHeight;
+    }
+  }
 
   function normalizeBase(rawBase) {
     const raw = String(rawBase || '').trim();
@@ -312,19 +361,17 @@
   }
 
   function getConversationHistory() {
-    const currentSession = getSessionId();
-    const conversations = lsGet('mm_conversations', []);
-    return conversations
-      .filter((item) => item && item.sessionId === currentSession)
-      .slice(-10)
-      .flatMap((item) => {
-        const userMessage = String(item.userMessage || '').trim();
-        const aiReply = String(item.aiReply || '').trim();
-        const rows = [];
-        if (userMessage) rows.push({ role: 'user', content: userMessage });
-        if (aiReply) rows.push({ role: 'assistant', content: aiReply });
-        return rows;
-      });
+    // Context comes from the current saved thread, so continuing a past chat
+    // keeps its memory and each thread stays independent.
+    const t = currentThread();
+    return (t.messages || [])
+      .slice(-12)
+      .map((m) => {
+        const content = String(m.content || '').trim();
+        if (!content) return null;
+        return { role: m.role === 'user' ? 'user' : 'assistant', content };
+      })
+      .filter(Boolean);
   }
 
   function consumeAttachments() {
@@ -674,6 +721,7 @@
       appendMessage(`⚠️ AI engines are offline — reason: ${ownerHint}\nOwner fix: open /api/setup.php · Full self-check: /api/diag.php`, 'ai', 'System');
     }
     recordConversation(subject, text, reply);
+    saveTurn(text, reply, engine);
     recordChat(subject);
     refreshTopBar();
   }
@@ -724,6 +772,17 @@
   }
   loadModelInfo();
   refreshTopBar();
+
+  // History drawer + restore the last open thread (unless arriving with ?q=).
+  historyDrawer = Convo.mountDrawer({
+    key: CHAT_KEY,
+    title: '💬 Your chats',
+    newLabel: '＋ New chat',
+    onNew: startNewChat,
+    onSelect: openThread,
+    itemLabel: (t) => ({ title: t.title || 'Untitled chat', sub: (t.subject ? t.subject + ' · ' : '') + Convo.ago(t.updatedAt) }),
+  });
+  if (!pendingQuestion) openThread(currentChatId);
 
   // PWA install prompt — shown as a small button when browser supports it
   let _deferredInstall = null;
