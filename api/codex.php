@@ -192,6 +192,36 @@ function cx_parse_files(string $text): array {
 }
 
 /**
+ * Safety net so a delivered project is actually coherent and runnable:
+ *  - drop empty files
+ *  - never ship Flask debug mode (RCE risk)
+ *  - strip <link>/<script> references to LOCAL files that weren't generated,
+ *    so the live preview never 404s on a missing stylesheet/script.
+ */
+function cx_finalize_files(array $files, bool $isWeb): array {
+    foreach ($files as $p => $c) {
+        if (trim((string) $c) === '') { unset($files[$p]); continue; }
+        if (preg_match('/\.py$/i', $p)) {
+            $files[$p] = preg_replace('/debug\s*=\s*True/i', 'debug=False', $c);
+        }
+    }
+    if ($isWeb) {
+        $strip = function (string $ref) use ($files): bool {
+            if (preg_match('#^(https?:)?//#i', $ref) || strncmp($ref, 'data:', 5) === 0) return false; // external — keep
+            $key = ltrim(preg_replace('#[?\#].*$#', '', $ref), './');
+            return !isset($files[$key]); // local + missing → strip
+        };
+        foreach ($files as $p => $c) {
+            if (!preg_match('/\.html?$/i', $p)) continue;
+            $c = preg_replace_callback('/<link\b[^>]*\bhref=["\']([^"\']+)["\'][^>]*>/i', fn ($m) => $strip($m[1]) ? '' : $m[0], $c);
+            $c = preg_replace_callback('/<script\b[^>]*\bsrc=["\']([^"\']+)["\'][^>]*><\/script>/i', fn ($m) => $strip($m[1]) ? '' : $m[0], $c);
+            $files[$p] = $c;
+        }
+    }
+    return $files;
+}
+
+/**
  * Read the repo the way Claude Code does before it edits: list the tree, then
  * pull the contents of the most relevant source files (capped) so the engines
  * work against real code instead of guessing. Returns [contextText, fileCount].
@@ -327,81 +357,69 @@ $fileFormat = "\n\nOUTPUT FORMAT — this is critical. Emit ONLY files, no prose
     . "For every file write a line EXACTLY like:\n===FILE: relative/path.ext===\nimmediately followed by a fenced code block "
     . "containing the FULL contents of that file. Repeat for each file. Do not write anything between or after the blocks.";
 
-$goal = $mode === 'fix'
-    ? "You are FIXING & IMPROVING an existing project. Correct the bugs and add what the student asked, then output the corrected files IN FULL."
-    : "You are BUILDING a new project from scratch.";
-$repoLine = "Repo: $owner/$name.";
-$repoNote = $repoContext !== ''
-    ? "\n\nThe repo already contains these files. To CHANGE one, output a file with the EXACT SAME path and its full new contents. To add a file, use a new path. Do not touch files you are not changing." . $repoContext
-    : '';
-$base = $goal . "\nProject: " . substr($task, 0, 1200) . "\nLanguage: " . $language . "\n" . $repoLine
-    . ($existing !== '' ? "\n\nExtra code the student pasted:\n```\n" . substr($existing, 0, 6000) . "\n```" : '')
-    . $repoNote
-    . "\nStudent level: " . $userLevel . '.';
+// One LEAD ENGINEER authors the whole project so files never reference each
+// other's missing pieces. The other three review, test and teach — no files.
+$isWeb = (bool) preg_match('/html|css|js|javascript|react|vue|svelte|frontend|web/i', $language);
 
-$frontendJob = $mode === 'fix'
-    ? "Fix the frontend files that need it and add the requested UI changes — output each changed file in full at its existing path (create new ones only if truly needed)."
-    : "Build the complete frontend: an index.html, a styles.css, and the UI JavaScript. Make it genuinely good-looking and responsive.";
-$backendJob = $mode === 'fix'
-    ? "Fix the backend/logic bugs and add the requested behaviour — output each changed file in full at its existing path."
-    : "Build the backend: the server/app entry file, routes/endpoints or core logic, and any data layer. Keep it runnable.";
-$qaJob = $mode === 'fix'
-    ? "Update the README if behaviour changed and add/adjust a tests file that covers the fixes. Keep a short '## Known edge cases' section."
-    : "Produce a clear README.md (what it is + how to run it) and one tests file that exercises the core logic. Add a short '## Known edge cases' section.";
-$teachJob = $mode === 'fix'
-    ? "Do NOT output files. In plain language for a $userLevel, explain what was broken, why, and what each fix teaches — then list 3 concepts learned and 2 things to try next."
-    : "Do NOT output files. In plain language for a $userLevel, explain what the team is building, how the frontend and backend fit together, walk through the 3 trickiest ideas, then list 3 concepts learned and 2 things to try next.";
+$repoNote = $repoContext !== ''
+    ? "\n\nThe repo already contains these files — output a file at the EXACT SAME path to change it, a new path to add one, and never reference a file that does not exist." . $repoContext
+    : '';
+$ctx = "Project: " . substr($task, 0, 1200) . "\nStack: " . $language . "\nRepo: $owner/$name."
+    . ($existing !== '' ? "\n\nExisting code from the student:\n```\n" . substr($existing, 0, 6000) . "\n```" : '')
+    . $repoNote . "\nAudience level: " . $userLevel . '.';
+
+$rulesWeb = "\n\nHARD RULES — a broken build is a failure:\n"
+    . "1. The app MUST actually work when opened — wire up EVERY button, form and interaction with real, working JavaScript.\n"
+    . "2. Deliver a SINGLE self-contained index.html: put ALL CSS in one <style> tag and ALL JavaScript in one <script> tag inside that same file. Do NOT reference external local files (no <link href=\"styles.css\">, no <script src=\"app.js\">).\n"
+    . "3. Modern, clean, responsive dark UI.\n4. No placeholders, no TODO, no dead links, nothing left unfinished.\n5. Also add a short README.md that matches the project exactly.";
+$rulesCode = "\n\nHARD RULES — a broken build is a failure:\n"
+    . "1. The project MUST run as-is. EVERY module you import/require/include MUST be a file you also output — never reference a file you don't create.\n"
+    . "2. Never use debug or production-unsafe settings (e.g. never Flask debug=True).\n"
+    . "3. Names consistent with the task; no placeholders or TODO.\n4. Add a README.md with exact run steps that matches the project.";
+
+$buildVerb = $mode === 'fix'
+    ? "FIX and IMPROVE the project as asked, re-outputting every changed file IN FULL"
+    : "BUILD the complete project from scratch";
+$builderPrompt = "You are the LEAD ENGINEER shipping a real project. $ctx\n\nTask: $buildVerb."
+    . ($isWeb ? $rulesWeb : $rulesCode) . $fileFormat;
 
 $assignments = [
-    'storyteller' => "You are CLAUDE, the FRONTEND DESIGNER on a 4-AI dev team. $base\n\n$frontendJob$fileFormat",
-    'explorer' => "You are CHATGPT, the BACKEND ARCHITECT on a 4-AI dev team. $base\n\n$backendJob$fileFormat",
-    'solver' => "You are GEMINI, the QA ENGINEER on a 4-AI dev team. $base\n\n$qaJob$fileFormat",
-    'reasoner' => "You are GROQ, the CODING TEACHER on a 4-AI dev team. $base\n\n$teachJob",
+    'storyteller' => $builderPrompt, // the ONLY file author
+    'explorer' => "You are the CODE REVIEWER. $ctx\n\nDo NOT output any files or code blocks. In 2-3 short bullets, review the approach and name the single most likely bug to watch for.",
+    'solver' => "You are the QA TESTER. $ctx\n\nDo NOT output any files or code blocks. List 3 concrete test cases as 'do X → expect Y' that prove the app works.",
+    'reasoner' => "You are the CODING TEACHER. $ctx\n\nDo NOT output files. In plain language for a $userLevel, explain in one short paragraph how this project works, then list 2 things to try next.",
 ];
-
 $roleNames = [
-    'storyteller' => '🟣 Claude · Frontend Designer',
-    'explorer' => '🔵 ChatGPT · Backend Architect',
-    'solver' => '🟠 Gemini · QA Engineer',
-    'reasoner' => '🟢 Groq · Coding Teacher',
+    'storyteller' => '🛠 Lead Engineer',
+    'explorer' => '🔍 Code Reviewer',
+    'solver' => '🧪 QA Tester',
+    'reasoner' => '🎓 Coding Teacher',
 ];
 
-$results = mm_call_engine_assignments($assignments, 'Programming', $userLevel, 2600, 0.4);
+$results = mm_call_engine_assignments($assignments, 'Programming', $userLevel, 3400, 0.3);
 
-if (count($results) === 0) {
+if (count($results) === 0 || !isset($results['storyteller'])) {
     mm_json_response(200, [
         'status' => 'ok',
         'fallback' => true,
         'repo' => "$owner/$name",
         'repoUrl' => "https://github.com/$owner/$name",
-        'sections' => [['role' => '🧠 Hungter', 'engine' => 'Hungter', 'reply' => "The engines are offline right now. Owner: open /api/setup.php to add an AI key, then Codex builds with all four engines."]],
+        'sections' => [['role' => '🧠 Hungter', 'engine' => 'Hungter', 'reply' => "The engines are offline right now. Owner: open /api/setup.php to add an AI key, then Codex can build."]],
     ]);
     exit;
 }
 
-// ── Collect the files the builders produced, and the teacher's explanation ────
-$allFiles = [];
+// Files come ONLY from the lead engineer, then get repaired for coherence.
+$allFiles = cx_finalize_files(cx_parse_files((string) ($results['storyteller']['reply'] ?? '')), $isWeb);
+
 $sections = [];
 $teacherReply = '';
-$brandOrder = ['storyteller', 'explorer', 'solver', 'reasoner'];
-foreach ($brandOrder as $key) {
-    if (!isset($results[$key])) {
-        continue;
-    }
-    $reply = (string) ($results[$key]['reply'] ?? '');
-    if ($key === 'reasoner') {
-        $teacherReply = $reply;
-        continue;
-    }
-    $files = cx_parse_files($reply);
-    foreach ($files as $path => $content) {
-        $allFiles[$path] = $content; // later lanes can override, but lanes rarely collide
-    }
-    $sections[] = [
-        'role' => $roleNames[$key],
-        'engine' => mm_engine_display_name($results[$key]),
-        'files' => array_keys($files),
-    ];
+foreach (['storyteller', 'explorer', 'solver', 'reasoner'] as $key) {
+    if (!isset($results[$key])) continue;
+    if ($key === 'reasoner') { $teacherReply = (string) ($results[$key]['reply'] ?? ''); continue; }
+    $sections[] = $key === 'storyteller'
+        ? ['role' => $roleNames[$key], 'engine' => mm_engine_display_name($results[$key]), 'files' => array_keys($allFiles)]
+        : ['role' => $roleNames[$key], 'engine' => mm_engine_display_name($results[$key]), 'reply' => (string) ($results[$key]['reply'] ?? '')];
 }
 
 // ── Commit every file to the repo ─────────────────────────────────────────────
@@ -417,16 +435,17 @@ foreach ($allFiles as $path => $content) {
     }
 }
 
-// Commit a build log so the repo shows what happened.
-if (count($committed) > 0) {
-    $logMd = "# 🤖 Hungter Codex build\n\n**Task:** " . $task . "\n\n**Mode:** " . $mode . "  \n**Language:** " . $language . "\n\n## Files committed\n"
+// Commit a build log so the repo shows what happened (kept OUT of the project
+// file count so "N files" is honest).
+$projectCount = count($committed);
+if ($projectCount > 0) {
+    $logMd = "# 🤖 Hungter Codex build\n\n**Task:** " . $task . "\n\n**Mode:** " . $mode . "  \n**Stack:** " . $language . "\n\n## Files\n"
         . implode("\n", array_map(fn ($f) => "- `$f`", $committed)) . "\n\n## How it works\n\n" . $teacherReply . "\n";
     cx_put_file($token, $owner, $name, 'CODEX_BUILD.md', $logMd, 'Codex: build notes');
-    $committed[] = 'CODEX_BUILD.md';
 }
 
-$log[] = count($committed) > 0
-    ? '✅ Committed ' . count($committed) . ' file' . (count($committed) === 1 ? '' : 's') . " to $owner/$name"
+$log[] = $projectCount > 0
+    ? '✅ Committed ' . $projectCount . ' file' . ($projectCount === 1 ? '' : 's') . " to $owner/$name (+ build notes)"
     : '⚠️ The engines ran but produced no committable files — try a more specific request.';
 foreach ($failed as $f) {
     $log[] = '⚠️ Skipped ' . $f;

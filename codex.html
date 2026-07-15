@@ -18,8 +18,10 @@
 <script defer src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <style>
+  body { background: var(--bg-deep); background-image: var(--gradient-aurora); background-attachment: fixed; }
   .top-bar { height: 4px; background: var(--surface-2); }
-  .top-bar-fill { height: 100%; background: var(--gradient-brand); width: 0%; }
+  .top-bar-fill { height: 100%; background: var(--gradient-brand); width: 0%; box-shadow: var(--glow-lime); }
+  .hg-gradient-text { background: var(--gradient-brand); -webkit-background-clip: text; background-clip: text; color: transparent; }
 
   /* Gate */
   .cx-gate { max-width: 460px; margin: 48px auto; text-align: center; background: rgba(13,20,40,0.8); border: 1px solid var(--border-glow); border-radius: var(--radius); padding: 40px 30px; box-shadow: var(--shadow); }
@@ -51,16 +53,21 @@
   .cx-msg { display: flex; gap: 10px; }
   .cx-ava { width: 30px; height: 30px; flex: 0 0 30px; border-radius: 9px; display: grid; place-items: center; font-size: 0.95rem; background: var(--surface-2); border: 1px solid var(--border); }
   .cx-msg.user .cx-ava { background: rgba(77,240,255,0.12); border-color: rgba(77,240,255,0.3); }
-  .cx-bubble { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; font-size: 0.9rem; color: var(--ink); max-width: 100%; overflow: hidden; }
-  .cx-msg.user .cx-bubble { background: rgba(77,240,255,0.06); }
+  .cx-msg { animation: cxrise 0.3s ease; }
+  @keyframes cxrise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  .cx-bubble { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; font-size: 0.9rem; color: var(--ink); max-width: 100%; overflow: hidden; box-shadow: var(--shadow-sm); }
+  .cx-msg.user .cx-bubble { background: rgba(77,240,255,0.07); border-color: rgba(77,240,255,0.22); }
   .cx-bubble .cx-body { color: var(--ink-soft); line-height: 1.6; font-size: 0.86rem; }
   .cx-bubble .cx-body pre { background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 8px; padding: 10px; overflow-x: auto; }
   .cx-bubble .cx-body code { font-family: var(--font-mono); font-size: 0.82em; }
   .cx-bubble h4 { margin: 2px 0 6px; font-size: 0.82rem; color: var(--lime); font-family: var(--font-display); }
   .cx-log { font-family: var(--font-mono); font-size: 0.76rem; color: var(--ink-soft); padding: 2px 0; }
   .cx-agents { display: flex; flex-direction: column; gap: 4px; margin: 8px 0 2px; }
-  .cx-agent { font-size: 0.74rem; color: var(--ink-soft); }
+  .cx-agent { font-size: 0.76rem; color: var(--ink-soft); padding: 5px 0; border-top: 1px solid var(--border-soft); }
+  .cx-agent:first-child { border-top: none; }
   .cx-agent b { color: var(--ink); font-weight: 600; }
+  .cx-agent-reply { margin-top: 3px; color: var(--ink-faint); font-size: 0.76rem; line-height: 1.5; }
+  .cx-agent-reply p { margin: 2px 0; } .cx-agent-reply ul { margin: 2px 0; padding-left: 18px; }
   .cx-files { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
   .cx-file { font-family: var(--font-mono); font-size: 0.72rem; background: var(--surface-2); border: 1px solid var(--border); color: var(--ink-soft); border-radius: 6px; padding: 2px 7px; }
   .spinner { width: 13px; height: 13px; border: 2px solid var(--border); border-top-color: var(--lime); border-radius: 50%; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; margin-right: 7px; }
@@ -146,10 +153,10 @@
       <h1>Chat. Build. <span class="hg-gradient-text">Watch it come alive.</span></h1>
       <p>Describe an app — code appears here, a live preview on the right.</p>
       <div class="cxw-team">
-        <span class="cxw-role">🟣 Claude · Frontend</span>
-        <span class="cxw-role">🔵 ChatGPT · Backend</span>
-        <span class="cxw-role">🟠 Gemini · QA</span>
-        <span class="cxw-role">🟢 Groq · Teacher</span>
+        <span class="cxw-role">🛠 Lead Engineer</span>
+        <span class="cxw-role">🔍 Reviewer</span>
+        <span class="cxw-role">🧪 QA Tester</span>
+        <span class="cxw-role">🎓 Teacher</span>
       </div>
     </div>
 
@@ -307,6 +314,10 @@ function showArtifact(files, repo, repoUrl) {
   lastFiles = files;
   appEl.classList.remove('solo');
   artEl.classList.remove('hidden');
+  const hasHtml = Object.keys(files || {}).some((p) => /\.html$/i.test(p));
+  const pvTab = document.querySelector('.cxw-art-tab[data-t="preview"]');
+  if (pvTab) pvTab.style.display = hasHtml ? '' : 'none';
+  if (!hasHtml) artState.tab = 'code';
   document.getElementById('cxArtRepo').textContent = repo || '';
   // Actions
   const actions = document.getElementById('cxArtActions');
@@ -412,8 +423,11 @@ function addThinking(runMode) {
   return { row, stop: () => clearInterval(timer) };
 }
 function agentLine(s) {
-  const files = (s.files || []).length ? ' · ' + s.files.map((f) => esc(f)).join(', ') : '';
-  return '<div class="cx-agent"><b>' + esc(s.role) + '</b> <span style="color:var(--ink-faint)">(' + esc(s.engine || '') + ')</span>' + files + '</div>';
+  const engine = s.engine ? ' <span style="color:var(--ink-faint)">· ' + esc(s.engine) + '</span>' : '';
+  let detail = '';
+  if ((s.files || []).length) detail = ' <span style="color:var(--ink-faint)">— ' + s.files.map((f) => esc(f)).join(', ') + '</span>';
+  else if (s.reply) detail = '<div class="cx-agent-reply">' + md(s.reply) + '</div>';
+  return '<div class="cx-agent"><b>' + esc(s.role) + '</b>' + engine + detail + '</div>';
 }
 function addCodexMsg(data, fresh) {
   const row = document.createElement('div'); row.className = 'cx-msg codex';
@@ -421,19 +435,35 @@ function addCodexMsg(data, fresh) {
   if ((data.log || []).length) inner += '<div>' + data.log.map((l) => '<div class="cx-log">' + esc(l) + '</div>').join('') + '</div>';
   if ((data.sections || []).length) inner += '<div class="cx-agents">' + data.sections.map(agentLine).join('') + '</div>';
   if (data.teacher) inner += '<h4>How it works</h4><div class="cx-body">' + md(data.teacher) + '</div>';
-  if (data.files && Object.keys(data.files).length) inner += '<div class="cx-body" style="margin-top:8px;color:var(--cyan)">→ See it live on the right. Ask for changes below.</div>';
+  if (data.files && Object.keys(data.files).length) inner += '<div class="cx-body" style="margin-top:8px;color:var(--cyan)">→ It\'s running on the right. Ask for any change below.</div>';
   inner += '</div>';
   row.innerHTML = inner;
   thread.appendChild(row);
-  if (data.built && window.Celebrate) {
-    if (fresh) window.Celebrate.confetti();
+  // Celebrate only on a fresh ship — never when reopening old history.
+  if (fresh && data.built && window.Celebrate) {
+    window.Celebrate.confetti();
     window.Celebrate.mountShareButton(row.querySelector('.cx-bubble'), {
       kind: 'codex', title: 'I built ' + (data.repo || 'a project') + ' with Hungter Codex',
-      subtitle: '4 AIs — one project. Frontend, backend, tests & a lesson.',
+      subtitle: 'Described it in plain English — 4 AIs shipped it.',
       stat: (data.committed || []).length + ' files shipped',
     });
   }
   scrollThread();
+}
+
+// A greeting / small-talk / meta question should NOT trigger a build.
+function isSmallTalk(text) {
+  const t = text.toLowerCase().trim();
+  if (t.length <= 2) return true;
+  if (/^(hi|hey+|hello+|yo|sup|hola|test|ok|okay|thanks|thank you|thx|ty|cool|nice|great|good|lol|wow|👍|help|who are you|what (are|can) you|what is this|how does this work|what do you do)\b[.!?\s]*$/i.test(t)) return true;
+  const hasIntent = /\b(build|make|create|generate|add|fix|change|update|improve|remove|delete|design|code|app|site|website|web ?page|page|game|tool|form|button|dashboard|api|calculator|todo|to-do|clone|landing|portfolio|convert|refactor|implement|feature|menu|nav|login|chart|timer|quiz)\b/i.test(t);
+  return !hasIntent && t.split(/\s+/).length < 4;
+}
+function addCodexText(html) {
+  if (emptyEl) emptyEl.style.display = 'none';
+  const row = document.createElement('div'); row.className = 'cx-msg codex';
+  row.innerHTML = '<div class="cx-ava">⚡</div><div class="cx-bubble"><div class="cx-body">' + html + '</div></div>';
+  thread.appendChild(row); scrollThread();
 }
 
 // ── Send ─────────────────────────────────────────────────────────────────────
@@ -445,6 +475,17 @@ async function send() {
   // Once a repo exists in this chat, follow-ups are improvements on it.
   const runMode = sessionRepo ? 'fix' : mode;
   if (!text) { errEl.textContent = 'Tell the team what to ' + (runMode === 'fix' ? 'change' : 'build') + ' first.'; errEl.style.display = 'block'; return; }
+
+  // Conversational: reply, don't build, for greetings / meta questions.
+  if (isSmallTalk(text)) {
+    addUserMsg(text); ta.value = '';
+    const reply = sessionRepo
+      ? 'Want a change to <b>' + esc(sessionRepo) + '</b>? Tell me what to add or fix — e.g. “add a dark mode toggle” or “make it mobile-friendly”.'
+      : 'Hey! 👋 I\'m Codex. Describe an app and my team builds it live — code on the left, a working preview on the right. Try <i>“a to-do app with a dark neon theme”</i>, or tap a template above.';
+    addCodexText(reply);
+    return;
+  }
+
   busy = true;
   const btn = document.getElementById('cxSend'); btn.disabled = true;
   addUserMsg(text); ta.value = '';
