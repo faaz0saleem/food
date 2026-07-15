@@ -24,6 +24,46 @@ $userLevel = trim((string) ($body['userLevel'] ?? 'Newbie'));
 $mode = strtolower(trim((string) ($body['mode'] ?? 'build'))) === 'fix' ? 'fix' : 'build';
 $repoInput = trim((string) ($body['repo'] ?? ''));
 
+// ── One-click deploy: turn the repo into a live GitHub Pages site ────────────
+if (strtolower((string) ($body['action'] ?? '')) === 'deploy') {
+    $gh = cx_github_session();
+    if ($gh === null) {
+        mm_json_response(403, ['error' => 'Reconnect GitHub so Codex can deploy for you.', 'needsRepoScope' => true]);
+        exit;
+    }
+    $repoFull = str_replace('\\', '/', $repoInput);
+    if ($repoFull === '' || strpos($repoFull, '/') === false) {
+        mm_json_response(400, ['error' => 'No repo to deploy.']);
+        exit;
+    }
+    [$dOwner, $dName] = explode('/', $repoFull, 2);
+    $dOwner = trim($dOwner);
+    $dName = trim($dName);
+    $tok = $gh['token'];
+    $repoInfo = cx_gh_api($tok, 'GET', "/repos/$dOwner/$dName");
+    $branch = (string) ($repoInfo['json']['default_branch'] ?? 'main');
+    $enable = cx_gh_api($tok, 'POST', "/repos/$dOwner/$dName/pages", ['source' => ['branch' => $branch, 'path' => '/']]);
+    $url = '';
+    if (($enable['status'] ?? 0) < 300) {
+        $url = (string) ($enable['json']['html_url'] ?? '');
+    } else {
+        // Already enabled (409) or needs a GET to read the URL.
+        $get = cx_gh_api($tok, 'GET', "/repos/$dOwner/$dName/pages");
+        if (($get['status'] ?? 0) < 300) {
+            $url = (string) ($get['json']['html_url'] ?? '');
+        } elseif (($enable['status'] ?? 0) !== 409) {
+            $msg = $enable['json']['message'] ?? ('HTTP ' . ($enable['status'] ?? '?'));
+            mm_json_response(502, ['error' => "Couldn't enable GitHub Pages: $msg"]);
+            exit;
+        }
+    }
+    if ($url === '') {
+        $url = "https://$dOwner.github.io/$dName/";
+    }
+    mm_json_response(200, ['status' => 'ok', 'deployed' => true, 'url' => $url]);
+    exit;
+}
+
 if ($task === '') {
     mm_json_response(400, ['error' => 'Describe what you want to build.']);
     exit;

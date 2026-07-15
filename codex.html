@@ -54,7 +54,17 @@
   .cx-gh { display: inline-flex; align-items: center; gap: 10px; background: #161b22; border: 1px solid #30363d; color: #fff; border-radius: 999px; padding: 13px 26px; font-family: var(--font-display); font-weight: 700; cursor: pointer; }
   .cx-gh:hover { border-color: var(--lime); box-shadow: var(--glow-lime); }
   .cx-result { border-color: var(--border-glow); box-shadow: var(--shadow-sm); }
-  .cx-repo-link { display: inline-block; color: var(--cyan); font-weight: 700; font-family: var(--font-display); margin-bottom: 10px; }
+  .cx-result-links { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+  .cx-repo-link { display: inline-block; color: var(--cyan); font-weight: 700; font-family: var(--font-display); }
+  .cx-deploy { border: 1px solid var(--border-glow); background: rgba(200,255,77,0.08); color: var(--lime); border-radius: 999px; padding: 8px 16px; font-family: var(--font-display); font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: all 0.16s ease; }
+  .cx-deploy:hover { box-shadow: var(--glow-lime); }
+  .cx-deploy:disabled { opacity: 0.7; cursor: default; }
+  .celebrate-share { display: flex; align-items: center; gap: 14px; background: rgba(139,92,255,0.1); border: 1px solid rgba(139,92,255,0.35); border-radius: var(--radius); padding: 16px 18px; margin-bottom: 16px; }
+  .celebrate-emoji { font-size: 1.8rem; }
+  .celebrate-copy { display: flex; flex-direction: column; flex: 1; }
+  .celebrate-copy strong { font-family: var(--font-display); color: var(--ink); }
+  .celebrate-copy span { color: var(--ink-soft); font-size: 0.84rem; }
+  .celebrate-btn { border: none; border-radius: 999px; padding: 10px 18px; font-family: var(--font-display); font-weight: 700; background: var(--gradient-brand); color: var(--bg-deep); cursor: pointer; box-shadow: var(--glow-lime); white-space: nowrap; }
   .cx-files { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
   .cx-file { font-family: var(--font-mono); font-size: 0.76rem; background: var(--surface-2); border: 1px solid var(--border); color: var(--ink-soft); border-radius: 6px; padding: 3px 8px; }
   .cx-console { background: var(--bg-deep); border-color: var(--border-soft); }
@@ -155,6 +165,7 @@
 <script src="/api-config.js?v=20260713"></script>
 <script src="/script.js?v=20260713"></script>
 <script src="/convos.js?v=20260716"></script>
+<script src="/celebrate.js?v=20260717"></script>
 <script src="/layout.js?v=20260713" defer></script>
 <script>
 ensureProfile();
@@ -351,15 +362,55 @@ function renderIde(files, repoName) {
   return card;
 }
 
+// One-click deploy: ask the backend to enable GitHub Pages and show the URL.
+async function runDeploy(repo, btn) {
+  if (!repo) return;
+  btn.disabled = true;
+  const original = btn.textContent;
+  btn.textContent = '🚀 Deploying…';
+  try {
+    const base = String(window.HUNGTER_API_BASE || '').replace(/\/$/, '');
+    const candidates = [base + '/api/codex.php', base + '/api/codex', '/.netlify/functions/api/codex'];
+    let data = null;
+    for (const url of candidates) {
+      try {
+        const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'deploy', repo, visitorId: getSessionId() }) });
+        const ct = String(r.headers.get('content-type') || '');
+        if (r.ok || ct.includes('application/json')) { data = await r.json(); break; }
+      } catch {}
+    }
+    if (data && data.needsRepoScope) {
+      btn.outerHTML = '<a class="cx-repo-link" href="/api/github-callback.php">Reconnect GitHub to deploy →</a>';
+      return;
+    }
+    if (data && data.url) {
+      btn.outerHTML = '<a class="cx-repo-link" href="' + data.url.replace(/"/g, '') + '" target="_blank" rel="noopener">🌐 Live site → ' + data.url.replace(/</g, '&lt;') +
+        '</a><div class="cx-body" style="font-size:0.78rem;margin-top:4px;">First build can take a minute to go live.</div>';
+    } else {
+      btn.disabled = false;
+      btn.textContent = (data && data.error) ? '🚀 ' + data.error : '🚀 Deploy failed — retry';
+      setTimeout(() => { btn.textContent = original; }, 4000);
+    }
+  } catch {
+    btn.disabled = false;
+    btn.textContent = '🚀 Deploy failed — retry';
+  }
+}
+
 // Render a Codex result (used for a fresh run AND for reopening saved sessions).
-function renderResult(data, runMode) {
+function renderResult(data, runMode, fresh) {
+  const allPaths = Object.keys(data.files || {}).concat(data.committed || []);
+  const hasHtml = allPaths.some((p) => /\.html$/i.test(p));
   let html = '';
   if (data.repoUrl) {
     const fileList = (data.committed || []).map((f) => '<code class="cx-file">' + esc(f) + '</code>').join('');
     html += '<div class="cx-card cx-result">' +
       '<span class="tag">' + (data.built ? '✅ Codex shipped it' : '⚙️ Codex ran') + '</span>' +
       '<h3 style="margin:6px 0 4px;">' + esc(data.repo || 'your repo') + '</h3>' +
+      '<div class="cx-result-links">' +
       '<a class="cx-repo-link" href="' + esc(data.repoUrl) + '" target="_blank" rel="noopener">Open the repo on GitHub →</a>' +
+      (hasHtml && data.repo ? '<button type="button" class="cx-deploy" data-repo="' + esc(data.repo) + '">🚀 Deploy live site</button>' : '') +
+      '</div>' +
       (fileList ? '<div class="cx-files">' + fileList + '</div>' : '') +
       '</div>';
   }
@@ -377,6 +428,21 @@ function renderResult(data, runMode) {
     html += '<div class="cx-card"><span class="tag">🟢 Groq · Coding Teacher</span><div class="cx-body">' + md(data.teacher) + '</div></div>';
   }
   cxOut.innerHTML = html || '<div class="cx-card">Codex ran but returned nothing — try a more specific request.</div>';
+
+  // Deploy button → live GitHub Pages site.
+  const deployBtn = cxOut.querySelector('.cx-deploy');
+  if (deployBtn) deployBtn.addEventListener('click', () => runDeploy(deployBtn.dataset.repo, deployBtn));
+
+  // Celebrate a successful build (confetti on a fresh ship; share card always).
+  if (data.built && window.Celebrate) {
+    if (fresh) window.Celebrate.confetti();
+    window.Celebrate.mountShareButton(cxOut, {
+      kind: 'codex',
+      title: 'I built ' + (data.repo || 'a project') + ' with Hungter Codex',
+      subtitle: '4 AIs — one project. Frontend, backend, tests & a lesson.',
+      stat: (data.committed || []).length + ' files shipped',
+    });
+  }
 
   // IDE panel: live preview + file tree/code viewer + ZIP (needs file contents).
   if (data.files && Object.keys(data.files).length) {
@@ -460,7 +526,7 @@ async function runCodex(followText, opts) {
     if (data.dailyLimitReached) { cxErr.textContent = data.error || 'Daily AI credits used up — come back tomorrow.'; cxErr.style.display = 'block'; cxOut.innerHTML = ''; return; }
     if (!res.ok || data.error) { cxErr.textContent = data.error || 'Codex hit an error — try again.'; cxErr.style.display = 'block'; cxOut.innerHTML = ''; return; }
 
-    renderResult(data, runMode);
+    renderResult(data, runMode, true);
     if (data.repo && document.getElementById('cxRepo')) document.getElementById('cxRepo').value = data.repo;
     saveCodexSession(task, runMode, data);
     if (typeof addMilestone === 'function') addMilestone('Used Codex (' + runMode + ')');
