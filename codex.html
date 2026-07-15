@@ -16,6 +16,7 @@
 <link rel="stylesheet" href="/nav.css?v=20260713">
 <script defer src="https://cdn.jsdelivr.net/npm/marked@4/marked.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <style>
   .top-bar { height: 4px; background: var(--surface-2); }
   .top-bar-fill { height: 100%; background: var(--gradient-brand); width: 0%; }
@@ -63,7 +64,30 @@
   .cx-cont-row input { flex: 1; min-width: 200px; }
   .cx-auto { width: 100%; border: 1px dashed var(--border-glow); background: transparent; color: var(--lime); border-radius: 12px; padding: 11px; font-family: var(--font-display); font-weight: 600; cursor: pointer; transition: all 0.16s ease; }
   .cx-auto:hover { background: rgba(200,255,77,0.07); box-shadow: var(--glow-lime); }
-  @media (max-width: 800px) { .cx-team { grid-template-columns: repeat(2, 1fr); } }
+  /* Templates gallery */
+  .cx-templates { margin-bottom: 16px; }
+  .cx-templates-label { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-faint); }
+  .cx-template-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .cx-template { border: 1px solid var(--border); background: var(--surface); color: var(--ink-soft); border-radius: 999px; padding: 8px 14px; font-size: 0.82rem; cursor: pointer; transition: all 0.16s ease; }
+  .cx-template:hover { border-color: var(--violet); color: var(--ink); box-shadow: 0 0 14px rgba(139,92,255,0.28); }
+  /* IDE panel */
+  .cx-ide { padding: 0; overflow: hidden; }
+  .cx-ide-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 14px 16px; border-bottom: 1px solid var(--border); }
+  .cx-ide-head .tag { margin-bottom: 0; }
+  .cx-ide-tabs { display: inline-flex; gap: 5px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; padding: 4px; }
+  .cx-ide-tab { border: none; background: transparent; color: var(--ink-soft); font-family: var(--font-display); font-weight: 600; font-size: 0.8rem; padding: 6px 14px; border-radius: 999px; cursor: pointer; }
+  .cx-ide-tab.on { background: var(--gradient-brand); color: var(--bg-deep); }
+  .cx-ide-head .cx-zip { margin-left: auto; }
+  .cx-ide-body { min-height: 240px; }
+  .cx-preview { width: 100%; height: 460px; border: 0; background: #fff; display: block; }
+  .cx-code-wrap { display: grid; grid-template-columns: 200px 1fr; min-height: 240px; }
+  .cx-tree { border-right: 1px solid var(--border); background: var(--bg-deep); padding: 8px; overflow-y: auto; max-height: 460px; }
+  .cx-tree-file { display: block; width: 100%; text-align: left; border: none; background: transparent; color: var(--ink-soft); font-family: var(--font-mono); font-size: 0.74rem; padding: 6px 8px; border-radius: 7px; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cx-tree-file:hover { background: var(--surface-2); color: var(--ink); }
+  .cx-tree-file.on { background: rgba(77,240,255,0.1); color: var(--cyan); }
+  .cx-code { margin: 0; padding: 16px; overflow: auto; max-height: 460px; background: rgba(0,0,0,0.35); }
+  .cx-code code { font-family: var(--font-mono); font-size: 0.8rem; color: var(--ink); white-space: pre; }
+  @media (max-width: 800px) { .cx-team { grid-template-columns: repeat(2, 1fr); } .cx-code-wrap { grid-template-columns: 1fr; } .cx-tree { max-height: 140px; border-right: none; border-bottom: 1px solid var(--border); } }
 </style>
 </head>
 <body data-page="codex">
@@ -98,6 +122,11 @@
     <div class="cx-tabs">
       <button type="button" class="cx-tab on" data-mode="build">🚀 Build from scratch</button>
       <button type="button" class="cx-tab" data-mode="fix">🛠 Fix &amp; improve</button>
+    </div>
+
+    <div class="cx-templates" id="cxTemplates">
+      <span class="cx-templates-label">Start from a template</span>
+      <div class="cx-template-row" id="cxTemplateRow"></div>
     </div>
 
     <div class="cx-form">
@@ -146,8 +175,8 @@ function openCodex() {
   document.getElementById('cxGate').style.display = 'none';
   document.getElementById('cxApp').style.display = 'block';
   mountCodexHistory();
+  mountTemplates();
 }
-if (lsGet('mm_codex_github', '')) openCodex();
 document.getElementById('cxGithub').addEventListener('click', () => {
   // Real GitHub OAuth — bounce to the server, which redirects to GitHub.
   window.location.href = '/api/github-callback.php';
@@ -186,6 +215,142 @@ const cxErr = document.getElementById('cxErr');
 
 function esc(s) { return String(s == null ? '' : s).replace(/</g, '&lt;'); }
 
+// ── Templates gallery ────────────────────────────────────────────────────────
+const CX_TEMPLATES = [
+  ['🎨 Portfolio', 'A personal portfolio website with a hero, an about section, a projects grid, and a contact form — modern, animated, and fully responsive.', 'JavaScript (HTML/CSS/JS)'],
+  ['✅ To-do app', 'A to-do app: add, edit, complete and delete tasks, filter by status, and save to localStorage. Clean dark neon theme.', 'JavaScript (HTML/CSS/JS)'],
+  ['🌦 Weather app', 'A weather app UI showing current conditions and a 5-day forecast in nice cards, with a search box for a city.', 'JavaScript (HTML/CSS/JS)'],
+  ['🎮 Quiz game', 'A multiple-choice quiz game with score, timer, progress bar, and a results screen.', 'JavaScript (HTML/CSS/JS)'],
+  ['🔗 URL shortener', 'A URL shortener with a small backend API to create and resolve short links, plus a simple frontend.', 'Node.js'],
+  ['📊 Notes REST API', 'A REST API with full CRUD endpoints for a notes resource, input validation, and clear error handling.', 'Python'],
+];
+function mountTemplates() {
+  const row = document.getElementById('cxTemplateRow');
+  if (!row || row.childElementCount) return;
+  CX_TEMPLATES.forEach(([label, prompt, lang]) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'cx-template'; b.textContent = label;
+    b.addEventListener('click', () => {
+      // Templates are build-from-scratch starters.
+      document.querySelectorAll('.cx-tab').forEach((x) => x.classList.toggle('on', x.dataset.mode === 'build'));
+      mode = 'build';
+      document.getElementById('cxTask').value = prompt;
+      const sel = document.getElementById('cxLang');
+      for (const o of sel.options) { if (o.value === lang) { sel.value = lang; break; } }
+      document.getElementById('cxTask').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+    row.appendChild(b);
+  });
+}
+
+// ── Live build narration (while the 4 engines work) ──────────────────────────
+function startNarration(runMode) {
+  const steps = runMode === 'fix'
+    ? ['🔍 Reading your repo…', '🟠 Gemini is hunting bugs…', '🔵 ChatGPT is repairing the backend…', '🟣 Claude is fixing the UI…', '🟢 Groq is explaining the fixes…', '📦 Committing changes to GitHub…']
+    : ['🧠 Planning the project…', '🟣 Claude is designing the frontend…', '🔵 ChatGPT is building the backend…', '🟠 Gemini is writing tests & catching bugs…', '🟢 Groq is preparing your lesson…', '📦 Creating the repo & committing…'];
+  cxOut.innerHTML = '<div class="cx-card cx-console" id="cxNarr"></div>';
+  const el = document.getElementById('cxNarr');
+  let i = 0;
+  const push = () => {
+    if (!el || i >= steps.length) return;
+    const d = document.createElement('div');
+    d.className = 'cx-log';
+    d.innerHTML = '<span class="spinner" style="width:11px;height:11px;margin-right:6px;"></span>' + steps[i];
+    el.appendChild(d); i++;
+  };
+  push();
+  const timer = setInterval(push, 3200);
+  return () => clearInterval(timer);
+}
+
+// ── IDE panel: live preview + file tree/code viewer + ZIP download ───────────
+function cxResolveKey(files, entry, ref) {
+  if (/^(https?:)?\/\//i.test(ref) || ref.startsWith('data:')) return null; // external
+  const r = ref.replace(/^\.\//, '').replace(/^\//, '').split(/[?#]/)[0];
+  if (files[r] != null) return r;
+  const dir = entry.includes('/') ? entry.slice(0, entry.lastIndexOf('/') + 1) : '';
+  if (files[dir + r] != null) return dir + r;
+  const base = r.split('/').pop();
+  return Object.keys(files).find((k) => k.split('/').pop() === base) || null;
+}
+function assemblePreview(files) {
+  const paths = Object.keys(files);
+  const entry = paths.find((p) => /(^|\/)index\.html$/i.test(p)) || paths.find((p) => /\.html$/i.test(p));
+  if (!entry) return null;
+  let html = String(files[entry] || '');
+  html = html.replace(/<link\b[^>]*\bhref=["']([^"']+)["'][^>]*>/gi, (m, href) => {
+    const key = cxResolveKey(files, entry, href);
+    return key && /\.css$/i.test(key) ? '<style>\n' + files[key] + '\n</style>' : m;
+  });
+  html = html.replace(/<script\b[^>]*\bsrc=["']([^"']+)["'][^>]*><\/script>/gi, (m, src) => {
+    const key = cxResolveKey(files, entry, src);
+    return key ? '<scr' + 'ipt>\n' + files[key] + '\n</scr' + 'ipt>' : m;
+  });
+  return html;
+}
+function renderIde(files, repoName) {
+  const paths = Object.keys(files || {});
+  if (!paths.length) return null;
+  const hasHtml = paths.some((p) => /\.html$/i.test(p));
+  const card = document.createElement('div');
+  card.className = 'cx-card cx-ide';
+  card.innerHTML =
+    '<div class="cx-ide-head"><span class="tag">🖥 Your project</span>' +
+    '<div class="cx-ide-tabs">' +
+    (hasHtml ? '<button type="button" class="cx-ide-tab on" data-t="preview">▶ Preview</button>' : '') +
+    '<button type="button" class="cx-ide-tab' + (hasHtml ? '' : ' on') + '" data-t="code">📄 Code</button>' +
+    '</div><button type="button" class="cx-mini cx-zip">⬇ Download ZIP</button></div>' +
+    '<div class="cx-ide-body"></div>';
+  const body = card.querySelector('.cx-ide-body');
+
+  function showPreview() {
+    const assembled = assemblePreview(files);
+    body.innerHTML = '';
+    if (assembled == null) { body.innerHTML = '<p class="cx-body" style="padding:14px;">No HTML entry file to preview — see the Code tab.</p>'; return; }
+    const frame = document.createElement('iframe');
+    frame.className = 'cx-preview';
+    frame.setAttribute('sandbox', 'allow-scripts allow-forms allow-modals allow-popups');
+    frame.srcdoc = assembled;
+    body.appendChild(frame);
+  }
+  function showCode() {
+    body.innerHTML = '<div class="cx-code-wrap"><div class="cx-tree"></div><pre class="cx-code"><code></code></pre></div>';
+    const tree = body.querySelector('.cx-tree');
+    const codeEl = body.querySelector('.cx-code code');
+    paths.forEach((p, idx) => {
+      const f = document.createElement('button');
+      f.type = 'button'; f.className = 'cx-tree-file' + (idx === 0 ? ' on' : ''); f.textContent = p;
+      f.addEventListener('click', () => {
+        tree.querySelectorAll('.cx-tree-file').forEach((x) => x.classList.remove('on'));
+        f.classList.add('on');
+        codeEl.textContent = files[p];
+      });
+      tree.appendChild(f);
+    });
+    codeEl.textContent = files[paths[0]];
+  }
+
+  card.querySelectorAll('.cx-ide-tab').forEach((tab) => tab.addEventListener('click', () => {
+    card.querySelectorAll('.cx-ide-tab').forEach((x) => x.classList.remove('on'));
+    tab.classList.add('on');
+    if (tab.dataset.t === 'preview') showPreview(); else showCode();
+  }));
+  card.querySelector('.cx-zip').addEventListener('click', async () => {
+    if (typeof JSZip === 'undefined') { alert('ZIP tool is still loading — try again in a second.'); return; }
+    const zip = new JSZip();
+    Object.entries(files).forEach(([p, c]) => zip.file(p, c));
+    const blob = await zip.generateAsync({ type: 'blob' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = String(repoName || 'hungter-project').replace(/[^a-z0-9._-]/gi, '-') + '.zip';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+  });
+
+  if (hasHtml) showPreview(); else showCode();
+  return card;
+}
+
 // Render a Codex result (used for a fresh run AND for reopening saved sessions).
 function renderResult(data, runMode) {
   let html = '';
@@ -212,6 +377,12 @@ function renderResult(data, runMode) {
     html += '<div class="cx-card"><span class="tag">🟢 Groq · Coding Teacher</span><div class="cx-body">' + md(data.teacher) + '</div></div>';
   }
   cxOut.innerHTML = html || '<div class="cx-card">Codex ran but returned nothing — try a more specific request.</div>';
+
+  // IDE panel: live preview + file tree/code viewer + ZIP (needs file contents).
+  if (data.files && Object.keys(data.files).length) {
+    const ide = renderIde(data.files, data.repo);
+    if (ide) cxOut.appendChild(ide);
+  }
 
   // Continue / iterate composer — keeps working on the same repo.
   if (data.repo) {
@@ -257,7 +428,7 @@ async function runCodex(followText, opts) {
   if (!task) { cxErr.textContent = 'Tell the team what to ' + (runMode === 'fix' ? 'fix' : 'build') + ' first.'; cxErr.style.display = 'block'; return; }
   const btn = document.getElementById('cxRun');
   btn.disabled = true;
-  cxOut.innerHTML = '<div class="cx-card"><span class="spinner"></span>All 4 engines are ' + (runMode === 'fix' ? 'fixing and improving' : 'building') + ' your project — 20–40 seconds…</div>';
+  const stopNarration = startNarration(runMode);
   try {
     const payload = JSON.stringify({
       visitorId: getSessionId(), task, mode: runMode,
@@ -296,7 +467,7 @@ async function runCodex(followText, opts) {
     if (typeof updateLevel === 'function') updateLevel();
     if (bar) bar.style.width = getLevelProgress().pct + '%';
   } catch { cxErr.textContent = 'Could not reach the Codex backend.'; cxErr.style.display = 'block'; cxOut.innerHTML = ''; }
-  finally { btn.disabled = false; }
+  finally { stopNarration(); btn.disabled = false; }
 }
 
 document.getElementById('cxRun').addEventListener('click', () => runCodex());
@@ -337,6 +508,10 @@ function mountCodexHistory() {
     itemLabel: (t) => ({ title: t.title || 'Untitled build', sub: (t.repo ? t.repo + ' · ' : '') + (t.mode === 'fix' ? 'fix · ' : 'build · ') + Convo.ago(t.updatedAt) }),
   });
 }
+
+// Auto-open the app if already connected/skipped — run last so every function
+// and const (CX_TEMPLATES etc.) is defined before openCodex touches them.
+if (lsGet('mm_codex_github', '')) openCodex();
 </script>
 </body>
 </html>

@@ -396,6 +396,17 @@ if (count($committed) > 0) {
     mm_record_ai_usage((string) ($budget['scopeKey'] ?? mm_ai_scope_key($body)), isset($budget['user']['id']) ? (int) $budget['user']['id'] : null, 4);
 }
 
+// Return the generated file contents (capped) so the UI can show a live
+// preview, a file tree/code viewer, and a ZIP download without more API calls.
+$filesOut = [];
+$byteBudget = 240000;
+foreach ($allFiles as $path => $content) {
+    if ($byteBudget <= 0) break;
+    $slice = substr($content, 0, min(60000, $byteBudget));
+    $byteBudget -= strlen($slice);
+    $filesOut[$path] = $slice;
+}
+
 mm_json_response(200, [
     'status' => 'ok',
     'built' => count($committed) > 0,
@@ -403,6 +414,7 @@ mm_json_response(200, [
     'repoUrl' => "https://github.com/$owner/$name",
     'committed' => $committed,
     'failed' => $failed,
+    'files' => $filesOut,
     'log' => $log,
     'teacher' => $teacherReply,
     'sections' => $sections,
