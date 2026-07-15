@@ -39,6 +39,7 @@
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/marked@4/marked.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 </head>
 <body data-page="chat" style="display:flex;flex-direction:column;min-height:100vh;">
 <div class="top-bar"><div class="top-bar-fill" id="topBar" style="width:0%"></div></div>
@@ -91,12 +92,23 @@
           <button type="button" class="engine-btn" data-engine="storyteller" title="Stories, analogies, creative">🟣 Claude</button>
           <button type="button" class="engine-btn" data-engine="all" title="All 4 engines answer">⚡ All 4</button>
         </div>
+        <div class="study-row" role="radiogroup" aria-label="How should the tutor explain?">
+          <span class="engine-row-label">Style</span>
+          <button type="button" class="study-btn active" data-mode="normal" title="Balanced explanations">✨ Normal</button>
+          <button type="button" class="study-btn" data-mode="eli5" title="Explain like I'm 5">🧸 ELI5</button>
+          <button type="button" class="study-btn" data-mode="exam" title="Exam-focused, concise, mark-scheme style">🎯 Exam</button>
+          <button type="button" class="study-btn" data-mode="socratic" title="Teach by asking guiding questions">🤔 Socratic</button>
+        </div>
         <div class="composer-row">
           <button id="attachButton" class="attach-btn" type="button" aria-label="Attach file or image" title="Attach file or image">+</button>
           <input id="fileInput" type="file" accept="image/*,.pdf,.txt,.md,.csv,.json,.js,.ts,.py,.java,.c,.cpp,.html,.css" multiple hidden />
           <input id="chatInput" type="text" placeholder="Ask anything — math, essays, exam prep…" autocomplete="off" />
+          <button id="micButton" class="attach-btn" type="button" aria-label="Speak your question" title="Speak your question" style="display:none;">🎤</button>
           <button id="sendButton" class="send-btn" type="button" aria-label="Send message">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </button>
+          <button id="stopButton" class="send-btn stop-btn" type="button" aria-label="Stop generating" title="Stop generating" style="display:none;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
           </button>
         </div>
         <div id="attachmentTray" class="attachment-tray" aria-live="polite"></div>
@@ -112,7 +124,7 @@
 
 <script src="/api-config.js?v=20260713"></script>
 <script src="/script.js?v=20260713"></script>
-<script src="/convos.js?v=20260715"></script>
+<script src="/convos.js?v=20260716"></script>
 <script src="/layout.js?v=20260713" defer></script>
 <script>
 (function () {
@@ -127,9 +139,22 @@
   const attachmentTray = document.getElementById('attachmentTray');
   const modelBadge = document.getElementById('modelBadge');
   const topBar = document.getElementById('topBar');
+  const micButton = document.getElementById('micButton');
+  const stopButton = document.getElementById('stopButton');
   let typingIndicator = null;
   let selectedEngine = 'auto';
+  let studyMode = lsGet('mm_study_mode', 'normal');
+  let currentAbort = null;   // AbortController for the in-flight request
+  let streamCancelled = false;
   const fallbackModel = 'llama-3.3-70b-versatile';
+
+  // Persona directives prepended (invisibly) to the outgoing prompt.
+  const STUDY_DIRECTIVES = {
+    normal: '',
+    eli5: 'Explain this as if I am a young child — very simple words, a friendly tone, and a everyday analogy. ',
+    exam: 'Answer in an exam-focused way: concise, structured, with the key marking points and a worked model answer. ',
+    socratic: 'Teach me using the Socratic method — instead of giving the full answer at once, ask me one guiding question at a time and build toward the answer. ',
+  };
   let pendingQuestion = null;
   const MAX_ATTACHMENTS = 5;
   const MAX_ATTACHMENT_BYTES = 3 * 1024 * 1024;
@@ -434,6 +459,95 @@
     return html;
   }
 
+  let __mermaidReady = false;
+  function initMermaid() {
+    if (__mermaidReady || typeof mermaid === 'undefined') return;
+    try { mermaid.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'strict' }); __mermaidReady = true; } catch {}
+  }
+
+  // After AI markdown is in the DOM: render ```mermaid diagrams and add a Copy
+  // button to every code block.
+  async function enhanceRendered(container) {
+    if (!container) return;
+    container.querySelectorAll('pre > code').forEach((code) => {
+      const pre = code.parentElement;
+      if (pre.dataset.copyReady || /language-mermaid/.test(code.className)) return;
+      pre.dataset.copyReady = '1';
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'code-copy';
+      btn.textContent = 'Copy';
+      btn.addEventListener('click', async () => {
+        try { await navigator.clipboard.writeText(code.textContent || ''); btn.textContent = 'Copied ✓'; setTimeout(() => { btn.textContent = 'Copy'; }, 1400); } catch {}
+      });
+      pre.appendChild(btn);
+    });
+    const blocks = container.querySelectorAll('code.language-mermaid');
+    if (blocks.length && typeof mermaid !== 'undefined') {
+      initMermaid();
+      for (const code of blocks) {
+        const pre = code.parentElement;
+        if (!pre || pre.dataset.mermaidDone) continue;
+        pre.dataset.mermaidDone = '1';
+        try {
+          const { svg } = await mermaid.render('mmd' + Math.random().toString(36).slice(2, 8), code.textContent || '');
+          const holder = document.createElement('div');
+          holder.className = 'mermaid-diagram';
+          holder.innerHTML = svg;
+          pre.replaceWith(holder);
+        } catch { /* leave the code as-is if the diagram is invalid */ }
+      }
+    }
+  }
+
+  // Shared action row for AI messages (read / copy / regenerate / explain).
+  function buildActions(text, engine, sourcePrompt) {
+    const actions = document.createElement('div');
+    actions.className = 'msg-actions';
+    const mk = (label, fn) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'msg-action-btn'; b.textContent = label;
+      b.addEventListener('click', fn); actions.appendChild(b); return b;
+    };
+    mk('🔊 Read aloud', () => {
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text); u.rate = 0.95; u.pitch = 1;
+      window.speechSynthesis.speak(u);
+    });
+    const copyBtn = mk('⧉ Copy', async () => {
+      try { await navigator.clipboard.writeText(text); copyBtn.textContent = 'Copied ✓'; setTimeout(() => { copyBtn.textContent = '⧉ Copy'; }, 1400); } catch {}
+    });
+    if (sourcePrompt) {
+      mk('↻ Regenerate', () => sendMessage(sourcePrompt, { regenerate: true }));
+      mk('Explain differently', () => sendMessage(sourcePrompt, { excludeEngine: String(engine || '').split(',')[0].trim() }));
+      mk('Explain it back (+XP)', () => explainItBack(sourcePrompt, text));
+    }
+    return actions;
+  }
+
+  // Follow-up suggestion chips that keep the conversation moving.
+  function buildFollowups(subject) {
+    const wrap = document.createElement('div');
+    wrap.className = 'followups';
+    const chips = [
+      ['💡 Give an example', 'Give me a concrete example of that.'],
+      ['🔤 Explain simpler', 'Explain that again in much simpler words.'],
+      ['🔬 Go deeper', 'Go deeper and explain the why behind that.'],
+      ['🧪 Quiz me', null],
+    ];
+    chips.forEach(([label, prompt]) => {
+      const c = document.createElement('button');
+      c.type = 'button'; c.className = 'followup-chip'; c.textContent = label;
+      c.addEventListener('click', () => {
+        if (prompt) sendMessage(prompt);
+        else window.location.href = '/quiz.html?subject=' + encodeURIComponent(subject || lsGet('mm_subject', 'General'));
+      });
+      wrap.appendChild(c);
+    });
+    return wrap;
+  }
+
   function formatMessage(text, sender, engine, sourcePrompt) {
     const row = document.createElement('div');
     row.className = `msg-row ${sender}`;
@@ -457,43 +571,9 @@
     }
     bubble.appendChild(textNode);
     if (sender === 'ai') {
-      const actions = document.createElement('div');
-      actions.className = 'msg-actions';
-
-      const readBtn = document.createElement('button');
-      readBtn.type = 'button';
-      readBtn.className = 'msg-action-btn';
-      readBtn.textContent = '🔊 Read aloud';
-      readBtn.addEventListener('click', () => {
-        if (!('speechSynthesis' in window)) return;
-        window.speechSynthesis.cancel();
-        const utter = new SpeechSynthesisUtterance(text);
-        utter.rate = 0.95;
-        utter.pitch = 1;
-        window.speechSynthesis.speak(utter);
-      });
-      actions.appendChild(readBtn);
-
-      if (sourcePrompt) {
-        const explainBtn = document.createElement('button');
-        explainBtn.type = 'button';
-        explainBtn.className = 'msg-action-btn';
-        explainBtn.textContent = 'Explain differently';
-        explainBtn.addEventListener('click', () => {
-          sendMessage(sourcePrompt, { excludeEngine: String(engine || '').split(',')[0].trim() });
-        });
-        actions.appendChild(explainBtn);
-
-        const explainBackBtn = document.createElement('button');
-        explainBackBtn.type = 'button';
-        explainBackBtn.className = 'msg-action-btn';
-        explainBackBtn.textContent = 'Explain it back (+XP)';
-        explainBackBtn.addEventListener('click', () => {
-          explainItBack(sourcePrompt, text);
-        });
-        actions.appendChild(explainBackBtn);
-      }
-      bubble.appendChild(actions);
+      bubble.appendChild(buildActions(text, engine, sourcePrompt));
+      if (sourcePrompt) bubble.appendChild(buildFollowups(lsGet('mm_subject', 'General')));
+      enhanceRendered(textNode);
     }
     row.appendChild(avatar);
     row.appendChild(bubble);
@@ -550,6 +630,7 @@
     const TICK = 14;
     let i = 0;
     while (i < fullText.length) {
+      if (streamCancelled) { i = fullText.length; break; }
       i = Math.min(i + CHUNK, fullText.length);
       const partial = fullText.slice(0, i);
       if (sender === 'ai') {
@@ -565,35 +646,9 @@
     // Final clean render
     if (sender === 'ai') {
       textEl.innerHTML = renderMarkdownMath(fullText);
-      const actions = document.createElement('div');
-      actions.className = 'msg-actions';
-      const readBtn = document.createElement('button');
-      readBtn.type = 'button';
-      readBtn.className = 'msg-action-btn';
-      readBtn.textContent = '🔊 Read aloud';
-      readBtn.addEventListener('click', () => {
-        if (!('speechSynthesis' in window)) return;
-        window.speechSynthesis.cancel();
-        const utter = new SpeechSynthesisUtterance(fullText);
-        utter.rate = 0.95; utter.pitch = 1;
-        window.speechSynthesis.speak(utter);
-      });
-      actions.appendChild(readBtn);
-      if (sourcePrompt) {
-        const explainBtn = document.createElement('button');
-        explainBtn.type = 'button';
-        explainBtn.className = 'msg-action-btn';
-        explainBtn.textContent = 'Explain differently';
-        explainBtn.addEventListener('click', () => sendMessage(sourcePrompt, { excludeEngine: String(engine || '').split(',')[0].trim() }));
-        actions.appendChild(explainBtn);
-        const explainBackBtn = document.createElement('button');
-        explainBackBtn.type = 'button';
-        explainBackBtn.className = 'msg-action-btn';
-        explainBackBtn.textContent = 'Explain it back (+XP)';
-        explainBackBtn.addEventListener('click', () => explainItBack(sourcePrompt, fullText));
-        actions.appendChild(explainBackBtn);
-      }
-      bubble.appendChild(actions);
+      bubble.appendChild(buildActions(fullText, engine, sourcePrompt));
+      if (sourcePrompt) bubble.appendChild(buildFollowups(lsGet('mm_subject', 'General')));
+      enhanceRendered(textEl);
     } else {
       textEl.textContent = fullText;
     }
@@ -634,6 +689,7 @@
       const { response } = await fetchWithApiFallback('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: options.signal,
         body: JSON.stringify({
           visitorId: getSessionId(),
           subject,
@@ -708,14 +764,22 @@
     const attachmentNote = attachments.length
       ? `\n\nAttached: ${attachments.map((item) => item.name).join(', ')}`
       : '';
-    appendMessage(`${text}${attachmentNote}`, 'user');
+    if (!options.regenerate) appendMessage(`${text}${attachmentNote}`, 'user');
     chatInput.value = '';
     showTyping();
-    const { reply, engine, ownerHint } = await fetchAIResponse(text, subject, { ...options, attachments });
+    setGenerating(true);
+    streamCancelled = false;
+    const controller = new AbortController();
+    currentAbort = controller;
+    // Persona/study-mode directive is prepended to what the AI sees, but the
+    // saved thread + on-screen bubble keep the student's clean text.
+    const directive = STUDY_DIRECTIVES[studyMode] || '';
+    const { reply, engine, ownerHint } = await fetchAIResponse(directive + text, subject, { ...options, attachments, signal: controller.signal });
     if (typingIndicator) {
       typingIndicator.remove();
       typingIndicator = null;
     }
+    if (streamCancelled) { setGenerating(false); currentAbort = null; return; }
     await appendStreamingMessage(reply, 'ai', engine, text);
     if (ownerHint) {
       appendMessage(`⚠️ AI engines are offline — reason: ${ownerHint}\nOwner fix: open /api/setup.php · Full self-check: /api/diag.php`, 'ai', 'System');
@@ -724,6 +788,13 @@
     saveTurn(text, reply, engine);
     recordChat(subject);
     refreshTopBar();
+    setGenerating(false);
+    currentAbort = null;
+  }
+
+  function setGenerating(on) {
+    if (sendButton) sendButton.style.display = on ? 'none' : '';
+    if (stopButton) stopButton.style.display = on ? 'inline-flex' : 'none';
   }
 
   function updateEngineButtons() {
@@ -765,6 +836,55 @@
   fileInput?.addEventListener('change', async (event) => {
     await addFiles(Array.from(event.target.files || []));
   });
+
+  // Study-mode (persona) selector.
+  document.querySelectorAll('.study-btn').forEach((btn) => {
+    if (btn.dataset.mode === studyMode) btn.classList.add('active'); else btn.classList.remove('active');
+    btn.addEventListener('click', () => {
+      studyMode = btn.dataset.mode;
+      lsSet('mm_study_mode', studyMode);
+      document.querySelectorAll('.study-btn').forEach((b) => b.classList.toggle('active', b === btn));
+    });
+  });
+
+  // Stop generating.
+  stopButton?.addEventListener('click', () => {
+    streamCancelled = true;
+    if (currentAbort) { try { currentAbort.abort(); } catch {} }
+    if (typingIndicator) { typingIndicator.remove(); typingIndicator = null; }
+    setGenerating(false);
+  });
+
+  // Voice input (Web Speech API) — only shown when the browser supports it.
+  (function setupVoice() {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR || !micButton) return;
+    micButton.style.display = 'inline-flex';
+    let rec = null, listening = false;
+    micButton.addEventListener('click', () => {
+      if (listening && rec) { rec.stop(); return; }
+      rec = new SR();
+      rec.lang = navigator.language || 'en-US';
+      rec.interimResults = true;
+      rec.continuous = false;
+      let finalText = '';
+      rec.onstart = () => { listening = true; micButton.classList.add('listening'); micButton.textContent = '⏺'; };
+      rec.onresult = (e) => {
+        let interim = '';
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          const t = e.results[i][0].transcript;
+          if (e.results[i].isFinal) finalText += t; else interim += t;
+        }
+        chatInput.value = (finalText + interim).trim();
+      };
+      rec.onerror = () => {};
+      rec.onend = () => {
+        listening = false; micButton.classList.remove('listening'); micButton.textContent = '🎤';
+        if (chatInput.value.trim()) sendMessage();
+      };
+      rec.start();
+    });
+  })();
   const params = new URLSearchParams(window.location.search);
   pendingQuestion = params.get('q');
   if (pendingQuestion) {
