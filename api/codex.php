@@ -151,6 +151,70 @@ function cx_parse_files(string $text): array {
     return $files;
 }
 
+/**
+ * Read the repo the way Claude Code does before it edits: list the tree, then
+ * pull the contents of the most relevant source files (capped) so the engines
+ * work against real code instead of guessing. Returns [contextText, fileCount].
+ */
+function cx_read_repo(string $token, string $owner, string $repo, string $branch): array {
+    $tree = cx_gh_api($token, 'GET', "/repos/$owner/$repo/git/trees/" . rawurlencode($branch) . '?recursive=1');
+    if (($tree['status'] ?? 0) !== 200 || empty($tree['json']['tree'])) {
+        return ['', 0];
+    }
+    $codeExt = ['js', 'ts', 'jsx', 'tsx', 'php', 'py', 'html', 'css', 'json', 'md', 'java', 'cpp', 'c', 'h', 'go', 'rb', 'vue', 'svelte', 'sql'];
+    $skipDirs = ['node_modules/', '.git/', 'vendor/', 'dist/', 'build/', '.next/', 'coverage/'];
+    $candidates = [];
+    foreach ($tree['json']['tree'] as $node) {
+        if (($node['type'] ?? '') !== 'blob') {
+            continue;
+        }
+        $path = (string) ($node['path'] ?? '');
+        $size = (int) ($node['size'] ?? 0);
+        if ($path === '' || $size > 60000) {
+            continue;
+        }
+        foreach ($skipDirs as $skip) {
+            if (strpos($path, $skip) === 0 || strpos($path, '/' . $skip) !== false) {
+                continue 2;
+            }
+        }
+        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        if (!in_array($ext, $codeExt, true) && strtolower(basename($path)) !== 'package.json') {
+            continue;
+        }
+        // Prioritise entry points and configs so the map is meaningful.
+        $rank = 5;
+        $lower = strtolower($path);
+        if (preg_match('#(^|/)(index|main|app|server)\.#', $lower)) { $rank = 1; }
+        elseif (in_array(basename($lower), ['package.json', 'readme.md'], true)) { $rank = 2; }
+        elseif (strpos($lower, '/') === false) { $rank = 3; }
+        $candidates[] = ['path' => $path, 'rank' => $rank];
+    }
+    usort($candidates, fn ($a, $b) => $a['rank'] <=> $b['rank'] ?: strcmp($a['path'], $b['path']));
+
+    $context = '';
+    $budget = 24000; // total chars of code we hand the engines
+    $count = 0;
+    foreach ($candidates as $c) {
+        if ($count >= 14 || $budget <= 0) {
+            break;
+        }
+        $file = cx_gh_api($token, 'GET', "/repos/$owner/$repo/contents/" . cx_encode_path($c['path']));
+        if (($file['status'] ?? 0) !== 200 || empty($file['json']['content'])) {
+            continue;
+        }
+        $decoded = base64_decode(str_replace("\n", '', (string) $file['json']['content']), true);
+        if ($decoded === false || $decoded === '') {
+            continue;
+        }
+        $slice = substr($decoded, 0, min(4000, $budget));
+        $budget -= strlen($slice);
+        $context .= "\n===EXISTING FILE: {$c['path']}===\n```\n" . $slice . "\n```\n";
+        $count++;
+    }
+    return [$context, $count];
+}
+
 $token = $gh['token'];
 $login = $gh['login'];
 
@@ -196,12 +260,26 @@ if (($repoCheck['status'] ?? 0) === 404) {
         exit;
     }
     $log[] = "📦 Created new repo $owner/$name";
+    $defaultBranch = (string) ($created['json']['default_branch'] ?? 'main');
+    $freshRepo = true;
     // auto_init needs a beat before the Contents API sees the default branch.
     usleep(800000);
 } elseif (($repoCheck['status'] ?? 0) >= 300) {
     $ghMsg = $repoCheck['json']['message'] ?? ('HTTP ' . ($repoCheck['status'] ?? '?'));
     mm_json_response(502, ['error' => "Couldn't reach the repo $owner/$name: $ghMsg"]);
     exit;
+} else {
+    $defaultBranch = (string) ($repoCheck['json']['default_branch'] ?? 'main');
+    $freshRepo = false;
+}
+
+// ── Read the repo first (Claude-Code-style) so the engines edit real code ─────
+$repoContext = '';
+if (empty($freshRepo)) {
+    [$repoContext, $repoFileCount] = cx_read_repo($token, $owner, $name, $defaultBranch);
+    if ($repoFileCount > 0) {
+        $log[] = "🔍 Read $repoFileCount file" . ($repoFileCount === 1 ? '' : 's') . " from $owner/$name";
+    }
 }
 
 // ── Build the assignments (strict FILE format so we can commit the output) ────
@@ -210,18 +288,35 @@ $fileFormat = "\n\nOUTPUT FORMAT — this is critical. Emit ONLY files, no prose
     . "containing the FULL contents of that file. Repeat for each file. Do not write anything between or after the blocks.";
 
 $goal = $mode === 'fix'
-    ? "You are FIXING & IMPROVING an existing project. Correct the bugs and add what the student asked, then output the corrected files in full."
+    ? "You are FIXING & IMPROVING an existing project. Correct the bugs and add what the student asked, then output the corrected files IN FULL."
     : "You are BUILDING a new project from scratch.";
 $repoLine = "Repo: $owner/$name.";
+$repoNote = $repoContext !== ''
+    ? "\n\nThe repo already contains these files. To CHANGE one, output a file with the EXACT SAME path and its full new contents. To add a file, use a new path. Do not touch files you are not changing." . $repoContext
+    : '';
 $base = $goal . "\nProject: " . substr($task, 0, 1200) . "\nLanguage: " . $language . "\n" . $repoLine
-    . ($existing !== '' ? "\n\nExisting code from the student:\n```\n" . substr($existing, 0, 6000) . "\n```" : '')
+    . ($existing !== '' ? "\n\nExtra code the student pasted:\n```\n" . substr($existing, 0, 6000) . "\n```" : '')
+    . $repoNote
     . "\nStudent level: " . $userLevel . '.';
 
+$frontendJob = $mode === 'fix'
+    ? "Fix the frontend files that need it and add the requested UI changes — output each changed file in full at its existing path (create new ones only if truly needed)."
+    : "Build the complete frontend: an index.html, a styles.css, and the UI JavaScript. Make it genuinely good-looking and responsive.";
+$backendJob = $mode === 'fix'
+    ? "Fix the backend/logic bugs and add the requested behaviour — output each changed file in full at its existing path."
+    : "Build the backend: the server/app entry file, routes/endpoints or core logic, and any data layer. Keep it runnable.";
+$qaJob = $mode === 'fix'
+    ? "Update the README if behaviour changed and add/adjust a tests file that covers the fixes. Keep a short '## Known edge cases' section."
+    : "Produce a clear README.md (what it is + how to run it) and one tests file that exercises the core logic. Add a short '## Known edge cases' section.";
+$teachJob = $mode === 'fix'
+    ? "Do NOT output files. In plain language for a $userLevel, explain what was broken, why, and what each fix teaches — then list 3 concepts learned and 2 things to try next."
+    : "Do NOT output files. In plain language for a $userLevel, explain what the team is building, how the frontend and backend fit together, walk through the 3 trickiest ideas, then list 3 concepts learned and 2 things to try next.";
+
 $assignments = [
-    'storyteller' => "You are CLAUDE, the FRONTEND DESIGNER on a 4-AI dev team. $base\n\nBuild the complete frontend: an index.html, a styles.css, and the UI JavaScript. Make it genuinely good-looking and responsive.$fileFormat",
-    'explorer' => "You are CHATGPT, the BACKEND ARCHITECT on a 4-AI dev team. $base\n\nBuild the backend: the server/app entry file, routes/endpoints or core logic, and any data layer. Keep it runnable.$fileFormat",
-    'solver' => "You are GEMINI, the QA ENGINEER on a 4-AI dev team. $base\n\nProduce a clear README.md (what it is + how to run it) and one tests file that exercises the core logic. Inside the README add a short '## Known edge cases' section.$fileFormat",
-    'reasoner' => "You are GROQ, the CODING TEACHER on a 4-AI dev team. $base\n\nDo NOT output files. In plain language for a $userLevel, explain what the team is building, how the frontend and backend fit together, walk through the 3 trickiest ideas, then list 3 concepts learned and 2 things to try next.",
+    'storyteller' => "You are CLAUDE, the FRONTEND DESIGNER on a 4-AI dev team. $base\n\n$frontendJob$fileFormat",
+    'explorer' => "You are CHATGPT, the BACKEND ARCHITECT on a 4-AI dev team. $base\n\n$backendJob$fileFormat",
+    'solver' => "You are GEMINI, the QA ENGINEER on a 4-AI dev team. $base\n\n$qaJob$fileFormat",
+    'reasoner' => "You are GROQ, the CODING TEACHER on a 4-AI dev team. $base\n\n$teachJob",
 ];
 
 $roleNames = [
