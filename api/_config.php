@@ -182,12 +182,22 @@ function mm_build_final_message(string $message, array $attachments): string {
     return $message . "\n\nStudent uploaded files/images for analysis:\n" . implode("\n\n", $parts);
 }
 
+// This Hungter instance is wired to a specific Supabase project. Only the DB
+// PASSWORD is secret and comes from the server .env (SUPABASE_DB_PASSWORD) — it
+// is never stored in the repo. Set an env override to point at a different DB.
+if (!defined('HUNGTER_SUPABASE_REF')) {
+    define('HUNGTER_SUPABASE_REF', 'dgakpfautrrfonjnbybh');
+}
+
 // Which SQL dialect the active connection speaks: 'pgsql' (Supabase) or 'mysql'.
 function mm_db_driver(): string {
     static $d = null;
     if ($d === null) {
         $d = 'mysql';
-        $sup = mm_env_value('SUPABASE_DB_HOST', '') !== '' || mm_env_value('SUPABASE_DB_URL', '') !== '' || strtolower(mm_env_value('DB_DRIVER', '')) === 'pgsql';
+        $sup = HUNGTER_SUPABASE_REF !== ''
+            || mm_env_value('SUPABASE_DB_HOST', '') !== ''
+            || mm_env_value('SUPABASE_DB_URL', '') !== ''
+            || strtolower(mm_env_value('DB_DRIVER', '')) === 'pgsql';
         if ($sup) $d = 'pgsql';
     }
     return $d;
@@ -251,13 +261,17 @@ function mm_db(): ?PDO {
             $user = urldecode((string) ($p['user'] ?? 'postgres'));
             $pass = urldecode((string) ($p['pass'] ?? ''));
         } else {
-            $host = mm_env_value('SUPABASE_DB_HOST', '');
+            // Defaults are this project's DIRECT connection. On an IPv4-only host
+            // (e.g. Hostinger) override host/port/user with the Session pooler.
+            $defHost = HUNGTER_SUPABASE_REF !== '' ? 'db.' . HUNGTER_SUPABASE_REF . '.supabase.co' : '';
+            $host = mm_env_value('SUPABASE_DB_HOST', $defHost);
             $port = mm_env_value('SUPABASE_DB_PORT', '5432');
             $name = mm_env_value('SUPABASE_DB_NAME', 'postgres');
             $user = mm_env_value('SUPABASE_DB_USER', 'postgres');
             $pass = mm_env_value('SUPABASE_DB_PASSWORD', mm_env_value('DB_PASSWORD', ''));
         }
-        if ($host === '' || $user === '') { $pdo = null; return $pdo; }
+        // No password yet → treat DB as not configured (login shows a clear msg).
+        if ($host === '' || $user === '' || $pass === '') { $pdo = null; return $pdo; }
         try {
             $dsn = sprintf('pgsql:host=%s;port=%s;dbname=%s;sslmode=require', $host, $port, $name);
             $pdo = new MMPgPDO($dsn, $user, $pass, $opts);
@@ -297,9 +311,17 @@ function mm_ensure_runtime_tables(): void {
         return;
     }
 
-    // On Supabase/Postgres the schema is created once via supabase/schema.sql;
-    // the MySQL DDL below only runs on MySQL.
+    // On Supabase/Postgres, auto-provision from supabase/schema.sql the first
+    // time (idempotent CREATE ... IF NOT EXISTS) so there's no manual step.
     if (mm_db_driver() === 'pgsql') {
+        try {
+            $db->query('SELECT 1 FROM admins LIMIT 1');
+        } catch (Throwable $probe) {
+            $schema = @file_get_contents(__DIR__ . '/../supabase/schema.sql');
+            if (is_string($schema) && $schema !== '') {
+                try { $db->exec($schema); } catch (Throwable $e) {}
+            }
+        }
         $initialized = true;
         return;
     }

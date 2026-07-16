@@ -1,31 +1,37 @@
-# Connect Hungter to Supabase (Postgres)
+# Hungter × Supabase — already wired
 
-The PHP backend now speaks Postgres automatically — you just point it at Supabase.
+This app is pre-configured for the Supabase project **dgakpfautrrfonjnbybh**.
+The database driver is Postgres and the tables are created automatically on
+first run. You only supply the secret: the DB password.
 
-## 1. Create the tables
-Supabase Dashboard → **SQL Editor** → paste all of `supabase/schema.sql` → **Run**.
+## The ONE thing to do
+Add your Supabase database password to the server `.env` (never commit it):
 
-## 2. Get your connection details
-Supabase Dashboard → **Project Settings → Database → Connection info**
-(use the **Session/Transaction pooler** for shared hosting like Hostinger).
+    SUPABASE_DB_PASSWORD=your-supabase-db-password
 
-## 3. Add to your server `.env`
-Either one URL:
+Requires the PHP `pdo_pgsql` extension (Hostinger: hPanel → PHP Configuration →
+Extensions → enable `pdo_pgsql`).
 
-    SUPABASE_DB_URL=postgres://postgres.<ref>:<PASSWORD>@aws-0-<region>.pooler.supabase.com:6543/postgres
+That's it. On the next request the app connects to Supabase and creates every
+table (users, chats, sessions, admins, …) itself.
 
-or the discrete fields:
+## IPv4 hosts (Hostinger) — important
+The default is Supabase's **Direct** connection, which is IPv6-only. Most shared
+hosts (Hostinger) are IPv4-only, so use the **Session pooler** instead. In the
+Supabase Connect dialog choose *Session pooler*, then add to `.env`:
 
-    SUPABASE_DB_HOST=aws-0-<region>.pooler.supabase.com
-    SUPABASE_DB_PORT=6543
-    SUPABASE_DB_NAME=postgres
-    SUPABASE_DB_USER=postgres.<ref>
-    SUPABASE_DB_PASSWORD=<your db password>
+    SUPABASE_DB_HOST=aws-0-<your-region>.pooler.supabase.com
+    SUPABASE_DB_PORT=5432
+    SUPABASE_DB_USER=postgres.dgakpfautrrfonjnbybh
+    SUPABASE_DB_PASSWORD=your-supabase-db-password
 
-Setting any of these switches the whole app to Supabase (no MySQL needed).
-Requires the PHP `pdo_pgsql` extension (on by default on most hosts; on Hostinger
-enable it in hPanel → PHP Configuration → Extensions).
+(Or paste the full pooler URI as `SUPABASE_DB_URL=...`.)
 
-## 4. Verify
-Open `/api/diag` — it reports DB status. Then `/admin` → log in
-(`admin` / `Faaz12345`); the seeded admin is created on first login.
+## Verify
+- `/api/diag` → the `database` block shows `"provider":"Supabase (Postgres)"`,
+  `"connected":true`, and a user count.
+- `/admin` → log in with `admin` / `Faaz12345` (the admin row seeds itself).
+
+## Point at a different project later
+Set `SUPABASE_DB_URL` (or the `SUPABASE_DB_*` fields) in `.env` — env always
+overrides the built-in project defaults.

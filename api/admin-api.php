@@ -60,6 +60,7 @@ function admin_authed(array $body): bool {
     return $expected !== '' && hash_equals($expected, $key);
 }
 
+if ($db !== null) { mm_ensure_runtime_tables(); } // provisions tables on Supabase
 admin_ensure($db);
 
 // ── Public: login ────────────────────────────────────────────────────────────

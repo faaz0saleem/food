@@ -88,9 +88,21 @@ foreach (array_keys(mm_engines_config()) as $engineKey) {
 
 // 6. Database (analytics/limits) — degrades gracefully if down
 try {
-    $checks['database'] = ['connected' => mm_db() !== null];
+    $db = mm_db();
+    $driver = mm_db_driver();
+    $userCount = null;
+    if ($db !== null) {
+        try { mm_ensure_runtime_tables(); $userCount = (int) $db->query('SELECT COUNT(*) FROM users')->fetchColumn(); } catch (Throwable $e) {}
+    }
+    $checks['database'] = [
+        'connected' => $db !== null,
+        'driver' => $driver,
+        'provider' => $driver === 'pgsql' ? 'Supabase (Postgres)' : 'MySQL',
+        'users' => $userCount,
+        'hint' => $db === null ? 'Set SUPABASE_DB_PASSWORD in .env (and pdo_pgsql must be enabled).' : '',
+    ];
 } catch (Throwable $e) {
-    $checks['database'] = ['connected' => false];
+    $checks['database'] = ['connected' => false, 'error' => $e->getMessage()];
 }
 
 mm_json_response(200, ['status' => 'ok', 'checks' => $checks, 'generatedAt' => gmdate('c')]);
