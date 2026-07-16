@@ -14,27 +14,8 @@
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
     Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://api.groq.com https://api.openai.com https://api.anthropic.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 
-# The admin dashboard is a local-only tool (run `node server.js` and open
-# localhost:3000/admin.html). These blocks keep it off the public deploy —
-# they only apply to the Netlify-hosted site, never to local dev.
-[[redirects]]
-  from = "/admin.html"
-  to = "/index.html"
-  status = 404
-  force = true
-
-[[redirects]]
-  from = "/api/admin-stats"
-  to = "/index.html"
-  status = 404
-  force = true
-
-[[redirects]]
-  from = "/.netlify/functions/api/admin-stats"
-  to = "/index.html"
-  status = 404
-  force = true
-
+# The admin dashboard is protected by its own username/password login +
+# signed tokens (api/admin-api.php), so it is safe to serve publicly.
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/api/:splat"

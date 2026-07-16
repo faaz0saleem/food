@@ -61,7 +61,9 @@ admin_ensure($db);
 
 // ── Public: login ────────────────────────────────────────────────────────────
 if ($action === 'login') {
-    if ($db === null) { mm_json_response(503, ['error' => 'Database offline — cannot sign in.']); exit; }
+    // Brute-force lock: max 5 attempts per IP per minute.
+    mm_require_rate_limit('admin-login|' . mm_client_ip(), 5, 60);
+    if ($db === null) { mm_json_response(503, ['error' => 'Database offline — connect the DB in .env first (the admin needs MySQL to store admins and users).']); exit; }
     $u = trim((string) ($body['username'] ?? ''));
     $p = (string) ($body['password'] ?? '');
     try {
