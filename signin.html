@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Sign in — Hungter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/brand.css?v=20260720">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  /* Intentionally NO site nav here — this is a clean gate. */
+  body { min-height: 100vh; margin: 0; display: grid; place-items: center; padding: 24px;
+    background: var(--bg-deep); background-image: var(--gradient-aurora); background-attachment: fixed;
+    font-family: var(--font-body); color: var(--ink); }
+  .auth { width: 100%; max-width: 400px; text-align: center; background: rgba(13,20,40,0.82);
+    border: 1px solid var(--border-glow); border-radius: var(--radius); padding: 40px 30px; box-shadow: var(--shadow); }
+  .auth .logo { font-family: var(--font-display); font-weight: 700; font-size: 1.4rem; }
+  .auth .logo .g { background: var(--gradient-brand); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .auth h1 { font-family: var(--font-display); font-size: 1.5rem; letter-spacing: -0.02em; margin: 18px 0 8px; }
+  .auth p { color: var(--ink-soft); line-height: 1.6; margin: 0 0 26px; font-size: 0.92rem; }
+  .gbtn-wrap { display: flex; justify-content: center; min-height: 44px; }
+  .auth .err { color: var(--coral); font-size: 0.85rem; margin-top: 16px; min-height: 1em; }
+  .auth .fine { color: var(--ink-faint); font-size: 0.72rem; margin-top: 22px; line-height: 1.6; }
+  .auth .fine a { color: var(--ink-soft); }
+  .spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--lime); border-radius: 50%; animation: spin 0.9s linear infinite; display: none; margin: 12px auto 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+  <div class="auth">
+    <div class="logo">⚡ <span class="g">Hungter</span></div>
+    <h1>Sign in to continue</h1>
+    <p>The tutor that gets you. Sign in with Google — it's free, and it's the only step.</p>
+    <div class="gbtn-wrap">
+      <div id="g_id_onload"
+           data-client_id="222174024094-g85g7rm3mhjjcmp93j2e4thgd2pvhm3s.apps.googleusercontent.com"
+           data-callback="onGoogleCredential" data-auto_prompt="false"></div>
+      <div class="g_id_signin" data-type="standard" data-theme="filled_black" data-size="large" data-shape="pill" data-text="continue_with" data-logo_alignment="center"></div>
+    </div>
+    <div class="spinner" id="spin"></div>
+    <p class="err" id="err"></p>
+    <p class="fine">By continuing you agree to our <a href="/terms.html">Terms</a> and <a href="/privacy.html">Privacy Policy</a>.</p>
+  </div>
+
+<script src="/api-config.js?v=20260720"></script>
+<script>
+  function ls(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  function apiBase() { return String(window.HUNGTER_API_BASE || '').replace(/\/$/, ''); }
+
+  // Already signed in? Skip straight in.
+  try { if (JSON.parse(localStorage.getItem('mm_auth_token') || 'null')) location.replace('/dashboard.html'); } catch (e) {}
+
+  async function onGoogleCredential(resp) {
+    const err = document.getElementById('err');
+    const spin = document.getElementById('spin');
+    err.textContent = ''; spin.style.display = 'block';
+    const urls = [apiBase() + '/api/auth/google.php', apiBase() + '/api/auth/google'];
+    let data = null;
+    for (const u of urls) {
+      try {
+        const r = await fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ credential: resp.credential }) });
+        const ct = String(r.headers.get('content-type') || '');
+        if (r.ok || ct.includes('application/json')) { data = await r.json(); break; }
+      } catch (e) {}
+    }
+    spin.style.display = 'none';
+    if (data && data.token) {
+      ls('mm_auth_token', data.token);
+      ls('mm_authed', true);
+      if (data.user) {
+        if (data.user.name) ls('mm_name', data.user.name);
+        if (data.user.email) ls('mm_email', data.user.email);
+        if (data.user.picture) ls('mm_avatar', data.user.picture);
+      }
+      location.replace(data.isNew ? '/onboarding.html' : '/dashboard.html');
+    } else {
+      err.textContent = (data && data.error) ? data.error : 'Sign-in failed. Please try again.';
+    }
+  }
+  window.onGoogleCredential = onGoogleCredential;
+</script>
+</body>
+</html>

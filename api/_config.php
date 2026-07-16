@@ -87,7 +87,7 @@ function mm_json_response(int $statusCode, array $payload): void {
     header('Content-Type: application/json; charset=utf-8');
     header('Access-Control-Allow-Origin: *');
     header('Access-Control-Allow-Methods: GET,POST,OPTIONS');
-    header('Access-Control-Allow-Headers: Content-Type,Authorization');
+    header('Access-Control-Allow-Headers: Content-Type,Authorization,X-Admin-Key,X-Admin-Token');
     echo json_encode($payload);
 }
 
@@ -525,14 +525,29 @@ function mm_track_visit(string $visitorId): void {
         return;
     }
 
-    $sql = 'INSERT INTO visitor_sessions (visitor_id, first_seen, last_seen, ip_address)
+    // Country from Cloudflare's edge header (free, instant, no lookup call).
+    $country = strtoupper(substr((string) ($_SERVER['HTTP_CF_IPCOUNTRY'] ?? ''), 0, 2));
+    if ($country === 'XX' || $country === 'T1') $country = '';
+
+    $vid = substr($id, 0, 120);
+    $ip = mm_client_ip();
+    $withCountry = 'INSERT INTO visitor_sessions (visitor_id, first_seen, last_seen, ip_address, country)
+            VALUES (:visitor_id, UTC_TIMESTAMP(), UTC_TIMESTAMP(), :ip_address, :country)
+            ON DUPLICATE KEY UPDATE last_seen = UTC_TIMESTAMP(), ip_address = VALUES(ip_address), country = COALESCE(NULLIF(VALUES(country), \'\'), country)';
+    $plain = 'INSERT INTO visitor_sessions (visitor_id, first_seen, last_seen, ip_address)
             VALUES (:visitor_id, UTC_TIMESTAMP(), UTC_TIMESTAMP(), :ip_address)
             ON DUPLICATE KEY UPDATE last_seen = UTC_TIMESTAMP(), ip_address = VALUES(ip_address)';
-    $stmt = $db->prepare($sql);
-    $stmt->execute([
-        ':visitor_id' => substr($id, 0, 120),
-        ':ip_address' => mm_client_ip(),
-    ]);
+    try {
+        $db->prepare($withCountry)->execute([':visitor_id' => $vid, ':ip_address' => $ip, ':country' => $country]);
+    } catch (Throwable $e) {
+        // Self-heal: add the column once, then retry; fall back to plain insert.
+        try {
+            $db->exec('ALTER TABLE visitor_sessions ADD COLUMN country VARCHAR(2) NULL');
+            $db->prepare($withCountry)->execute([':visitor_id' => $vid, ':ip_address' => $ip, ':country' => $country]);
+        } catch (Throwable $e2) {
+            try { $db->prepare($plain)->execute([':visitor_id' => $vid, ':ip_address' => $ip]); } catch (Throwable $e3) {}
+        }
+    }
 }
 
 function mm_record_chat(array $payload, string $reply, string $engine, string $model): void {

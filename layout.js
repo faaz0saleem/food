@@ -13,6 +13,20 @@ if ('serviceWorker' in navigator) {
     return `${API_BASE}${clean}`;
   }
 
+  // ── Auth gate — no one reaches the app without signing in with Google ───────
+  // Public pages (landing, sign-in, legal) stay open; everything else requires
+  // a session token stored at sign-in.
+  const PUBLIC_PAGES = ['', 'index', 'signin', 'signup', 'privacy', 'terms', 'faq', 'contact', 'about', '404', 'verify-email', 'reset-password'];
+  (function authGate() {
+    const file = (location.pathname.split('/').pop() || '').replace(/\.html$/, '').toLowerCase();
+    if (PUBLIC_PAGES.includes(file)) return;
+    let token = null;
+    try { token = JSON.parse(localStorage.getItem('mm_auth_token') || 'null'); } catch (e) {}
+    if (!token) {
+      location.replace('/signin.html');
+    }
+  })();
+
   const NAV_LINKS = [
     { label: '💬 Chat', href: '/chat' },
     { label: '⚡ Codex', href: '/codex' },
