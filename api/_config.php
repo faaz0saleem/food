@@ -182,9 +182,86 @@ function mm_build_final_message(string $message, array $attachments): string {
     return $message . "\n\nStudent uploaded files/images for analysis:\n" . implode("\n\n", $parts);
 }
 
+// Which SQL dialect the active connection speaks: 'pgsql' (Supabase) or 'mysql'.
+function mm_db_driver(): string {
+    static $d = null;
+    if ($d === null) {
+        $d = 'mysql';
+        $sup = mm_env_value('SUPABASE_DB_HOST', '') !== '' || mm_env_value('SUPABASE_DB_URL', '') !== '' || strtolower(mm_env_value('DB_DRIVER', '')) === 'pgsql';
+        if ($sup) $d = 'pgsql';
+    }
+    return $d;
+}
+
+// Translate the MySQL SQL this codebase is written in into Postgres so the same
+// queries run unchanged on Supabase. (Upserts are hand-ported at their call
+// sites; everything else — timestamps, intervals, date functions — is here.)
+function mm_pg_translate(string $sql): string {
+    $sql = str_replace('`', '"', $sql);
+    $sql = preg_replace('/\bUTC_TIMESTAMP\s*\(\s*\)/i', 'NOW()', $sql);
+    $sql = preg_replace('/\bUTC_DATE\s*\(\s*\)/i', 'CURRENT_DATE', $sql);
+    // DATE_ADD(x, INTERVAL n UNIT) -> (x + (n) * INTERVAL '1 unit')  (n may be a :param)
+    $sql = preg_replace_callback('/\bDATE_ADD\s*\(\s*(.+?)\s*,\s*INTERVAL\s+(:?\w+)\s+(MINUTE|HOUR|DAY|MONTH|YEAR|SECOND)\s*\)/i',
+        fn ($m) => '(' . $m[1] . ' + (' . $m[2] . ') * INTERVAL \'1 ' . strtolower($m[3]) . '\')', $sql);
+    // standalone: INTERVAL 5 MINUTE -> INTERVAL '5 minutes'
+    $sql = preg_replace_callback('/\bINTERVAL\s+(\d+)\s+(MINUTE|HOUR|DAY|MONTH|YEAR|SECOND)\b/i',
+        fn ($m) => "INTERVAL '" . $m[1] . ' ' . strtolower($m[2]) . "s'", $sql);
+    $sql = preg_replace('/\bYEAR\s*\(([^()]+)\)/i', 'EXTRACT(YEAR FROM $1)', $sql);
+    $sql = preg_replace('/\bMONTH\s*\(([^()]+)\)/i', 'EXTRACT(MONTH FROM $1)', $sql);
+    $sql = preg_replace('/\bDATE\s*\(([^()]+)\)/i', 'CAST($1 AS DATE)', $sql);
+    return $sql;
+}
+
+// A PDO that auto-translates MySQL SQL to Postgres on the way through.
+// No return-type declarations (keeps it compatible across PHP 7.x–8.x); the
+// ReturnTypeWillChange attribute is just a comment on PHP < 8.0.
+class MMPgPDO extends PDO {
+    #[\ReturnTypeWillChange]
+    public function prepare($query, $options = []) { return parent::prepare(mm_pg_translate($query), $options); }
+    #[\ReturnTypeWillChange]
+    public function query($query, ...$args) { return parent::query(mm_pg_translate($query), ...$args); }
+    #[\ReturnTypeWillChange]
+    public function exec($statement) { return parent::exec(mm_pg_translate($statement)); }
+}
+
+// lastInsertId() needs the sequence name on Postgres.
+function mm_last_insert_id(PDO $db, string $pgSequence): int {
+    return (int) $db->lastInsertId(mm_db_driver() === 'pgsql' ? $pgSequence : null);
+}
+
 function mm_db(): ?PDO {
     static $pdo = false;
     if ($pdo !== false) {
+        return $pdo;
+    }
+
+    $opts = [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        PDO::ATTR_EMULATE_PREPARES => false,
+    ];
+
+    if (mm_db_driver() === 'pgsql') {
+        // Supabase Postgres — a single SUPABASE_DB_URL, or discrete fields.
+        $url = mm_env_value('SUPABASE_DB_URL', '');
+        if ($url !== '' && ($p = parse_url($url)) !== false) {
+            $host = $p['host'] ?? '';
+            $port = (string) ($p['port'] ?? '5432');
+            $name = ltrim((string) ($p['path'] ?? '/postgres'), '/') ?: 'postgres';
+            $user = urldecode((string) ($p['user'] ?? 'postgres'));
+            $pass = urldecode((string) ($p['pass'] ?? ''));
+        } else {
+            $host = mm_env_value('SUPABASE_DB_HOST', '');
+            $port = mm_env_value('SUPABASE_DB_PORT', '5432');
+            $name = mm_env_value('SUPABASE_DB_NAME', 'postgres');
+            $user = mm_env_value('SUPABASE_DB_USER', 'postgres');
+            $pass = mm_env_value('SUPABASE_DB_PASSWORD', mm_env_value('DB_PASSWORD', ''));
+        }
+        if ($host === '' || $user === '') { $pdo = null; return $pdo; }
+        try {
+            $dsn = sprintf('pgsql:host=%s;port=%s;dbname=%s;sslmode=require', $host, $port, $name);
+            $pdo = new MMPgPDO($dsn, $user, $pass, $opts);
+        } catch (Throwable $error) { $pdo = null; }
         return $pdo;
     }
 
@@ -201,11 +278,7 @@ function mm_db(): ?PDO {
 
     try {
         $dsn = sprintf('mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4', $host, $port, $name);
-        $pdo = new PDO($dsn, $user, $pass, [
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-            PDO::ATTR_EMULATE_PREPARES => false,
-        ]);
+        $pdo = new PDO($dsn, $user, $pass, $opts);
     } catch (Throwable $error) {
         $pdo = null;
     }
@@ -221,6 +294,13 @@ function mm_ensure_runtime_tables(): void {
 
     $db = mm_db();
     if ($db === null) {
+        return;
+    }
+
+    // On Supabase/Postgres the schema is created once via supabase/schema.sql;
+    // the MySQL DDL below only runs on MySQL.
+    if (mm_db_driver() === 'pgsql') {
+        $initialized = true;
         return;
     }
 
@@ -329,9 +409,13 @@ function mm_require_rate_limit(string $key, int $maxRequests, int $windowSeconds
     $row = $stmt->fetch();
 
     if ($row === false) {
-        $insert = $db->prepare('INSERT INTO api_rate_limits (limiter_key, window_start, request_count)
-                                VALUES (:limiter_key, UTC_TIMESTAMP(), 1)
-                                ON DUPLICATE KEY UPDATE window_start = VALUES(window_start), request_count = 1');
+        $insert = $db->prepare(mm_db_driver() === 'pgsql'
+            ? 'INSERT INTO api_rate_limits (limiter_key, window_start, request_count)
+               VALUES (:limiter_key, NOW(), 1)
+               ON CONFLICT (limiter_key) DO UPDATE SET window_start = EXCLUDED.window_start, request_count = 1'
+            : 'INSERT INTO api_rate_limits (limiter_key, window_start, request_count)
+               VALUES (:limiter_key, UTC_TIMESTAMP(), 1)
+               ON DUPLICATE KEY UPDATE window_start = VALUES(window_start), request_count = 1');
         $insert->execute([':limiter_key' => $limiterKey]);
         return;
     }
@@ -414,9 +498,13 @@ function mm_record_ai_usage(string $scopeKey, ?int $userId, int $cost = 1): void
 
     mm_ensure_runtime_tables();
     $scope = substr($scopeKey, 0, 190);
-    $stmt = $db->prepare('INSERT INTO ai_usage_daily (usage_date, scope_key, user_id, calls_used, updated_at)
-                          VALUES (UTC_DATE(), :scope_key, :user_id, :calls_used, UTC_TIMESTAMP())
-                          ON DUPLICATE KEY UPDATE calls_used = calls_used + VALUES(calls_used), user_id = VALUES(user_id), updated_at = UTC_TIMESTAMP()');
+    $stmt = $db->prepare(mm_db_driver() === 'pgsql'
+        ? 'INSERT INTO ai_usage_daily (usage_date, scope_key, user_id, calls_used, updated_at)
+           VALUES (CURRENT_DATE, :scope_key, :user_id, :calls_used, NOW())
+           ON CONFLICT (usage_date, scope_key) DO UPDATE SET calls_used = ai_usage_daily.calls_used + EXCLUDED.calls_used, user_id = EXCLUDED.user_id, updated_at = NOW()'
+        : 'INSERT INTO ai_usage_daily (usage_date, scope_key, user_id, calls_used, updated_at)
+           VALUES (UTC_DATE(), :scope_key, :user_id, :calls_used, UTC_TIMESTAMP())
+           ON DUPLICATE KEY UPDATE calls_used = calls_used + VALUES(calls_used), user_id = VALUES(user_id), updated_at = UTC_TIMESTAMP()');
     $stmt->bindValue(':scope_key', $scope, PDO::PARAM_STR);
     if ($userId === null) {
         $stmt->bindValue(':user_id', null, PDO::PARAM_NULL);
@@ -531,22 +619,30 @@ function mm_track_visit(string $visitorId): void {
 
     $vid = substr($id, 0, 120);
     $ip = mm_client_ip();
-    $withCountry = 'INSERT INTO visitor_sessions (visitor_id, first_seen, last_seen, ip_address, country)
+    $pg = mm_db_driver() === 'pgsql';
+    $withCountry = $pg
+        ? 'INSERT INTO visitor_sessions (visitor_id, first_seen, last_seen, ip_address, country)
+            VALUES (:visitor_id, NOW(), NOW(), :ip_address, :country)
+            ON CONFLICT (visitor_id) DO UPDATE SET last_seen = NOW(), ip_address = EXCLUDED.ip_address, country = COALESCE(NULLIF(EXCLUDED.country, \'\'), visitor_sessions.country)'
+        : 'INSERT INTO visitor_sessions (visitor_id, first_seen, last_seen, ip_address, country)
             VALUES (:visitor_id, UTC_TIMESTAMP(), UTC_TIMESTAMP(), :ip_address, :country)
             ON DUPLICATE KEY UPDATE last_seen = UTC_TIMESTAMP(), ip_address = VALUES(ip_address), country = COALESCE(NULLIF(VALUES(country), \'\'), country)';
-    $plain = 'INSERT INTO visitor_sessions (visitor_id, first_seen, last_seen, ip_address)
+    $plain = $pg
+        ? 'INSERT INTO visitor_sessions (visitor_id, first_seen, last_seen, ip_address)
+            VALUES (:visitor_id, NOW(), NOW(), :ip_address)
+            ON CONFLICT (visitor_id) DO UPDATE SET last_seen = NOW(), ip_address = EXCLUDED.ip_address'
+        : 'INSERT INTO visitor_sessions (visitor_id, first_seen, last_seen, ip_address)
             VALUES (:visitor_id, UTC_TIMESTAMP(), UTC_TIMESTAMP(), :ip_address)
             ON DUPLICATE KEY UPDATE last_seen = UTC_TIMESTAMP(), ip_address = VALUES(ip_address)';
     try {
         $db->prepare($withCountry)->execute([':visitor_id' => $vid, ':ip_address' => $ip, ':country' => $country]);
     } catch (Throwable $e) {
-        // Self-heal: add the column once, then retry; fall back to plain insert.
-        try {
-            $db->exec('ALTER TABLE visitor_sessions ADD COLUMN country VARCHAR(2) NULL');
-            $db->prepare($withCountry)->execute([':visitor_id' => $vid, ':ip_address' => $ip, ':country' => $country]);
-        } catch (Throwable $e2) {
-            try { $db->prepare($plain)->execute([':visitor_id' => $vid, ':ip_address' => $ip]); } catch (Throwable $e3) {}
+        // MySQL self-heal: add the missing column once, then retry / fall back.
+        if (!$pg) {
+            try { $db->exec('ALTER TABLE visitor_sessions ADD COLUMN country VARCHAR(2) NULL'); } catch (Throwable $e2) {}
         }
+        try { $db->prepare($withCountry)->execute([':visitor_id' => $vid, ':ip_address' => $ip, ':country' => $country]); }
+        catch (Throwable $e3) { try { $db->prepare($plain)->execute([':visitor_id' => $vid, ':ip_address' => $ip]); } catch (Throwable $e4) {} }
     }
 }
 
@@ -614,7 +710,7 @@ function mm_create_user(string $name, string $email, string $password, string $l
         ':plan_status' => 'inactive',
     ]);
 
-    $user = mm_find_user_by_id((int) $db->lastInsertId());
+    $user = mm_find_user_by_id(mm_last_insert_id($db, 'users_id_seq'));
     if ($user === null) {
         throw new RuntimeException('User was created but could not be reloaded.');
     }

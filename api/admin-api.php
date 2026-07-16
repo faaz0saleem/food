@@ -15,13 +15,16 @@ $action = strtolower(trim((string) ($_GET['action'] ?? ($body['action'] ?? 'over
 function admin_ensure(?PDO $db): void {
     if ($db === null) return;
     try {
-        $db->exec('CREATE TABLE IF NOT EXISTS admins (
-            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-            username VARCHAR(64) NOT NULL UNIQUE,
-            password_hash VARCHAR(255) NOT NULL,
-            created_at DATETIME NOT NULL,
-            PRIMARY KEY (id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4');
+        // On Postgres the admins table comes from supabase/schema.sql.
+        if (mm_db_driver() !== 'pgsql') {
+            $db->exec('CREATE TABLE IF NOT EXISTS admins (
+                id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                username VARCHAR(64) NOT NULL UNIQUE,
+                password_hash VARCHAR(255) NOT NULL,
+                created_at DATETIME NOT NULL,
+                PRIMARY KEY (id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4');
+        }
         $count = (int) $db->query('SELECT COUNT(*) FROM admins')->fetchColumn();
         if ($count === 0) {
             $seedPass = mm_env_value('ADMIN_SEED_PASSWORD', 'Faaz12345');

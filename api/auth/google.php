@@ -83,7 +83,7 @@ try {
             ':lv' => 'Newbie',
             ':ps' => 'inactive',
         ]);
-        $userId = (int) $db->lastInsertId();
+        $userId = mm_last_insert_id($db, 'users_id_seq');
         $isNew = true;
     } else {
         $userId = (int) $user['id'];
