@@ -442,5 +442,22 @@
       }
     })();
   </script>
+
+  <!-- Sticky mobile CTA — the next step is always one thumb away -->
+  <div class="lp-sticky-cta" id="stickyCta" aria-hidden="true">
+    <span class="lp-sticky-txt"><span class="hg-live-dot"></span> Free during launch</span>
+    <a href="/signin.html" class="lp-btn-hero lp-sticky-btn">Start free →</a>
+  </div>
+  <script>
+    (function () {
+      const bar = document.getElementById('stickyCta');
+      if (!bar) return;
+      let shown = false;
+      window.addEventListener('scroll', () => {
+        const should = window.scrollY > 560;
+        if (should !== shown) { shown = should; bar.classList.toggle('show', should); bar.setAttribute('aria-hidden', String(!should)); }
+      }, { passive: true });
+    })();
+  </script>
 </body>
 </html>

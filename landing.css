@@ -1266,3 +1266,16 @@ body[data-lp] main h1 {
   .lp-lead, .lp-hero-ctas, .lp-hero-micro, .lp-console-wrap { opacity: 1; }
   .lp-marquee-track { animation: none; }
 }
+
+/* ── Sticky mobile CTA ───────────────────────────────────────────────────── */
+.lp-sticky-cta {
+  position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 90;
+  display: none; align-items: center; justify-content: space-between; gap: 12px;
+  background: rgba(13, 20, 40, 0.92); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--border-glow); border-radius: 16px; padding: 10px 12px 10px 16px;
+  box-shadow: var(--shadow); transform: translateY(120%); transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.lp-sticky-cta.show { transform: translateY(0); }
+.lp-sticky-txt { font-size: 0.8rem; color: var(--ink-soft); display: inline-flex; align-items: center; gap: 7px; }
+.lp-sticky-btn { font-size: 0.88rem; padding: 11px 20px; }
+@media (max-width: 760px) { .lp-sticky-cta { display: flex; } }

@@ -59,6 +59,19 @@
         <span class="xp-label" id="xpLabel">0 / 10 msgs</span>
       </div>
     </div>
+    <div class="goal-ring" title="Daily goal">
+      <svg viewBox="0 0 84 84" width="84" height="84" aria-hidden="true">
+        <circle cx="42" cy="42" r="36" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="7"/>
+        <circle id="goalArc" cx="42" cy="42" r="36" fill="none" stroke="url(#goalGrad)" stroke-width="7"
+                stroke-linecap="round" stroke-dasharray="226.2" stroke-dashoffset="226.2"
+                transform="rotate(-90 42 42)"/>
+        <defs><linearGradient id="goalGrad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#C8FF4D"/><stop offset="100%" stop-color="#4DF0FF"/>
+        </linearGradient></defs>
+      </svg>
+      <div class="goal-ring-txt"><b id="goalCount">0/5</b><span>today</span></div>
+      <div class="goal-ring-label" id="goalLabel">Daily goal</div>
+    </div>
     <div class="level-badge">
       <span class="level-icon" id="levelIcon">🌱</span>
       <div class="level-name" id="levelBadge">Beginner</div>
@@ -207,6 +220,7 @@
 <footer class="site-footer"></footer>
 <script src="/api-config.js?v=20260713"></script>
 <script src="/script.js?v=20260713"></script>
+<script src="/celebrate.js?v=20260717"></script>
 <script src="/layout.js?v=20260713" defer></script>
 <script>
 // ---- helpers ----
@@ -267,6 +281,27 @@ animateStatsWhenReady(10);
 
 el('totalXP').textContent = totalXP;
 el('todayDelta').textContent = `today: ${todayCount}`;
+
+// Daily goal ring — 5 questions/day. Goal-gradient: the closer you are, the
+// harder it pulls you to finish. Confetti once per day when crushed.
+(function () {
+  const GOAL = 5;
+  const C = 226.2; // ring circumference
+  const pct = Math.min(1, todayCount / GOAL);
+  const arc = el('goalArc');
+  if (arc) setTimeout(() => { arc.style.strokeDashoffset = (C * (1 - pct)).toFixed(1); }, 150);
+  el('goalCount').textContent = `${Math.min(todayCount, GOAL)}/${GOAL}`;
+  if (pct >= 1) {
+    el('goalLabel').textContent = 'Goal crushed 🎉';
+    const today = new Date().toDateString();
+    if (get('mm_goal_confetti') !== today && window.Celebrate) {
+      set('mm_goal_confetti', today);
+      window.Celebrate.confetti(90);
+    }
+  } else if (todayCount > 0) {
+    el('goalLabel').textContent = `${GOAL - todayCount} more to go`;
+  }
+})();
 el('xpMessage').textContent = `${xpBreakdown.messageXP} XP`;
 el('xpSubjects').textContent = `${xpBreakdown.subjectXP} XP`;
 el('xpQuizParticipation').textContent = `${xpBreakdown.quizParticipationXP} XP`;
