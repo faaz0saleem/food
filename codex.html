@@ -62,6 +62,10 @@
   .cx-bubble .cx-body code { font-family: var(--font-mono); font-size: 0.82em; }
   .cx-bubble h4 { margin: 2px 0 6px; font-size: 0.82rem; color: var(--lime); font-family: var(--font-display); }
   .cx-log { font-family: var(--font-mono); font-size: 0.76rem; color: var(--ink-soft); padding: 2px 0; }
+  .cx-pipe { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 2px; padding: 6px 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border-soft); }
+  .cx-pipe-step { display: inline-flex; align-items: center; gap: 5px; font-size: 0.72rem; color: var(--ink); background: var(--surface-2); border: 1px solid var(--border-soft); border-radius: 999px; padding: 4px 10px; }
+  .cx-pipe-ico { font-size: 0.85rem; }
+  .cx-pipe-arr { color: var(--lime); font-size: 0.72rem; margin: 0 1px; }
   .cx-agents { display: flex; flex-direction: column; gap: 4px; margin: 8px 0 2px; }
   .cx-agent { font-size: 0.76rem; color: var(--ink-soft); padding: 5px 0; border-top: 1px solid var(--border-soft); }
   .cx-agent:first-child { border-top: none; }
@@ -149,14 +153,14 @@
 <main class="cxw solo" id="cxApp" style="display:none;">
   <section class="cxw-chat">
     <div class="cxw-head">
-      <span class="eyebrow">Codex · 4-AI Dev Team</span>
-      <h1>Chat. Build. <span class="hg-gradient-text">Watch it come alive.</span></h1>
-      <p>Describe an app — code appears here, a live preview on the right.</p>
+      <span class="eyebrow">Codex · AI Orchestrator</span>
+      <h1>Describe it. <span class="hg-gradient-text">The orchestra builds it.</span></h1>
+      <p>One conductor coordinates four AI engines — plans, builds, reviews, tests — then ships a live app on the right.</p>
       <div class="cxw-team">
-        <span class="cxw-role">🛠 Lead Engineer</span>
+        <span class="cxw-role">🧭 Orchestrator</span>
+        <span class="cxw-role">🛠 Engineer</span>
         <span class="cxw-role">🔍 Reviewer</span>
-        <span class="cxw-role">🧪 QA Tester</span>
-        <span class="cxw-role">🎓 Teacher</span>
+        <span class="cxw-role">🧪 Tester</span>
       </div>
     </div>
 
@@ -412,8 +416,8 @@ function addUserMsg(text) {
 }
 function addThinking(runMode) {
   const steps = runMode === 'fix'
-    ? ['Reading your repo…', 'Gemini is hunting bugs…', 'ChatGPT is repairing the backend…', 'Claude is fixing the UI…', 'Groq is explaining…', 'Committing…']
-    : ['Planning the project…', 'Claude is designing the frontend…', 'ChatGPT is building the backend…', 'Gemini is writing tests…', 'Groq is preparing your lesson…', 'Creating the repo & committing…'];
+    ? ['🧭 Orchestrator reading your repo…', '🧭 Planning the fix…', '🛠 Engineer repairing the code…', '🔍 Reviewer checking changes…', '🧪 Tester verifying…', '🚀 Committing…']
+    : ['🧭 Orchestrator planning the build…', '🛠 Engineer writing the app…', '🔍 Reviewer checking the plan…', '🧪 Tester writing test cases…', '🎓 Teacher preparing your lesson…', '🚀 Creating the repo & shipping…'];
   const row = document.createElement('div'); row.className = 'cx-msg codex';
   row.innerHTML = '<div class="cx-ava">⚡</div><div class="cx-bubble"><div class="cx-log" id="cxNarrLine"><span class="spinner"></span>' + steps[0] + '</div></div>';
   thread.appendChild(row); scrollThread();
@@ -429,9 +433,23 @@ function agentLine(s) {
   else if (s.reply) detail = '<div class="cx-agent-reply">' + md(s.reply) + '</div>';
   return '<div class="cx-agent"><b>' + esc(s.role) + '</b>' + engine + detail + '</div>';
 }
+function orchestratorPipeline(data) {
+  const files = (data.committed || data.files ? (data.committed || Object.keys(data.files || {})) : []).length;
+  const steps = [
+    ['🧭', 'Planned'],
+    ['🛠', 'Built ' + files + ' file' + (files === 1 ? '' : 's')],
+    ['🔍', 'Reviewed'],
+    ['🧪', 'Tested'],
+    ['🚀', data.built ? 'Shipped' : 'Ran'],
+  ];
+  return '<div class="cx-pipe">' + steps.map((s, i) =>
+    '<span class="cx-pipe-step"><span class="cx-pipe-ico">' + s[0] + '</span>' + esc(s[1]) + '</span>' +
+    (i < steps.length - 1 ? '<span class="cx-pipe-arr">→</span>' : '')).join('') + '</div>';
+}
 function addCodexMsg(data, fresh) {
   const row = document.createElement('div'); row.className = 'cx-msg codex';
   let inner = '<div class="cx-ava">⚡</div><div class="cx-bubble">';
+  if (data.sections || data.built || (data.files && Object.keys(data.files).length)) inner += orchestratorPipeline(data);
   if ((data.log || []).length) inner += '<div>' + data.log.map((l) => '<div class="cx-log">' + esc(l) + '</div>').join('') + '</div>';
   if ((data.sections || []).length) inner += '<div class="cx-agents">' + data.sections.map(agentLine).join('') + '</div>';
   if (data.teacher) inner += '<h4>How it works</h4><div class="cx-body">' + md(data.teacher) + '</div>';
