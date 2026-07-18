@@ -398,7 +398,10 @@ $builderPrompt = "You are the ENGINEER on an AI dev orchestra, shipping a real p
 $assignments = [
     'storyteller' => $builderPrompt, // Claude — the ONLY file author
     'explorer' => "You are the CODE REVIEWER on an AI dev orchestra. $ctx" . ($planText !== '' ? "\n\nThe planner's plan:\n" . substr($planText, 0, 1500) : '') . "\n\nDo NOT output any files or code blocks. In 2-3 short bullets, review the plan/approach and name the single most likely bug to watch for.",
-    'reasoner' => "You are the QA TESTER on an AI dev orchestra. $ctx\n\nDo NOT output any files or code blocks. List 3 concrete test cases as 'do X → expect Y' that prove the app works, then one line for a $userLevel on what this project teaches.",
+    'reasoner' => "You are the QA TESTER and CODING TEACHER on an AI dev orchestra. $ctx\n\nDo NOT output any files or full code blocks. Two parts:\n"
+        . "1) List 3 concrete test cases as 'do X → expect Y' that prove the app works.\n"
+        . "2) Then a line containing exactly ===LESSON=== followed by a VERY SHORT lesson (max 6 short lines, plain words for a $userLevel): "
+        . "what each part of this exact app's code does (HTML structure / styling / the logic), the 1-2 key concepts used, and the first step to rebuild it yourself.",
 ];
 $roleNames = [
     'solver' => '🧭 Planner',
@@ -430,10 +433,19 @@ if ($planText !== '') {
 $teacherReply = '';
 foreach (['storyteller', 'explorer', 'reasoner'] as $key) {
     if (!isset($results[$key])) continue;
+    $reply = (string) ($results[$key]['reply'] ?? '');
+    if ($key === 'reasoner' && strpos($reply, '===LESSON===') !== false) {
+        // Split Groq's answer: test cases stay in the Tester section, the short
+        // "how to code this yourself" lesson becomes the teacher block.
+        [$tests, $lesson] = array_map('trim', explode('===LESSON===', $reply, 2));
+        $reply = $tests;
+        $teacherReply = $lesson;
+    } elseif ($key === 'reasoner') {
+        $teacherReply = '';
+    }
     $sections[] = $key === 'storyteller'
         ? ['role' => $roleNames[$key], 'engine' => mm_engine_display_name($results[$key]), 'files' => array_keys($allFiles)]
-        : ['role' => $roleNames[$key], 'engine' => mm_engine_display_name($results[$key]), 'reply' => (string) ($results[$key]['reply'] ?? '')];
-    if ($key === 'reasoner') { $teacherReply = (string) ($results[$key]['reply'] ?? ''); }
+        : ['role' => $roleNames[$key], 'engine' => mm_engine_display_name($results[$key]), 'reply' => $reply];
 }
 
 // ── Commit every file to the repo ─────────────────────────────────────────────
@@ -489,6 +501,6 @@ mm_json_response(200, [
     'failed' => $failed,
     'files' => $filesOut,
     'log' => $log,
-    'teacher' => '', // tester/teacher content lives in its pipeline section now
+    'teacher' => $teacherReply, // the short "how to code this yourself" lesson
     'sections' => $sections,
 ]);

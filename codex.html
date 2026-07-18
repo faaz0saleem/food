@@ -488,7 +488,7 @@ function addCodexMsg(data, fresh) {
   if (data.sections || data.built || (data.files && Object.keys(data.files).length)) inner += orchestratorPipeline(data);
   if ((data.log || []).length) inner += '<div>' + data.log.map((l) => '<div class="cx-log">' + esc(l) + '</div>').join('') + '</div>';
   if ((data.sections || []).length) inner += '<div class="cx-agents">' + data.sections.map(agentLine).join('') + '</div>';
-  if (data.teacher) inner += '<h4>How it works</h4><div class="cx-body">' + md(data.teacher) + '</div>';
+  if (data.teacher) inner += '<h4>🎓 Quick lesson — how this is coded</h4><div class="cx-body">' + md(data.teacher) + '</div>';
   if (data.files && Object.keys(data.files).length) inner += '<div class="cx-body" style="margin-top:8px;color:var(--cyan)">→ It\'s running on the right. Ask for any change below.</div>';
   inner += '</div>';
   row.innerHTML = inner;
