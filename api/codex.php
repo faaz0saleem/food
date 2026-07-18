@@ -357,8 +357,9 @@ $fileFormat = "\n\nOUTPUT FORMAT — this is critical. Emit ONLY files, no prose
     . "For every file write a line EXACTLY like:\n===FILE: relative/path.ext===\nimmediately followed by a fenced code block "
     . "containing the FULL contents of that file. Repeat for each file. Do not write anything between or after the blocks.";
 
-// One LEAD ENGINEER authors the whole project so files never reference each
-// other's missing pieces. The other three review, test and teach — no files.
+// The Orchestra: 🧭 Gemini plans → 🛠 Claude builds from the plan (sole file
+// author, so nothing references missing pieces) → 🔍 ChatGPT reviews →
+// 🧪 Groq tests → 🚀 Codex ships.
 $isWeb = (bool) preg_match('/html|css|js|javascript|react|vue|svelte|frontend|web/i', $language);
 
 $repoNote = $repoContext !== ''
@@ -380,20 +381,30 @@ $rulesCode = "\n\nHARD RULES — a broken build is a failure:\n"
 $buildVerb = $mode === 'fix'
     ? "FIX and IMPROVE the project as asked, re-outputting every changed file IN FULL"
     : "BUILD the complete project from scratch";
-$builderPrompt = "You are the LEAD ENGINEER shipping a real project. $ctx\n\nTask: $buildVerb."
+
+// ── STAGE 1 · 🧭 PLAN (Gemini) — a real plan the builder must follow ─────────
+$planPrompt = "You are the PLANNER on an AI dev orchestra. $ctx\n\n"
+    . "Write a tight build plan for this task (max 12 lines): the app's core features (bulleted), "
+    . "the exact file(s) to create, the data model/state, and the trickiest part with how to handle it. "
+    . "No code — just the plan.";
+$planResult = mm_call_engine('solver', 'Programming', $userLevel, $planPrompt, [], [], 600, 0.4);
+$planText = ($planResult['ok'] ?? false) ? trim((string) $planResult['reply']) : '';
+$planNote = $planText !== '' ? "\n\nFOLLOW THIS BUILD PLAN from the team's planner:\n" . substr($planText, 0, 2200) : '';
+
+// ── STAGE 2 · 🛠 BUILD (Claude) + 🔍 REVIEW (ChatGPT) + 🧪 TEST (Groq) ───────
+$builderPrompt = "You are the ENGINEER on an AI dev orchestra, shipping a real project. $ctx$planNote\n\nTask: $buildVerb."
     . ($isWeb ? $rulesWeb : $rulesCode) . $fileFormat;
 
 $assignments = [
-    'storyteller' => $builderPrompt, // the ONLY file author
-    'explorer' => "You are the CODE REVIEWER. $ctx\n\nDo NOT output any files or code blocks. In 2-3 short bullets, review the approach and name the single most likely bug to watch for.",
-    'solver' => "You are the QA TESTER. $ctx\n\nDo NOT output any files or code blocks. List 3 concrete test cases as 'do X → expect Y' that prove the app works.",
-    'reasoner' => "You are the CODING TEACHER. $ctx\n\nDo NOT output files. In plain language for a $userLevel, explain in one short paragraph how this project works, then list 2 things to try next.",
+    'storyteller' => $builderPrompt, // Claude — the ONLY file author
+    'explorer' => "You are the CODE REVIEWER on an AI dev orchestra. $ctx" . ($planText !== '' ? "\n\nThe planner's plan:\n" . substr($planText, 0, 1500) : '') . "\n\nDo NOT output any files or code blocks. In 2-3 short bullets, review the plan/approach and name the single most likely bug to watch for.",
+    'reasoner' => "You are the QA TESTER on an AI dev orchestra. $ctx\n\nDo NOT output any files or code blocks. List 3 concrete test cases as 'do X → expect Y' that prove the app works, then one line for a $userLevel on what this project teaches.",
 ];
 $roleNames = [
-    'storyteller' => '🛠 Lead Engineer',
-    'explorer' => '🔍 Code Reviewer',
-    'solver' => '🧪 QA Tester',
-    'reasoner' => '🎓 Coding Teacher',
+    'solver' => '🧭 Planner',
+    'storyteller' => '🛠 Engineer',
+    'explorer' => '🔍 Reviewer',
+    'reasoner' => '🧪 Tester',
 ];
 
 $results = mm_call_engine_assignments($assignments, 'Programming', $userLevel, 3400, 0.3);
@@ -409,17 +420,20 @@ if (count($results) === 0 || !isset($results['storyteller'])) {
     exit;
 }
 
-// Files come ONLY from the lead engineer, then get repaired for coherence.
+// Files come ONLY from the engineer, then get repaired for coherence.
 $allFiles = cx_finalize_files(cx_parse_files((string) ($results['storyteller']['reply'] ?? '')), $isWeb);
 
 $sections = [];
+if ($planText !== '') {
+    $sections[] = ['role' => $roleNames['solver'], 'engine' => mm_engine_display_name($planResult), 'reply' => $planText];
+}
 $teacherReply = '';
-foreach (['storyteller', 'explorer', 'solver', 'reasoner'] as $key) {
+foreach (['storyteller', 'explorer', 'reasoner'] as $key) {
     if (!isset($results[$key])) continue;
-    if ($key === 'reasoner') { $teacherReply = (string) ($results[$key]['reply'] ?? ''); continue; }
     $sections[] = $key === 'storyteller'
         ? ['role' => $roleNames[$key], 'engine' => mm_engine_display_name($results[$key]), 'files' => array_keys($allFiles)]
         : ['role' => $roleNames[$key], 'engine' => mm_engine_display_name($results[$key]), 'reply' => (string) ($results[$key]['reply'] ?? '')];
+    if ($key === 'reasoner') { $teacherReply = (string) ($results[$key]['reply'] ?? ''); }
 }
 
 // ── Commit every file to the repo ─────────────────────────────────────────────
@@ -475,6 +489,6 @@ mm_json_response(200, [
     'failed' => $failed,
     'files' => $filesOut,
     'log' => $log,
-    'teacher' => $teacherReply,
+    'teacher' => '', // tester/teacher content lives in its pipeline section now
     'sections' => $sections,
 ]);

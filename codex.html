@@ -63,9 +63,22 @@
   .cx-bubble h4 { margin: 2px 0 6px; font-size: 0.82rem; color: var(--lime); font-family: var(--font-display); }
   .cx-log { font-family: var(--font-mono); font-size: 0.76rem; color: var(--ink-soft); padding: 2px 0; }
   .cx-pipe { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 2px; padding: 6px 0 10px; margin-bottom: 8px; border-bottom: 1px solid var(--border-soft); }
-  .cx-pipe-step { display: inline-flex; align-items: center; gap: 5px; font-size: 0.72rem; color: var(--ink); background: var(--surface-2); border: 1px solid var(--border-soft); border-radius: 999px; padding: 4px 10px; }
-  .cx-pipe-ico { font-size: 0.85rem; }
+  .cx-pipe-step { display: inline-flex; align-items: center; gap: 6px; font-size: 0.72rem; color: var(--ink-faint); background: var(--surface-2); border: 1px solid var(--border-soft); border-radius: 12px; padding: 5px 10px; transition: all 0.3s ease; }
+  .cx-pipe-lbl { display: flex; flex-direction: column; line-height: 1.25; }
+  .cx-pipe-lbl em { font-style: normal; font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.06em; color: var(--ink-faint); }
+  .cx-pipe-step.done { color: var(--ink); border-color: rgba(200,255,77,0.35); background: rgba(200,255,77,0.07); }
+  .cx-pipe-step.done .cx-pipe-lbl em { color: var(--lime); }
+  .cx-pipe-step.live { color: var(--ink); border-color: var(--cyan); background: rgba(77,240,255,0.08); box-shadow: var(--glow-cyan); animation: pipepulse 1.4s ease-in-out infinite; }
+  .cx-pipe-step.live .cx-pipe-lbl em { color: var(--cyan); }
+  @keyframes pipepulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.045); } }
+  .cx-pipe-ico { font-size: 0.9rem; }
   .cx-pipe-arr { color: var(--lime); font-size: 0.72rem; margin: 0 1px; }
+  /* Idle Orchestra card */
+  .cx-orchestra { background: var(--surface); border: 1px solid var(--border-glow); border-radius: var(--radius); padding: 22px 20px 12px; margin-bottom: 18px; box-shadow: var(--shadow-sm); }
+  .cx-orch-title { font-family: var(--font-display); font-size: 1.05rem; margin: 0 0 2px; color: var(--ink); }
+  .cx-orch-sub { color: var(--ink-soft); font-size: 0.8rem; margin: 0 0 10px; }
+  .cx-orch-live { display: inline-flex; align-items: center; gap: 7px; font-family: var(--font-mono); font-size: 0.64rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--lime); border: 1px solid rgba(200,255,77,0.35); background: rgba(200,255,77,0.07); border-radius: 999px; padding: 4px 11px; margin-bottom: 12px; }
+  .cx-orchestra .cx-pipe { border-bottom: none; justify-content: center; }
   .cx-agents { display: flex; flex-direction: column; gap: 4px; margin: 8px 0 2px; }
   .cx-agent { font-size: 0.76rem; color: var(--ink-soft); padding: 5px 0; border-top: 1px solid var(--border-soft); }
   .cx-agent:first-child { border-top: none; }
@@ -166,8 +179,12 @@
 
     <div class="cxw-thread" id="cxThread">
       <div class="cxw-empty" id="cxEmpty">
-        <div class="big">⚡</div>
-        <p>Tell the team what to build.</p>
+        <div class="cx-orchestra">
+          <h3 class="cx-orch-title">The Orchestra</h3>
+          <p class="cx-orch-sub">Idle — describe an app below and watch all five stages light up.</p>
+          <span class="cx-orch-live"><span class="hg-live-dot"></span> All 4 AI engines live</span>
+          <div id="cxIdlePipe"></div>
+        </div>
         <div class="cx-templates">
           <span class="cx-templates-label">Or start from a template</span>
           <div class="cx-template-row" id="cxTemplateRow"></div>
@@ -241,6 +258,8 @@ function md(t) {
 function openWorkspace() {
   document.getElementById('cxGate').style.display = 'none';
   appEl.style.display = 'grid';
+  const idle = document.getElementById('cxIdlePipe');
+  if (idle) idle.innerHTML = renderPipeline(-1);
   mountTemplates();
   mountHistory();
   restoreSession();
@@ -415,15 +434,23 @@ function addUserMsg(text) {
   thread.appendChild(row); scrollThread();
 }
 function addThinking(runMode) {
-  const steps = runMode === 'fix'
-    ? ['🧭 Orchestrator reading your repo…', '🧭 Planning the fix…', '🛠 Engineer repairing the code…', '🔍 Reviewer checking changes…', '🧪 Tester verifying…', '🚀 Committing…']
-    : ['🧭 Orchestrator planning the build…', '🛠 Engineer writing the app…', '🔍 Reviewer checking the plan…', '🧪 Tester writing test cases…', '🎓 Teacher preparing your lesson…', '🚀 Creating the repo & shipping…'];
+  const lines = runMode === 'fix'
+    ? ['🧭 Gemini is planning the fix…', '🛠 Claude is repairing the code…', '🔍 ChatGPT is reviewing changes…', '🧪 Groq is writing test cases…', '🚀 Codex is committing…']
+    : ['🧭 Gemini is planning the build…', '🛠 Claude is writing the app…', '🔍 ChatGPT is reviewing the plan…', '🧪 Groq is writing test cases…', '🚀 Codex is creating the repo & shipping…'];
   const row = document.createElement('div'); row.className = 'cx-msg codex';
-  row.innerHTML = '<div class="cx-ava">⚡</div><div class="cx-bubble"><div class="cx-log" id="cxNarrLine"><span class="spinner"></span>' + steps[0] + '</div></div>';
+  row.innerHTML = '<div class="cx-ava">⚡</div><div class="cx-bubble"><div id="cxLivePipe">' + renderPipeline(0) + '</div>' +
+    '<div class="cx-log" id="cxNarrLine"><span class="spinner"></span>' + lines[0] + '</div></div>';
   thread.appendChild(row); scrollThread();
   let i = 1;
+  const pipe = row.querySelector('#cxLivePipe');
   const line = row.querySelector('#cxNarrLine');
-  const timer = setInterval(() => { if (line && i < steps.length) { line.innerHTML = '<span class="spinner"></span>' + steps[i]; i++; } }, 3000);
+  const timer = setInterval(() => {
+    if (i < lines.length) {
+      if (pipe) pipe.innerHTML = renderPipeline(i);
+      if (line) line.innerHTML = '<span class="spinner"></span>' + lines[i];
+      i++;
+    }
+  }, 8000);
   return { row, stop: () => clearInterval(timer) };
 }
 function agentLine(s) {
@@ -433,18 +460,27 @@ function agentLine(s) {
   else if (s.reply) detail = '<div class="cx-agent-reply">' + md(s.reply) + '</div>';
   return '<div class="cx-agent"><b>' + esc(s.role) + '</b>' + engine + detail + '</div>';
 }
+// The Orchestra — five stages, each played by a named engine.
+const ORCH_STAGES = [
+  ['🧭', 'Planned', 'Gemini'],
+  ['🛠', 'Built', 'Claude'],
+  ['🔍', 'Reviewed', 'ChatGPT'],
+  ['🧪', 'Tested', 'Groq'],
+  ['🚀', 'Shipped', '⚡ Codex'],
+];
+// activeIdx: -1 idle (all dim) · 0..4 that stage is playing · 5 all done.
+function renderPipeline(activeIdx, filesCount) {
+  return '<div class="cx-pipe">' + ORCH_STAGES.map((s, i) => {
+    const state = activeIdx >= 5 || i < activeIdx ? ' done' : (i === activeIdx ? ' live' : '');
+    const label = (i === 1 && filesCount != null && activeIdx >= 5) ? 'Built ' + filesCount + ' file' + (filesCount === 1 ? '' : 's') : s[1];
+    return '<span class="cx-pipe-step' + state + '"><span class="cx-pipe-ico">' + s[0] + '</span>' +
+      '<span class="cx-pipe-lbl">' + esc(label) + '<em>' + esc(s[2]) + '</em></span></span>' +
+      (i < ORCH_STAGES.length - 1 ? '<span class="cx-pipe-arr">→</span>' : '');
+  }).join('') + '</div>';
+}
 function orchestratorPipeline(data) {
   const files = (data.committed || data.files ? (data.committed || Object.keys(data.files || {})) : []).length;
-  const steps = [
-    ['🧭', 'Planned'],
-    ['🛠', 'Built ' + files + ' file' + (files === 1 ? '' : 's')],
-    ['🔍', 'Reviewed'],
-    ['🧪', 'Tested'],
-    ['🚀', data.built ? 'Shipped' : 'Ran'],
-  ];
-  return '<div class="cx-pipe">' + steps.map((s, i) =>
-    '<span class="cx-pipe-step"><span class="cx-pipe-ico">' + s[0] + '</span>' + esc(s[1]) + '</span>' +
-    (i < steps.length - 1 ? '<span class="cx-pipe-arr">→</span>' : '')).join('') + '</div>';
+  return renderPipeline(5, files);
 }
 function addCodexMsg(data, fresh) {
   const row = document.createElement('div'); row.className = 'cx-msg codex';

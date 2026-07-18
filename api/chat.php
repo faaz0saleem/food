@@ -73,16 +73,34 @@ $modelUsed = mm_env_value('GROQ_MODEL', 'llama-3.3-70b-versatile');
 $usageCost = 1;
 
 if ($engineMode === 'all') {
-    // Every engine answers with its own persona — Hungter's signature mode.
+    // Orchestra mode: all four engines draft an answer, then a conductor pass
+    // merges them into ONE best answer (instead of dumping four replies).
     $results = mm_call_engines_all($subject, $userLevel, $userText, $history, $images);
     if (count($results) > 0) {
-        $sections = [];
+        $drafts = [];
         foreach ($results as $result) {
-            $sections[] = '**' . $result['icon'] . ' ' . $result['engine'] . '** · _' . $result['providerLabel'] . "_\n\n" . $result['reply'];
+            $drafts[] = '--- Draft from ' . $result['engine'] . " ---\n" . $result['reply'];
             $engineNames[] = mm_engine_display_name($result);
         }
-        $reply = implode("\n\n---\n\n", $sections);
-        $modelUsed = (string) ($results[0]['model'] ?? $modelUsed);
+        $conductorPrompt = "Four AI tutors each drafted an answer to the student's question below. "
+            . "Synthesize them into ONE single best answer: keep the clearest explanation, the best example, "
+            . "and anything one draft caught that others missed. Fix any disagreement by choosing what is correct. "
+            . "Do NOT mention the drafts, the tutors, or the merging — just answer the student directly, "
+            . "in the same concise tutoring style.\n\nStudent's question: " . $message . "\n\n" . implode("\n\n", $drafts);
+        $synth = mm_call_engine('reasoner', $subject, $userLevel, $conductorPrompt, [], [], 900, 0.4);
+        if ($synth['ok'] && trim((string) $synth['reply']) !== '') {
+            $reply = (string) $synth['reply'];
+            $modelUsed = (string) $synth['model'];
+            $engineNames = ['⚡ Orchestra · ' . implode(' + ', array_map(fn ($r) => $r['engine'], $results))];
+        } else {
+            // Conductor unavailable — fall back to the classic side-by-side view.
+            $sections = [];
+            foreach ($results as $result) {
+                $sections[] = '**' . $result['icon'] . ' ' . $result['engine'] . '** · _' . $result['providerLabel'] . "_\n\n" . $result['reply'];
+            }
+            $reply = implode("\n\n---\n\n", $sections);
+            $modelUsed = (string) ($results[0]['model'] ?? $modelUsed);
+        }
         $usageCost = count($results);
     }
 } else {
