@@ -154,4 +154,6 @@ mm_json_response(200, [
     'reply' => $reply,
     'engine' => implode(', ', $engineNames),
     'model' => $modelUsed,
+    'credits' => isset($budget['credits']) ? array_merge($budget['credits'], ['used' => ($budget['credits']['used'] ?? 0) + $usageCost, 'left' => max(0, ($budget['credits']['left'] ?? 0) - $usageCost)]) : null,
+    'payg' => (bool) ($budget['payg'] ?? false),
 ]);

@@ -200,14 +200,10 @@
       <textarea id="cxTask" rows="2" placeholder="e.g. A to-do app with dark neon theme, categories, and streaks"></textarea>
       <div class="cxw-opts">
         <input id="cxRepo" type="text" placeholder="repo (optional) — Codex names one" />
-        <select id="cxLang">
-          <option>JavaScript (HTML/CSS/JS)</option><option>Python</option><option>PHP + MySQL</option>
-          <option>Java</option><option>C++</option><option>React</option><option>Node.js</option>
-        </select>
       </div>
       <button id="cxSend" class="cxw-send" type="button">⚡ Build with all 4 engines</button>
       <p id="cxErr" class="cxw-err"></p>
-      <p class="cxw-hint">Real Claude &amp; GPT need their API keys — owner: <a href="/api/setup.php">add keys</a>. Otherwise engines fall back to what's available.</p>
+      <p class="cxw-hint"><span id="cxCredits">Stack auto-selected · a build uses 4 credits</span> · <a href="/checkout.html">plans</a></p>
     </div>
   </section>
 
@@ -298,8 +294,6 @@ function mountTemplates() {
     b.type = 'button'; b.className = 'cx-template'; b.textContent = label;
     b.addEventListener('click', () => {
       document.getElementById('cxTask').value = prompt;
-      const sel = document.getElementById('cxLang');
-      for (const o of sel.options) if (o.value === lang) sel.value = lang;
       document.getElementById('cxTask').focus();
     });
     row.appendChild(b);
@@ -547,7 +541,7 @@ async function send() {
   try {
     const data = await postCodex({
       task: text, mode: runMode,
-      language: document.getElementById('cxLang').value,
+      language: 'auto',
       repo: (sessionRepo || document.getElementById('cxRepo').value).trim(),
       userLevel: lsGet('mm_level', 'Newbie'),
     });
@@ -558,6 +552,12 @@ async function send() {
     if (data.error) { errEl.textContent = data.error; errEl.style.display = 'block'; return; }
 
     addCodexMsg(data, true);
+    const cr = document.getElementById('cxCredits');
+    if (cr && data.credits) {
+      cr.textContent = data.payg
+        ? 'Pay-as-you-go · $' + data.credits.paygPerCredit + '/credit'
+        : data.credits.left + ' credits left today · ' + data.credits.plan + ' plan · a build uses 4';
+    }
     if (data.repo) { sessionRepo = data.repo; document.getElementById('cxRepo').value = data.repo; }
     if (data.files && Object.keys(data.files).length) { artState.tab = 'preview'; showArtifact(data.files, data.repo, data.repoUrl); }
     // After the first build, the composer becomes an "ask for changes" box.
@@ -584,7 +584,7 @@ function saveSession(lastText, data) {
   Convo.save(CODEX_KEY, {
     id: currentCodexId,
     title: (prev && prev.title) || lastText.slice(0, 48),
-    repo: sessionRepo, lang: document.getElementById('cxLang').value,
+    repo: sessionRepo,
     turns: turns.slice(-40),
     files: data.files || (prev && prev.files) || null,
     repoUrl: data.repoUrl || (prev && prev.repoUrl) || '',
@@ -604,7 +604,6 @@ function openSession(id) {
   const t = Convo.get(CODEX_KEY, id);
   if (!t) return;
   currentCodexId = id; sessionRepo = t.repo || '';
-  if (t.lang) document.getElementById('cxLang').value = t.lang;
   if (t.repo) document.getElementById('cxRepo').value = t.repo;
   thread.querySelectorAll('.cx-msg, .celebrate-share').forEach((n) => n.remove());
   if (emptyEl) emptyEl.style.display = 'none';

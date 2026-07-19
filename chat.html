@@ -721,6 +721,8 @@
         reply: data.reply || "Sorry, I couldn't generate a response right now.",
         engine: data.engine || null,
         ownerHint: data.fallback ? String(data.ownerHint || '') : '',
+        credits: data.credits || null,
+        payg: !!data.payg,
       };
     } catch (error) {
       return {
@@ -774,7 +776,12 @@
     // Persona/study-mode directive is prepended to what the AI sees, but the
     // saved thread + on-screen bubble keep the student's clean text.
     const directive = STUDY_DIRECTIVES[studyMode] || '';
-    const { reply, engine, ownerHint } = await fetchAIResponse(directive + text, subject, { ...options, attachments, signal: controller.signal });
+    const { reply, engine, ownerHint, credits, payg } = await fetchAIResponse(directive + text, subject, { ...options, attachments, signal: controller.signal });
+    if (credits && modelBadge) {
+      modelBadge.textContent = payg
+        ? `Pay-as-you-go · $${credits.paygPerCredit}/credit (${credits.plan})`
+        : `${credits.left} credits left today · ${credits.plan} plan`;
+    }
     if (typingIndicator) {
       typingIndicator.remove();
       typingIndicator = null;

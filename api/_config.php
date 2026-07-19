@@ -575,10 +575,40 @@ function mm_ai_budget_decision(array $body = [], int $cost = 1): array {
             'message' => 'Free plan limit reached for today. Upgrade or come back tomorrow for more AI help.',
             'scopeKey' => $scopeKey,
             'user' => $user,
+            'credits' => mm_credits_meta($used, $freeLimit, 'Free'),
         ];
     }
 
-    return ['mode' => 'live', 'scopeKey' => $scopeKey, 'user' => $user];
+    // Paid plans get a generous daily credit allowance; past it they continue on
+    // pay-as-you-go, priced at 2x our underlying provider cost.
+    $paidLimit = max(1, (int) mm_env_value('PAID_DAILY_CREDITS_LIMIT', '300'));
+    if ($isPaid && (($used + $cost) > $paidLimit)) {
+        return [
+            'mode' => 'live', 'payg' => true,
+            'scopeKey' => $scopeKey, 'user' => $user,
+            'credits' => mm_credits_meta($used, $paidLimit, 'Paid · pay-as-you-go'),
+        ];
+    }
+
+    $limit = $user === null ? $anonLimit : ($isPaid ? $paidLimit : $freeLimit);
+    $plan = $user === null ? 'Preview' : ($isPaid ? 'Paid' : 'Free');
+    return ['mode' => 'live', 'scopeKey' => $scopeKey, 'user' => $user, 'credits' => mm_credits_meta($used, $limit, $plan)];
+}
+
+/**
+ * Credit + pricing metadata surfaced to the UI. Our underlying provider cost
+ * per credit comes from AI_COST_PER_CREDIT_USD (owner-set, default $0.002);
+ * users always pay exactly 2x that on pay-as-you-go.
+ */
+function mm_credits_meta(int $used, int $limit, string $plan): array {
+    $ownerCost = (float) mm_env_value('AI_COST_PER_CREDIT_USD', '0.002');
+    return [
+        'used' => $used,
+        'limit' => $limit,
+        'left' => max(0, $limit - $used),
+        'plan' => $plan,
+        'paygPerCredit' => round($ownerCost * 2, 4), // 2x our cost, in USD
+    ];
 }
 
 function mm_demo_chat_reply(string $subject, string $message): string {

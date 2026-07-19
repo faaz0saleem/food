@@ -18,7 +18,18 @@ $body = mm_read_json_body();
 mm_require_rate_limit(mm_rate_limit_key($body), 4, 60);
 
 $task = trim((string) ($body['task'] ?? ''));
-$language = trim((string) ($body['language'] ?? 'JavaScript'));
+$language = trim((string) ($body['language'] ?? ''));
+// Auto-select the stack from the task itself — students shouldn't have to know.
+if ($language === '' || strtolower($language) === 'auto') {
+    $t = strtolower($task);
+    if (preg_match('/\b(python|flask|django|pandas|numpy)\b/', $t)) $language = 'Python';
+    elseif (preg_match('/\b(node|express|npm)\b/', $t)) $language = 'Node.js';
+    elseif (preg_match('/\breact\b/', $t)) $language = 'React';
+    elseif (preg_match('/\b(php|mysql|laravel)\b/', $t)) $language = 'PHP + MySQL';
+    elseif (preg_match('/\bjava\b(?!script)/', $t)) $language = 'Java';
+    elseif (preg_match('/\b(c\+\+|cpp)\b/', $t)) $language = 'C++';
+    else $language = 'JavaScript (HTML/CSS/JS)'; // best default: instantly previewable
+}
 $existing = trim((string) ($body['code'] ?? ''));
 $userLevel = trim((string) ($body['userLevel'] ?? 'Newbie'));
 $mode = strtolower(trim((string) ($body['mode'] ?? 'build'))) === 'fix' ? 'fix' : 'build';
@@ -501,6 +512,8 @@ mm_json_response(200, [
     'failed' => $failed,
     'files' => $filesOut,
     'log' => $log,
+    'credits' => isset($budget['credits']) ? array_merge($budget['credits'], ['used' => ($budget['credits']['used'] ?? 0) + 4, 'left' => max(0, ($budget['credits']['left'] ?? 0) - 4)]) : null,
+    'payg' => (bool) ($budget['payg'] ?? false),
     'teacher' => $teacherReply, // the short "how to code this yourself" lesson
     'sections' => $sections,
 ]);

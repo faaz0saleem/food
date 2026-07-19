@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Complaints — Hungter</title>
+<meta name="description" content="Something wrong? Tell us — every complaint goes straight to the founder.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/brand.css?v=20260720">
+<link rel="stylesheet" href="/nav.css?v=20260713">
+<link rel="stylesheet" href="/styles.css?v=20260713">
+<style>
+  body { background: var(--bg-deep); background-image: var(--gradient-aurora); background-attachment: fixed; }
+  .cp-main { max-width: 640px; margin: 0 auto; padding: 40px 20px 80px; }
+  .cp-card { background: rgba(13,20,40,0.8); border: 1px solid var(--border-glow); border-radius: var(--radius); padding: 34px 28px; box-shadow: var(--shadow); }
+  .cp-card h1 { font-family: var(--font-display); font-size: 1.6rem; letter-spacing: -0.02em; margin: 0 0 6px; }
+  .cp-card > p { color: var(--ink-soft); line-height: 1.65; margin: 0 0 22px; font-size: 0.94rem; }
+  .cp-card label { display: block; font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-faint); margin: 16px 0 6px; }
+  .cp-card input, .cp-card select, .cp-card textarea { width: 100%; box-sizing: border-box; border: 1px solid var(--border); background: var(--surface-2); color: var(--ink); border-radius: 10px; padding: 12px; font-family: var(--font-body); font-size: 0.92rem; }
+  .cp-card input:focus, .cp-card select:focus, .cp-card textarea:focus { outline: none; border-color: var(--cyan); box-shadow: var(--glow-cyan); }
+  .cp-send { margin-top: 20px; width: 100%; border: none; border-radius: 12px; padding: 13px; font-family: var(--font-display); font-weight: 700; font-size: 0.96rem; background: var(--gradient-brand); color: var(--bg-deep); cursor: pointer; box-shadow: var(--glow-lime); }
+  .cp-direct { margin-top: 18px; text-align: center; color: var(--ink-faint); font-size: 0.82rem; }
+  .cp-direct a { color: var(--cyan); font-weight: 600; }
+</style>
+</head>
+<body data-page="complaints">
+<div class="top-bar"><div class="top-bar-fill" id="topBar" style="width:0%"></div></div>
+<header class="site-nav"></header>
+
+<main class="cp-main">
+  <div class="cp-card">
+    <h1>📣 Complaints</h1>
+    <p>Something broken, unfair, or just annoying? Tell us about <strong>anything</strong> — the site, Codex, billing, an AI answer, your account. Every complaint goes straight to the founder's inbox and gets read.</p>
+
+    <label for="cpTopic">What is it about?</label>
+    <select id="cpTopic">
+      <option>The website / a bug</option>
+      <option>Codex</option>
+      <option>Chat / an AI answer</option>
+      <option>Billing / credits</option>
+      <option>My account</option>
+      <option>Something else</option>
+    </select>
+
+    <label for="cpMsg">Your complaint</label>
+    <textarea id="cpMsg" rows="6" placeholder="Tell us what happened — the more detail, the faster we can fix it."></textarea>
+
+    <label for="cpFrom">Your email (so we can reply)</label>
+    <input id="cpFrom" type="email" placeholder="you@email.com">
+
+    <button class="cp-send" id="cpSend" type="button">Send complaint →</button>
+    <p class="cp-direct">Or email directly: <a href="mailto:faaz.saleem@hungter.com">faaz.saleem@hungter.com</a></p>
+  </div>
+</main>
+
+<footer class="site-footer"></footer>
+<script src="/api-config.js?v=20260713"></script>
+<script src="/script.js?v=20260713"></script>
+<script src="/layout.js?v=20260713" defer></script>
+<script>
+  // No backend needed: the button composes a pre-filled email to the founder.
+  document.getElementById('cpSend').addEventListener('click', () => {
+    const topic = document.getElementById('cpTopic').value;
+    const msg = document.getElementById('cpMsg').value.trim();
+    const from = document.getElementById('cpFrom').value.trim();
+    if (!msg) { document.getElementById('cpMsg').focus(); return; }
+    const subject = encodeURIComponent('[Hungter complaint] ' + topic);
+    const body = encodeURIComponent(msg + (from ? '\n\nReply to: ' + from : '') + '\n\nPage: complaints.html');
+    window.location.href = 'mailto:faaz.saleem@hungter.com?subject=' + subject + '&body=' + body;
+  });
+</script>
+</body>
+</html>
