@@ -87,7 +87,7 @@ if ($engineMode === 'all') {
             . "and anything one draft caught that others missed. Fix any disagreement by choosing what is correct. "
             . "Do NOT mention the drafts, the tutors, or the merging — just answer the student directly, "
             . "in the same concise tutoring style.\n\nStudent's question: " . $message . "\n\n" . implode("\n\n", $drafts);
-        $synth = mm_call_engine(mm_best_ready_engine(), $subject, $userLevel, $conductorPrompt, [], [], 900, 0.4);
+        $synth = mm_call_engine(mm_best_ready_engine(), $subject, $userLevel, $conductorPrompt, [], [], 1500, 0.4);
         if ($synth['ok'] && trim((string) $synth['reply']) !== '') {
             $reply = (string) $synth['reply'];
             $modelUsed = (string) $synth['model'];
@@ -114,9 +114,9 @@ if ($engineMode === 'all') {
             }
         }
     }
-    $result = mm_call_engine($engineKey, $subject, $userLevel, $userText, $history, $images);
+    $result = mm_call_engine($engineKey, $subject, $userLevel, $userText, $history, $images, 1600, 0.7);
     if (!$result['ok'] && $engineKey !== 'reasoner') {
-        $result = mm_call_engine('reasoner', $subject, $userLevel, $userText, $history, $images);
+        $result = mm_call_engine('reasoner', $subject, $userLevel, $userText, $history, $images, 1600, 0.7);
     }
     if ($result['ok']) {
         $reply = (string) $result['reply'];

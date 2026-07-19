@@ -1,504 +1,416 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-FHMTQDLHV2"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag("js", new Date());
-
-  gtag("config", "G-FHMTQDLHV2");
-</script>
-
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag("js",new Date());gtag("config","G-FHMTQDLHV2");</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz Arena — Test What You Know, Earn XP | Hungter</title>
+<meta name="description" content="AI-generated quizzes on any subject. Pick a topic and length, get a hint when stuck, and review every answer at the end.">
+<link rel="canonical" href="https://hungter.com/quiz.html">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Fredoka:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap">
-  <title>AI Quiz Generator — Practice Questions for Any Subject | Hungter</title>
-  <meta name="description" content="Unlimited AI-generated multiple-choice questions that never repeat. Test yourself on Math, Physics, Chemistry, Biology, English, History and more.">
-  <link rel="canonical" href="https://hungter.com/quiz.html">
-  <meta property="og:type" content="website">
-  <meta property="og:title" content="Hungter — Quiz">
-  <meta property="og:description" content="Practice with adaptive quizzes and improve your subject mastery in Hungter.">
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/brand.css?v=20260713">
-  <link rel="stylesheet" href="/nav.css?v=20260713">
-  <link rel="stylesheet" href="/styles.css?v=20260713">
-  <link rel="stylesheet" href="/quiz.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/brand.css?v=20260727">
+<link rel="stylesheet" href="/nav.css?v=20260713">
+<style>
+  body { background: var(--bg-deep); background-image: var(--gradient-aurora); background-attachment: fixed; }
+  .top-bar { height: 4px; background: var(--surface-2); }
+  .top-bar-fill { height: 100%; background: var(--gradient-brand); width: 0%; box-shadow: var(--glow-lime); }
+  .qz-main { max-width: 900px; margin: 0 auto; padding: 30px 20px 80px; }
+  .hg-gradient-text { background: var(--gradient-brand); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .qz-eyebrow { display: flex; align-items: center; justify-content: center; gap: 9px; font-family: var(--font-mono); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--cyan); }
+  .qz-hero { text-align: center; margin-bottom: 30px; }
+  .qz-hero h1 { font-family: var(--font-display); font-size: clamp(2rem, 4.6vw, 3rem); letter-spacing: -0.02em; margin: 10px 0 10px; }
+  .qz-hero p { color: var(--ink-soft); max-width: 34em; margin: 0 auto; line-height: 1.65; }
+
+  .qz-card { background: rgba(13,20,40,0.72); border: 1px solid var(--border); border-radius: var(--radius); padding: 26px; box-shadow: var(--shadow-sm); }
+  .qz-step { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-faint); margin: 4px 0 12px; }
+  .qz-subjects { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+  .qz-subject { display: flex; align-items: center; gap: 12px; text-align: left; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 15px 16px; cursor: pointer; transition: all 0.16s ease; color: var(--ink); position: relative; }
+  .qz-subject .ico { font-size: 1.5rem; }
+  .qz-subject b { display: block; font-family: var(--font-display); font-size: 0.95rem; }
+  .qz-subject span { font-size: 0.74rem; color: var(--ink-faint); }
+  .qz-subject:hover { border-color: var(--cyan); transform: translateY(-2px); }
+  .qz-subject.on { border-color: var(--lime); background: rgba(200,255,77,0.07); box-shadow: var(--glow-lime); }
+  .qz-subject.on::after { content: '✓'; position: absolute; top: 10px; right: 12px; color: var(--lime); font-weight: 700; }
+  .qz-more { margin-top: 12px; border: 1.5px dashed var(--border-glow); background: transparent; color: var(--lime); border-radius: 12px; padding: 10px 18px; font-family: var(--font-display); font-weight: 600; font-size: 0.85rem; cursor: pointer; }
+  .qz-more:hover { background: rgba(200,255,77,0.06); }
+  .qz-extra { display: none; margin-top: 12px; }
+  .qz-extra.open { display: grid; }
+  .qz-row2 { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 20px; }
+  .qz-counts { display: inline-flex; gap: 5px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; padding: 5px; }
+  .qz-count { border: none; background: transparent; color: var(--ink-soft); font-family: var(--font-display); font-weight: 700; font-size: 0.95rem; padding: 9px 20px; border-radius: 999px; cursor: pointer; }
+  .qz-count.on { background: var(--gradient-brand); color: var(--bg-deep); box-shadow: var(--glow-lime); }
+  .qz-startrow { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border-soft); }
+  .qz-start { border: none; border-radius: 999px; padding: 15px 30px; font-family: var(--font-display); font-weight: 700; font-size: 1rem; background: var(--gradient-brand); color: var(--bg-deep); cursor: pointer; box-shadow: var(--glow-lime); }
+  .qz-start:disabled { opacity: 0.6; cursor: default; }
+  .qz-offer { color: var(--ink-soft); font-size: 0.9rem; }
+  .qz-offer b { color: var(--lime); }
+
+  /* Quiz view */
+  .qz-top { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; }
+  .qz-qnum { font-family: var(--font-mono); font-size: 0.9rem; color: var(--cyan); white-space: nowrap; }
+  .qz-progress { flex: 1; height: 10px; background: var(--surface-2); border-radius: 999px; overflow: hidden; border: 1px solid var(--border-soft); }
+  .qz-progress i { display: block; height: 100%; background: var(--gradient-brand); border-radius: 999px; transition: width 0.4s ease; box-shadow: 0 0 10px rgba(200,255,77,0.4); }
+  .qz-answered { font-size: 0.8rem; color: var(--ink-faint); white-space: nowrap; }
+  .qz-quit { border: 1px solid var(--border); background: transparent; color: var(--ink-soft); border-radius: 999px; padding: 7px 14px; font-size: 0.8rem; cursor: pointer; }
+  .qz-quit:hover { border-color: var(--coral); color: var(--coral); }
+  .qz-subject-tag { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--cyan); margin-bottom: 12px; }
+  .qz-question { font-family: var(--font-display); font-size: clamp(1.2rem, 2.6vw, 1.65rem); letter-spacing: -0.01em; margin: 0 0 20px; }
+  .qz-opt { display: flex; align-items: center; gap: 14px; width: 100%; text-align: left; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px 18px; margin-bottom: 12px; cursor: pointer; color: var(--ink); font-size: 1rem; transition: all 0.15s ease; }
+  .qz-opt .letter { font-family: var(--font-mono); font-weight: 700; font-size: 0.85rem; color: var(--ink-faint); width: 28px; height: 28px; border-radius: 8px; background: var(--surface-2); display: grid; place-items: center; flex: 0 0 28px; }
+  .qz-opt:hover { border-color: var(--cyan); }
+  .qz-opt.sel { border-color: var(--lime); background: rgba(200,255,77,0.08); }
+  .qz-opt.sel .letter { background: var(--lime); color: var(--bg-deep); }
+  .qz-hint-btn { display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgba(139,92,255,0.45); background: rgba(139,92,255,0.1); color: #C9B8FF; border-radius: 999px; padding: 10px 18px; font-family: var(--font-display); font-weight: 600; font-size: 0.86rem; cursor: pointer; margin-top: 4px; }
+  .qz-hint-btn:hover { box-shadow: 0 0 16px rgba(139,92,255,0.35); }
+  .qz-hint { display: none; margin-top: 12px; background: rgba(139,92,255,0.08); border: 1px solid rgba(139,92,255,0.3); border-radius: var(--radius-sm); padding: 12px 15px; color: var(--ink-soft); font-size: 0.9rem; line-height: 1.55; }
+  .qz-nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 22px; }
+  .qz-prev { border: 1px solid var(--border); background: var(--surface); color: var(--ink-soft); border-radius: 12px; padding: 13px 24px; font-family: var(--font-display); font-weight: 600; cursor: pointer; }
+  .qz-prev:disabled { opacity: 0.4; cursor: default; }
+  .qz-next { border: none; border-radius: 12px; padding: 13px 28px; font-family: var(--font-display); font-weight: 700; background: var(--gradient-brand); color: var(--bg-deep); cursor: pointer; box-shadow: var(--glow-lime); }
+  .qz-note { text-align: center; color: var(--ink-faint); font-size: 0.82rem; margin-top: 16px; }
+
+  /* Results */
+  .qz-result { display: grid; grid-template-columns: auto 1fr; gap: 30px; align-items: center; border-color: var(--border-glow); }
+  .qz-ring { position: relative; width: 170px; height: 170px; }
+  .qz-ring svg { transform: rotate(-90deg); }
+  .qz-ring .txt { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; }
+  .qz-ring .txt b { font-family: var(--font-display); font-size: 2.6rem; letter-spacing: -0.03em; }
+  .qz-ring .txt b em { font-style: normal; font-size: 1.1rem; color: var(--ink-faint); }
+  .qz-ring .txt span { display: block; font-family: var(--font-mono); font-size: 0.72rem; color: var(--ink-faint); margin-top: 2px; }
+  .qz-tier-eyebrow { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--cyan); margin-bottom: 8px; }
+  .qz-tier { font-family: var(--font-display); font-size: 2rem; letter-spacing: -0.02em; margin: 0 0 8px; }
+  .qz-tier-sub { color: var(--ink-soft); line-height: 1.6; margin: 0 0 16px; }
+  .qz-chips { display: flex; gap: 10px; flex-wrap: wrap; }
+  .qz-chip { font-family: var(--font-mono); font-size: 0.82rem; font-weight: 700; border-radius: 999px; padding: 9px 16px; }
+  .qz-chip.xp { color: var(--lime); background: rgba(200,255,77,0.1); border: 1px solid rgba(200,255,77,0.35); }
+  .qz-chip.streak { color: var(--coral); background: rgba(255,107,74,0.1); border: 1px solid rgba(255,107,74,0.35); }
+  .qz-review-head { display: flex; align-items: center; gap: 14px; margin: 30px 0 16px; }
+  .qz-review-head h2 { font-family: var(--font-display); font-size: 1.3rem; margin: 0; white-space: nowrap; }
+  .qz-review-head .line { flex: 1; height: 1px; background: var(--border); }
+  .qz-review-head .subj { font-family: var(--font-mono); font-size: 0.74rem; color: var(--cyan); white-space: nowrap; }
+  .qz-rq { border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 22px; margin-bottom: 16px; background: rgba(13,20,40,0.6); }
+  .qz-rq.wrong { border-color: rgba(255,107,74,0.4); }
+  .qz-rq.right { border-color: rgba(200,255,77,0.35); }
+  .qz-rq .mark { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; font-weight: 700; margin-bottom: 8px; }
+  .qz-rq.wrong .mark { background: rgba(255,107,74,0.15); color: var(--coral); }
+  .qz-rq.right .mark { background: rgba(200,255,77,0.15); color: var(--lime); }
+  .qz-rq .qn { font-family: var(--font-mono); font-size: 0.7rem; color: var(--ink-faint); }
+  .qz-rq h3 { font-family: var(--font-display); font-size: 1.1rem; margin: 4px 0 14px; }
+  .qz-ropt { display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 1px solid var(--border-soft); border-radius: 10px; padding: 11px 15px; margin-bottom: 8px; color: var(--ink-soft); font-size: 0.92rem; }
+  .qz-ropt .l { font-family: var(--font-mono); font-weight: 700; font-size: 0.78rem; color: var(--ink-faint); margin-right: 10px; }
+  .qz-ropt.correct { border-color: var(--lime); background: rgba(200,255,77,0.08); color: var(--ink); }
+  .qz-ropt.correct .tagc { color: var(--lime); font-family: var(--font-display); font-weight: 700; font-size: 0.8rem; }
+  .qz-ropt.chosen-wrong { border-color: rgba(255,107,74,0.5); background: rgba(255,107,74,0.07); }
+  .qz-expl { color: var(--ink-faint); font-size: 0.84rem; line-height: 1.55; margin-top: 10px; }
+  .qz-final-cta { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-top: 26px; }
+  .qz-retry { border: none; border-radius: 14px; padding: 15px 28px; font-family: var(--font-display); font-weight: 700; font-size: 0.98rem; background: var(--gradient-brand); color: var(--bg-deep); cursor: pointer; box-shadow: var(--glow-lime); }
+  .qz-new { border: 1px solid var(--border); background: var(--surface); color: var(--ink); border-radius: 14px; padding: 15px 28px; font-family: var(--font-display); font-weight: 700; font-size: 0.98rem; cursor: pointer; }
+  .spinner { width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--lime); border-radius: 50%; animation: spin 1s linear infinite; display: inline-block; vertical-align: middle; margin-right: 8px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .hide { display: none !important; }
+  @media (max-width: 640px) { .qz-result { grid-template-columns: 1fr; text-align: center; } .qz-ring { margin: 0 auto; } .qz-chips { justify-content: center; } }
+</style>
 </head>
 <body data-page="quiz">
-  <div class="top-bar"><div class="top-bar-fill" id="topBar" style="width:0%"></div></div>
-  <header class="site-nav"></header>
+<div class="top-bar"><div class="top-bar-fill" id="topBar" style="width:0%"></div></div>
+<header class="site-nav"></header>
 
-  <main class="quiz-page">
-    <section class="quiz-hero">
-      <div class="quiz-hero-head">
-        <div class="quiz-hero-copy">
-          <p class="eyebrow">Quiz Mode</p>
-          <h1>Adaptive quizzes that stay fresh every round.</h1>
-          <p>Pick a subject, set your quiz length, and let Hungter generate new multiple-choice practice without repeating your recent questions.</p>
-        </div>
-        <div class="quiz-actions">
-          <a class="quiz-button-secondary quiz-link" href="/progress.html">View Progress</a>
-          <a class="quiz-link" href="/chat.html">Ask AI</a>
+<main class="qz-main">
+  <!-- SETUP -->
+  <section id="vSetup">
+    <div class="qz-hero">
+      <div class="qz-eyebrow"><span class="hg-live-dot"></span> Quiz Arena · AI-Generated</div>
+      <h1>Test what you know. <span class="hg-gradient-text">Earn XP.</span></h1>
+      <p>Pick a subject and length. The AI writes a fresh set each round, gives a hint when you're stuck, and grades you at the end.</p>
+    </div>
+
+    <div class="qz-card">
+      <div class="qz-step">1 · Choose a subject</div>
+      <div class="qz-subjects" id="mainSubjects"></div>
+      <button type="button" class="qz-more" id="moreBtn">📁 More subjects (6) ▾</button>
+      <div class="qz-subjects qz-extra" id="extraSubjects"></div>
+
+      <div class="qz-row2">
+        <div class="qz-step" style="margin:0;">2 · How many questions</div>
+        <div class="qz-counts">
+          <button type="button" class="qz-count" data-n="5">5</button>
+          <button type="button" class="qz-count on" data-n="10">10</button>
+          <button type="button" class="qz-count" data-n="15">15</button>
         </div>
       </div>
-    </section>
 
-    <section class="quiz-layout" id="mainSection">
-      <div id="optionsView" class="quiz-options-grid">
-        <div class="quiz-stack">
-          <section class="quiz-panel">
-            <p class="quiz-label">Subject</p>
-            <div class="quiz-chip-grid">
-              <button type="button" data-subject="Math" class="subject-chip">Math</button>
-              <button type="button" data-subject="Science" class="subject-chip is-active">Science</button>
-              <button type="button" data-subject="English" class="subject-chip">English</button>
-              <button type="button" data-subject="History" class="subject-chip">History</button>
-              <button type="button" data-subject="Coding" class="subject-chip">Coding</button>
-              <button type="button" data-subject="Philosophy" class="subject-chip">Philosophy</button>
-            </div>
-          </section>
-
-          <section class="quiz-panel">
-            <p class="quiz-label">Quiz Length</p>
-            <div class="quiz-length-row">
-              <button type="button" data-count="5" class="length-chip is-active">5 questions</button>
-              <button type="button" data-count="10" class="length-chip">10 questions</button>
-              <button type="button" data-count="15" class="length-chip">15 questions</button>
-              <button type="button" id="customLengthBtn" class="length-chip">Custom</button>
-              <input id="customCount" class="quiz-custom-input" type="number" min="1" max="50" value="10" placeholder="Count">
-            </div>
-            <p class="quiz-note">Hungter remembers your recent quiz history in localStorage and uses it to avoid obvious repeats.</p>
-          </section>
-
-          <section class="quiz-panel">
-            <div class="quiz-tip-head">
-              <div>
-                <p class="quiz-label">AI Insight</p>
-                <h2>Study tip for this quiz</h2>
-              </div>
-              <span class="quiz-tip-pill">Adaptive</span>
-            </div>
-            <p id="grokTip" class="quiz-tip-copy">AI is ready to generate a study hint based on your selected quiz.</p>
-            <button id="refreshTip" type="button" class="quiz-button-secondary">Refresh Tip</button>
-          </section>
-        </div>
-
-        <aside class="quiz-panel">
-          <div class="quiz-summary-head">
-            <div class="quiz-summary-copy">
-              <p class="quiz-label">Quiz Summary</p>
-              <h2 id="previewHeadline">Science · 5 questions</h2>
-              <p>No repeated questions from your recent session history. Every run is meant to feel new.</p>
-            </div>
-            <span class="quiz-summary-pill">Ready</span>
-          </div>
-          <div class="quiz-stack">
-            <div class="quiz-preview-line"><span>Estimated time</span><strong id="previewTime">4 min</strong></div>
-            <div class="quiz-preview-line"><span>Current focus</span><strong id="previewSubject">Science</strong></div>
-            <div class="quiz-preview-line"><span>AI mode</span><strong>Groq quiz generation</strong></div>
-          </div>
-          <button id="generateQuiz" type="button" class="quiz-button">Generate Quiz</button>
-        </aside>
+      <div class="qz-startrow">
+        <button type="button" class="qz-start" id="startBtn">🖊 Start 10-question quiz</button>
+        <span class="qz-offer">Subject: <b id="offerSubject">General Knowledge</b> · up to <b>35 XP</b> on offer</span>
       </div>
+    </div>
+  </section>
 
-      <section id="quizView" class="quiz-panel quiz-screen hidden">
-        <div class="question-head">
-          <div>
-            <div class="question-meta">
-              <span id="progressLabel">Question 1 of 5</span>
-              <span>Subject switch stays in-session</span>
-            </div>
-            <h2 id="questionText" class="question-title">Loading question…</h2>
-          </div>
-          <div class="quiz-summary-pill">Score <span id="scoreBadge">0</span></div>
-        </div>
+  <!-- QUIZ -->
+  <section id="vQuiz" class="hide">
+    <div class="qz-top">
+      <span class="qz-qnum">Q <span id="qNum">1</span> / <span id="qTotal">10</span></span>
+      <div class="qz-progress"><i id="qBar" style="width:0%"></i></div>
+      <span class="qz-answered" id="qAnswered">0 answered</span>
+      <button type="button" class="qz-quit" id="quitBtn">✕ Quit</button>
+    </div>
 
-        <div>
-          <p class="quiz-label">Switch Subject</p>
-          <div class="quiz-subject-grid">
-            <button type="button" data-subject="Math" class="quiz-subject-chip">Math</button>
-            <button type="button" data-subject="Science" class="quiz-subject-chip is-active">Science</button>
-            <button type="button" data-subject="English" class="quiz-subject-chip">English</button>
-            <button type="button" data-subject="History" class="quiz-subject-chip">History</button>
-            <button type="button" data-subject="Coding" class="quiz-subject-chip">Coding</button>
-            <button type="button" data-subject="Philosophy" class="quiz-subject-chip">Philosophy</button>
-          </div>
-        </div>
+    <div class="qz-card">
+      <div class="qz-subject-tag">🌍 <span id="qSubject">General Knowledge</span></div>
+      <h2 class="qz-question" id="qText">Loading…</h2>
+      <div id="qOptions"></div>
+      <button type="button" class="qz-hint-btn" id="hintBtn">✦ Ask Gemini for a hint</button>
+      <div class="qz-hint" id="hintBox"></div>
+    </div>
 
-        <div id="answerOptions" class="answer-list"></div>
+    <div class="qz-nav">
+      <button type="button" class="qz-prev" id="prevBtn">← Previous</button>
+      <button type="button" class="qz-next" id="nextBtn">Next →</button>
+    </div>
+    <p class="qz-note">No instant grading — you'll review every answer at the end.</p>
+  </section>
 
-        <div class="quiz-toolbar">
-          <button id="quitQuiz" type="button" class="quiz-button-secondary">Quit Quiz</button>
-          <button id="nextQuestion" type="button" class="quiz-button" disabled>Next Question</button>
-        </div>
-      </section>
-    </section>
-
-    <section id="resultArea" class="quiz-result hidden">
-      <div class="result-head">
-        <div class="result-copy">
-          <p class="quiz-label">Quiz Complete</p>
-          <h2 id="resultScore">0%</h2>
-          <p id="resultMessage">Great work! Ask AI what to review next and keep the streak moving.</p>
-        </div>
-        <span class="result-score-pill">Saved</span>
+  <!-- RESULTS -->
+  <section id="vResult" class="hide">
+    <div class="qz-card qz-result">
+      <div class="qz-ring">
+        <svg width="170" height="170" viewBox="0 0 170 170">
+          <circle cx="85" cy="85" r="74" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="11"/>
+          <circle id="scoreArc" cx="85" cy="85" r="74" fill="none" stroke="url(#sg)" stroke-width="11" stroke-linecap="round" stroke-dasharray="465" stroke-dashoffset="465" style="transition:stroke-dashoffset 1.2s cubic-bezier(0.22,1,0.36,1);"/>
+          <defs><linearGradient id="sg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#C8FF4D"/><stop offset="100%" stop-color="#4DF0FF"/></linearGradient></defs>
+        </svg>
+        <div class="txt"><div><b id="scorePct">0<em>%</em></b><span id="scoreFrac">0 / 10 correct</span></div></div>
       </div>
-      <div class="result-actions">
-        <button id="retryQuiz" type="button" class="quiz-button-secondary">Retry Quiz</button>
-        <button id="askGrok" type="button" class="quiz-button">Ask AI</button>
+      <div>
+        <div class="qz-tier-eyebrow" id="tierEyebrow">Try again · General Knowledge</div>
+        <h2 class="qz-tier" id="tierName">Warm-up round</h2>
+        <p class="qz-tier-sub" id="tierSub">Everyone starts somewhere. Read the correct answers below, then retry.</p>
+        <div class="qz-chips">
+          <span class="qz-chip xp" id="xpChip">+ 0 XP</span>
+          <span class="qz-chip streak" id="streakChip">🔥 0-day streak</span>
+        </div>
       </div>
-    </section>
-  </main>
+    </div>
 
-  <script src="/api-config.js?v=20260713"></script>
+    <div class="qz-review-head">
+      <h2>Review your answers</h2>
+      <div class="line"></div>
+      <span class="subj" id="reviewSubject">General Knowledge</span>
+    </div>
+    <div id="reviewList"></div>
+
+    <div class="qz-final-cta">
+      <button type="button" class="qz-retry" id="retryBtn">↻ Retry this subject</button>
+      <button type="button" class="qz-new" id="newBtn">＋ New quiz</button>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer"></footer>
+<script src="/api-config.js?v=20260713"></script>
 <script src="/script.js?v=20260713"></script>
-  <script src="/layout.js?v=20260713" defer></script>
-  <script>
-    ensureProfile();
+<script src="/celebrate.js?v=20260717"></script>
+<script src="/layout.js?v=20260713" defer></script>
+<script>
+ensureProfile();
+const bar = document.getElementById('topBar');
+if (bar) bar.style.width = getLevelProgress().pct + '%';
 
-    const topBar = document.getElementById('topBar');
-    const subjectButtons = Array.from(document.querySelectorAll('.subject-chip'));
-    const lengthButtons = Array.from(document.querySelectorAll('.length-chip')).filter((button) => button.id !== 'customLengthBtn');
-    const quizSubjectBtns = Array.from(document.querySelectorAll('.quiz-subject-chip'));
-    const customLengthBtn = document.getElementById('customLengthBtn');
-    const customCountInput = document.getElementById('customCount');
-    const generateBtn = document.getElementById('generateQuiz');
-    const refreshTipBtn = document.getElementById('refreshTip');
-    const previewHeadline = document.getElementById('previewHeadline');
-    const previewTime = document.getElementById('previewTime');
-    const previewSubject = document.getElementById('previewSubject');
-    const grokTip = document.getElementById('grokTip');
-    const resultArea = document.getElementById('resultArea');
-    const progressLabel = document.getElementById('progressLabel');
-    const questionText = document.getElementById('questionText');
-    const scoreBadge = document.getElementById('scoreBadge');
-    const answerOptions = document.getElementById('answerOptions');
-    const nextQuestionBtn = document.getElementById('nextQuestion');
-    const quitQuizBtn = document.getElementById('quitQuiz');
-    const retryQuizBtn = document.getElementById('retryQuiz');
-    const askGrokBtn = document.getElementById('askGrok');
-    const resultScore = document.getElementById('resultScore');
-    const resultMessage = document.getElementById('resultMessage');
-    const optionsView = document.getElementById('optionsView');
-    const quizView = document.getElementById('quizView');
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-    const questionPool = {
-      Math: [
-        { question: 'What is 7 × 8?', options: ['54', '56', '58', '64'], answer: '56' },
-        { question: 'Solve 3x + 5 = 20. What is x?', options: ['4', '5', '6', '15'], answer: '5' },
-        { question: 'What is the area of a square with side 6?', options: ['12', '18', '24', '36'], answer: '36' },
-        { question: 'What is 15% of 200?', options: ['20', '25', '30', '35'], answer: '30' },
-        { question: 'What is the next number in the series 2, 4, 8, 16?', options: ['18', '20', '24', '32'], answer: '32' }
-      ],
-      Science: [
-        { question: 'What gas do plants take in for photosynthesis?', options: ['Oxygen', 'Nitrogen', 'Carbon dioxide', 'Hydrogen'], answer: 'Carbon dioxide' },
-        { question: 'What is the basic unit of life?', options: ['Atom', 'Cell', 'Molecule', 'Tissue'], answer: 'Cell' },
-        { question: 'What force keeps us grounded on Earth?', options: ['Magnetism', 'Gravity', 'Friction', 'Electricity'], answer: 'Gravity' },
-        { question: 'What planet is known as the Red Planet?', options: ['Venus', 'Mars', 'Jupiter', 'Saturn'], answer: 'Mars' },
-        { question: 'What is H2O commonly called?', options: ['Salt', 'Water', 'Sugar', 'Air'], answer: 'Water' }
-      ],
-      English: [
-        { question: 'Which word is a noun?', options: ['Run', 'Beautiful', 'Happiness', 'Quick'], answer: 'Happiness' },
-        { question: 'Choose the correct past tense of "go".', options: ['goed', 'went', 'gone', 'going'], answer: 'went' },
-        { question: 'Which sentence is correct?', options: ['She dont like ice cream.', 'She doesn’t like ice cream.', 'She not likes ice cream.', 'She no like ice cream.'], answer: 'She doesn’t like ice cream.' },
-        { question: 'What is the plural of "child"?', options: ['Childs', 'Childes', 'Children', 'Child'], answer: 'Children' },
-        { question: 'Which word is the opposite of "happy"?', options: ['Sad', 'Bright', 'Brave', 'Kind'], answer: 'Sad' }
-      ],
-      History: [
-        { question: 'Who was the first President of the United States?', options: ['Abraham Lincoln', 'George Washington', 'Thomas Jefferson', 'John Adams'], answer: 'George Washington' },
-        { question: 'Which ancient civilization built the pyramids?', options: ['Romans', 'Greeks', 'Egyptians', 'Mayans'], answer: 'Egyptians' },
-        { question: 'What year did the first moon landing occur?', options: ['1965', '1969', '1972', '1976'], answer: '1969' },
-        { question: 'The Renaissance began in which country?', options: ['France', 'Spain', 'Italy', 'Germany'], answer: 'Italy' },
-        { question: 'Who wrote the Declaration of Independence?', options: ['Benjamin Franklin', 'John Adams', 'Thomas Jefferson', 'James Madison'], answer: 'Thomas Jefferson' }
-      ],
-      Coding: [
-        { question: 'What does HTML stand for?', options: ['Hypertext Markup Language', 'Hyperlink Machine Language', 'Hypertext Markdown Language', 'Hyperlink Markup Level'], answer: 'Hypertext Markup Language' },
-        { question: 'Which language is used primarily for styling web pages?', options: ['Python', 'JavaScript', 'CSS', 'Ruby'], answer: 'CSS' },
-        { question: 'What is the correct syntax to create a function in JavaScript?', options: ['function myFunc() {}', 'def myFunc() {}', 'fun myFunc() {}', 'create function myFunc() {}'], answer: 'function myFunc() {}' },
-        { question: 'Which symbol starts a JavaScript single-line comment?', options: ['//', '<!--', '/*', '#'], answer: '//' },
-        { question: 'What is a loop used for in programming?', options: ['Storing data', 'Repeating instructions', 'Displaying text', 'Sorting values'], answer: 'Repeating instructions' }
-      ],
-      Philosophy: [
-        { question: 'Which term refers to the study of knowledge?', options: ['Ethics', 'Logic', 'Epistemology', 'Metaphysics'], answer: 'Epistemology' },
-        { question: '"I think, therefore I am" is attributed to which philosopher?', options: ['Kant', 'Descartes', 'Nietzsche', 'Hume'], answer: 'Descartes' },
-        { question: 'Which concept explores right and wrong actions?', options: ['Ontology', 'Ethics', 'Aesthetics', 'Epistemology'], answer: 'Ethics' },
-        { question: 'What is the Greek word for love often used by philosophers?', options: ['Agape', 'Eros', 'Philia', 'All of the above'], answer: 'All of the above' },
-        { question: 'Who asked "What is the meaning of life?" as part of existential inquiry?', options: ['Socrates', 'Descartes', 'Albert Camus', 'Plato'], answer: 'Albert Camus' }
-      ]
-    };
+const MAIN = [
+  ['🌍', 'General Knowledge'], ['🔬', 'Science'], ['💻', 'Web Dev'], ['🎲', 'Mixed Bag'],
+];
+const EXTRA = [
+  ['🔢', 'Mathematics'], ['🏛️', 'History'], ['🗺️', 'Geography'], ['🚀', 'Space'], ['⚽', 'Sports'], ['🎵', 'Music'],
+];
 
-    let selectedSubject = 'Science';
-    let selectedCount = 5;
-    let customMode = false;
-    let quizQuestions = [];
-    let currentIndex = 0;
-    let score = 0;
-    let currentSelection = null;
-    let wrongAnswers = [];
+let subject = 'General Knowledge';
+let count = 10;
+let questions = [];   // [{question, options[], correct, explanation}]
+let answers = [];     // ['A' | null, ...]
+let idx = 0;
+let asked = [];       // question texts already used (for retry freshness)
 
-    function refreshTopBar() {
-      const progress = getLevelProgress();
-      if (topBar) {
-        topBar.style.width = `${progress.pct}%`;
-      }
-    }
+function subjectCard([ico, name]) {
+  const b = document.createElement('button');
+  b.type = 'button'; b.className = 'qz-subject' + (name === subject ? ' on' : '');
+  b.innerHTML = '<span class="ico">' + ico + '</span><span><b>' + esc(name) + '</b><span>Fresh AI set each round</span></span>';
+  b.addEventListener('click', () => {
+    subject = name;
+    document.querySelectorAll('.qz-subject').forEach((x) => x.classList.remove('on'));
+    b.classList.add('on');
+    $('offerSubject').textContent = name;
+  });
+  return b;
+}
+MAIN.forEach((s) => $('mainSubjects').appendChild(subjectCard(s)));
+EXTRA.forEach((s) => $('extraSubjects').appendChild(subjectCard(s)));
+$('moreBtn').addEventListener('click', () => {
+  const open = $('extraSubjects').classList.toggle('open');
+  $('moreBtn').textContent = open ? '📁 Fewer subjects ▴' : '📁 More subjects (6) ▾';
+});
+document.querySelectorAll('.qz-count').forEach((b) => b.addEventListener('click', () => {
+  document.querySelectorAll('.qz-count').forEach((x) => x.classList.remove('on'));
+  b.classList.add('on');
+  count = Number(b.dataset.n);
+  $('startBtn').textContent = '🖊 Start ' + count + '-question quiz';
+}));
 
-    function getAskedQuestions() {
-      return lsGet('mm_asked_questions', []);
-    }
+async function postJson(path, body) {
+  const base = String(window.HUNGTER_API_BASE || '').replace(/\/$/, '');
+  const urls = [base + path + '.php', base + path, '/.netlify/functions' + path];
+  let last = null;
+  for (const u of urls) {
+    try {
+      const r = await fetch(u, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const ct = String(r.headers.get('content-type') || '');
+      if (r.ok || ct.includes('application/json')) return await r.json();
+      last = new Error('HTTP ' + r.status);
+    } catch (e) { last = e; }
+  }
+  throw (last || new Error('unreachable'));
+}
 
-    function saveAskedQuestions(questions) {
-      const current = getAskedQuestions();
-      const normalized = questions
-        .filter((question) => typeof question === 'string' && question.trim().length)
-        .map((question) => question.trim());
-      lsSet('mm_asked_questions', Array.from(new Set([...current, ...normalized])).slice(-200));
-    }
+function show(view) {
+  ['vSetup', 'vQuiz', 'vResult'].forEach((v) => $(v).classList.toggle('hide', v !== view));
+  window.scrollTo({ top: 0 });
+}
 
-    function setActiveSubject() {
-      subjectButtons.forEach((button) => {
-        button.classList.toggle('is-active', button.dataset.subject === selectedSubject);
-      });
-      quizSubjectBtns.forEach((button) => {
-        button.classList.toggle('is-active', button.dataset.subject === selectedSubject);
-      });
-      previewSubject.textContent = selectedSubject;
-    }
+// ── Start ────────────────────────────────────────────────────────────────────
+$('startBtn').addEventListener('click', async () => {
+  const btn = $('startBtn');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Writing your quiz…';
+  try {
+    const data = await postJson('/api/quiz', { subject, count, askedQuestions: asked, visitorId: getSessionId() });
+    const list = Array.isArray(data) ? data : (data.questions || []);
+    if (!list.length) throw new Error('empty');
+    questions = list.slice(0, count);
+    answers = new Array(questions.length).fill(null);
+    idx = 0;
+    questions.forEach((q) => asked.push(String(q.question || '')));
+    $('qSubject').textContent = subject;
+    $('qTotal').textContent = questions.length;
+    renderQuestion();
+    show('vQuiz');
+  } catch (e) {
+    btn.textContent = 'Could not reach the quiz AI — try again';
+    setTimeout(() => { btn.textContent = '🖊 Start ' + count + '-question quiz'; }, 3000);
+  } finally { btn.disabled = false; if (questions.length) btn.textContent = '🖊 Start ' + count + '-question quiz'; }
+});
 
-    function setActiveLength() {
-      lengthButtons.forEach((button) => {
-        button.classList.toggle('is-active', Number(button.dataset.count) === selectedCount && !customMode);
-      });
-      customLengthBtn.classList.toggle('is-active', customMode);
-      customCountInput.classList.toggle('is-visible', customMode);
-      const minutes = Math.max(2, Math.round(selectedCount * 0.7));
-      previewHeadline.textContent = `${selectedSubject} · ${selectedCount} questions`;
-      previewTime.textContent = `${minutes} min`;
-    }
-
-    function updateTip(text) {
-      grokTip.textContent = text;
-    }
-
-    async function refreshGrokTip() {
-      updateTip('AI is generating a study tip...');
-      try {
-        const payload = await apiPost('/api/chat', {
-          visitorId: getSessionId(),
-          subject: selectedSubject,
-          userLevel: lsGet('mm_level', 'Newbie'),
-          message: `Share one quick study tip for a ${selectedCount}-question ${selectedSubject} quiz and explain how I can avoid repeating questions.`
-        });
-        updateTip(payload.reply || 'AI could not generate a tip right now.');
-      } catch {
-        updateTip('AI is unavailable. Please try again later.');
-      }
-    }
-
-    function getFallbackQuestions(subject, count) {
-      const pool = questionPool[subject] || questionPool.Science;
-      const asked = getAskedQuestions().map((question) => question.trim().toLowerCase());
-      const filtered = pool.filter((item) => !asked.includes(item.question.trim().toLowerCase()));
-      const result = filtered.slice(0, count);
-      while (result.length < count) {
-        const item = pool[result.length % pool.length];
-        result.push({ ...item, question: `${item.question} (Review)` });
-      }
-      return result;
-    }
-
-    async function fetchQuizQuestions(subject, count) {
-      try {
-        const payload = await apiPost('/api/quiz', {
-          subject,
-          count,
-          askedQuestions: getAskedQuestions()
-        });
-        return Array.isArray(payload) && payload.length ? payload : getFallbackQuestions(subject, count);
-      } catch {
-        return getFallbackQuestions(subject, count);
-      }
-    }
-
-    function showSection(section) {
-      optionsView.classList.toggle('hidden', section !== 'options');
-      quizView.classList.toggle('hidden', section !== 'quiz');
-      resultArea.classList.toggle('hidden', section !== 'result');
-    }
-
-    function renderQuestion() {
-      const current = quizQuestions[currentIndex];
-      if (!current) {
-        return;
-      }
-      questionText.textContent = current.question;
-      progressLabel.textContent = `Question ${currentIndex + 1} of ${quizQuestions.length}`;
-      scoreBadge.textContent = score;
-      answerOptions.innerHTML = current.options.map((option, index) => `
-        <button type="button" class="answer-card" data-answer="${String(option).replace(/"/g, '&quot;')}">
-          <span class="answer-index">${String.fromCharCode(65 + index)}.</span>
-          <p class="answer-text">${option}</p>
-        </button>
-      `).join('');
-      currentSelection = null;
-      nextQuestionBtn.disabled = true;
-      document.querySelectorAll('.answer-card').forEach((button) => {
-        button.addEventListener('click', () => {
-          document.querySelectorAll('.answer-card').forEach((card) => card.classList.remove('is-selected'));
-          button.classList.add('is-selected');
-          currentSelection = button.dataset.answer;
-          nextQuestionBtn.disabled = false;
-        });
-      });
-    }
-
-    function showResults() {
-      const percent = Math.round((score / quizQuestions.length) * 100);
-      if (window.HungterTrack) {
-        window.HungterTrack.quizCompleted(selectedSubject, percent, 'quiz');
-      }
-      resultScore.textContent = `${percent}%`;
-      resultMessage.textContent = percent >= 85
-        ? 'Excellent work. Ask AI for a stretch challenge or move to a harder subject.'
-        : percent >= 65
-          ? 'Nice progress. Review the weaker questions once, then run another fresh quiz.'
-          : 'Good attempt. Ask AI for a targeted review and focus on the concepts you missed.';
-      showSection('result');
-      saveAskedQuestions(quizQuestions.map((question) => question.question));
-      const quizHistory = lsGet('mm_quiz_scores', {});
-      quizHistory[selectedSubject] = [...(quizHistory[selectedSubject] || []), percent];
-      lsSet('mm_quiz_scores', quizHistory);
-      if (typeof bumpQuest === 'function') bumpQuest('quiz1');
-      updateLevel();
-      refreshTopBar();
-      const milestones = lsGet('mm_milestones', []);
-      milestones.push({ event: `Completed ${selectedCount}-question quiz in ${selectedSubject}`, date: new Date().toLocaleDateString() });
-      lsSet('mm_milestones', milestones);
-      if (wrongAnswers.length) {
-        const existingWrong = lsGet('mm_wrong_answers', []);
-        lsSet('mm_wrong_answers', existingWrong.concat(wrongAnswers).slice(-200));
-      }
-    }
-
-    async function startQuiz() {
-      const count = customMode ? Math.max(1, Math.min(50, Number(customCountInput.value) || 5)) : selectedCount;
-      selectedCount = count;
-      setActiveLength();
-      quizQuestions = await fetchQuizQuestions(selectedSubject, selectedCount);
-      currentIndex = 0;
-      score = 0;
-      wrongAnswers = [];
-      showSection('quiz');
-      renderQuestion();
-    }
-
-    async function switchQuizSubject(subject) {
-      selectedSubject = subject;
-      setActiveSubject();
-      quizQuestions = await fetchQuizQuestions(selectedSubject, selectedCount);
-      currentIndex = 0;
-      score = 0;
-      wrongAnswers = [];
-      renderQuestion();
-    }
-
-    subjectButtons.forEach((button) => {
-      button.addEventListener('click', () => {
-        selectedSubject = button.dataset.subject;
-        setActiveSubject();
-        setActiveLength();
-        refreshGrokTip();
-      });
+// ── Question flow ────────────────────────────────────────────────────────────
+function letterOf(i) { return ['A', 'B', 'C', 'D', 'E'][i] || '?'; }
+function cleanOpt(t) { return String(t).replace(/^[A-E]\)\s*/, ''); }
+function renderQuestion() {
+  const q = questions[idx];
+  $('qNum').textContent = idx + 1;
+  $('qBar').style.width = Math.round(((idx) / questions.length) * 100) + '%';
+  $('qAnswered').textContent = answers.filter((a) => a !== null).length + ' answered';
+  $('qText').textContent = q.question;
+  $('hintBox').style.display = 'none'; $('hintBox').textContent = '';
+  const wrap = $('qOptions'); wrap.innerHTML = '';
+  (q.options || []).forEach((opt, i) => {
+    const L = letterOf(i);
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'qz-opt' + (answers[idx] === L ? ' sel' : '');
+    b.innerHTML = '<span class="letter">' + L + '</span><span>' + esc(cleanOpt(opt)) + '</span>';
+    b.addEventListener('click', () => {
+      answers[idx] = L;
+      wrap.querySelectorAll('.qz-opt').forEach((x) => x.classList.remove('sel'));
+      b.classList.add('sel');
+      $('qAnswered').textContent = answers.filter((a) => a !== null).length + ' answered';
     });
+    wrap.appendChild(b);
+  });
+  $('prevBtn').disabled = idx === 0;
+  $('nextBtn').textContent = idx === questions.length - 1 ? 'Finish ✓' : 'Next →';
+}
+$('prevBtn').addEventListener('click', () => { if (idx > 0) { idx--; renderQuestion(); } });
+$('nextBtn').addEventListener('click', () => {
+  if (idx < questions.length - 1) { idx++; renderQuestion(); } else finish();
+});
+$('quitBtn').addEventListener('click', () => { if (confirm('Quit this quiz? Your answers will be lost.')) show('vSetup'); });
 
-    lengthButtons.forEach((button) => {
-      button.addEventListener('click', () => {
-        customMode = false;
-        selectedCount = Number(button.dataset.count) || 5;
-        setActiveLength();
-        refreshGrokTip();
-      });
+// Hint — asks the AI without revealing the answer.
+$('hintBtn').addEventListener('click', async () => {
+  const box = $('hintBox');
+  box.style.display = 'block'; box.innerHTML = '<span class="spinner"></span>Thinking…';
+  try {
+    const q = questions[idx];
+    const data = await postJson('/api/chat', {
+      visitorId: getSessionId(), subject, userLevel: lsGet('mm_level', 'Newbie'), engineMode: 'solver',
+      message: 'Give ONE short hint (max 2 sentences) that nudges me toward the answer WITHOUT revealing it, for this quiz question: "' + q.question + '" Options: ' + (q.options || []).join(' | '),
     });
+    box.textContent = '✦ ' + (data.reply || 'Think about what the question is really asking.');
+  } catch (e) { box.textContent = '✦ Hint unavailable right now — trust your gut!'; }
+});
 
-    customLengthBtn.addEventListener('click', () => {
-      customMode = true;
-      customCountInput.classList.add('is-visible');
-      customCountInput.focus();
-      setActiveLength();
+// ── Finish + review ──────────────────────────────────────────────────────────
+function tierFor(pct) {
+  if (pct >= 90) return ['Master round', 'Outstanding — this subject is yours. Push the streak higher.'];
+  if (pct >= 70) return ['Strong run', 'Solid knowledge with a few gaps — review the misses below and go again.'];
+  if (pct >= 40) return ['Getting sharp', 'You know more than you think. Read the corrections and retry.'];
+  return ['Warm-up round', 'Everyone starts somewhere. Read the correct answers below, then retry.'];
+}
+function finish() {
+  const total = questions.length;
+  let correct = 0;
+  questions.forEach((q, i) => { if (answers[i] === String(q.correct || '').trim().toUpperCase().slice(0, 1)) correct++; });
+  const pct = Math.round((correct / total) * 100);
+
+  // Score + XP into the real progression system
+  const scores = lsGet('mm_quiz_scores', {});
+  (scores[subject] = scores[subject] || []).push(pct);
+  lsSet('mm_quiz_scores', scores);
+  if (typeof bumpQuest === 'function') try { bumpQuest('quiz1'); } catch (e) {}
+  if (typeof addMilestone === 'function' && pct >= 90) addMilestone('Scored ' + pct + '% in ' + subject);
+  if (typeof updateLevel === 'function') updateLevel();
+  if (typeof updateStreak === 'function') try { updateStreak(); } catch (e) {}
+  const earned = 15 + Math.round(pct * 0.2);
+
+  $('scoreArc').style.strokeDashoffset = Math.round(465 * (1 - pct / 100));
+  $('scorePct').innerHTML = pct + '<em>%</em>';
+  $('scoreFrac').textContent = correct + ' / ' + total + ' correct';
+  const [name, sub] = tierFor(pct);
+  $('tierEyebrow').textContent = (pct >= 70 ? 'Nice work' : 'Try again') + ' · ' + subject;
+  $('tierName').textContent = name;
+  $('tierSub').textContent = sub;
+  $('xpChip').textContent = '+ ' + earned + ' XP';
+  $('streakChip').textContent = '🔥 ' + (lsGet('mm_streak', []) || []).length + '-day streak';
+  $('reviewSubject').textContent = subject;
+
+  const list = $('reviewList'); list.innerHTML = '';
+  questions.forEach((q, i) => {
+    const correctL = String(q.correct || '').trim().toUpperCase().slice(0, 1);
+    const mine = answers[i];
+    const right = mine === correctL;
+    const div = document.createElement('div');
+    div.className = 'qz-rq ' + (right ? 'right' : 'wrong');
+    let html = '<div class="mark">' + (right ? '✓' : '✕') + '</div><div class="qn">Q' + (i + 1) + '</div><h3>' + esc(q.question) + '</h3>';
+    (q.options || []).forEach((opt, oi) => {
+      const L = letterOf(oi);
+      let cls = '';
+      if (L === correctL) cls = ' correct';
+      else if (L === mine) cls = ' chosen-wrong';
+      html += '<div class="qz-ropt' + cls + '"><span><span class="l">' + L + '</span>' + esc(cleanOpt(opt)) + '</span>' + (L === correctL ? '<span class="tagc">Correct</span>' : '') + '</div>';
     });
+    if (q.explanation) html += '<div class="qz-expl">💡 ' + esc(q.explanation) + '</div>';
+    div.innerHTML = html;
+    list.appendChild(div);
+  });
 
-    customCountInput.addEventListener('input', () => {
-      const value = Number(customCountInput.value);
-      if (value > 0 && value <= 50) {
-        selectedCount = value;
-        setActiveLength();
-      }
-    });
+  if (pct >= 70 && window.Celebrate) window.Celebrate.confetti(pct >= 90 ? 150 : 80);
+  show('vResult');
+  if (bar) bar.style.width = getLevelProgress().pct + '%';
+}
 
-    refreshTipBtn.addEventListener('click', refreshGrokTip);
-    generateBtn.addEventListener('click', startQuiz);
-    nextQuestionBtn.addEventListener('click', () => {
-      const current = quizQuestions[currentIndex];
-      if (!currentSelection || !current) {
-        return;
-      }
-      const answer = current.answer || current.correct;
-      if (currentSelection === answer) {
-        score += 1;
-      } else {
-        wrongAnswers.push({
-          subject: selectedSubject,
-          question: current.question,
-          selected: currentSelection,
-          correct: answer,
-          explanation: current.explanation || '',
-          date: new Date().toISOString(),
-        });
-      }
-      if (currentIndex + 1 < quizQuestions.length) {
-        currentIndex += 1;
-        renderQuestion();
-      } else {
-        showResults();
-      }
-    });
-
-    quitQuizBtn.addEventListener('click', () => {
-      showSection('options');
-    });
-
-    retryQuizBtn.addEventListener('click', () => {
-      showSection('options');
-      setTimeout(startQuiz, 120);
-    });
-
-    askGrokBtn.addEventListener('click', async () => {
-      try {
-        const payload = await apiPost('/api/chat', {
-          visitorId: getSessionId(),
-          subject: selectedSubject,
-          userLevel: lsGet('mm_level', 'Newbie'),
-          message: `I completed a ${selectedCount}-question ${selectedSubject} quiz and scored ${Math.round((score / selectedCount) * 100)}%. What should I review next?`
-        });
-        resultMessage.textContent = payload.reply || 'AI could not generate feedback right now.';
-      } catch {
-        resultMessage.textContent = 'Unable to reach AI. Please try again later.';
-      }
-    });
-
-    quizSubjectBtns.forEach((button) => {
-      button.addEventListener('click', () => switchQuizSubject(button.dataset.subject));
-    });
-
-    refreshTopBar();
-    setActiveSubject();
-    setActiveLength();
-    refreshGrokTip();
-    showSection('options');
-  </script>
+$('retryBtn').addEventListener('click', () => { $('startBtn').click(); });
+$('newBtn').addEventListener('click', () => show('vSetup'));
+</script>
 </body>
 </html>

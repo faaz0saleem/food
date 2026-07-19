@@ -587,3 +587,12 @@
 
 .mermaid-diagram { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; margin: 10px 0; overflow-x: auto; text-align: center; }
 .mermaid-diagram svg { max-width: 100%; height: auto; }
+
+/* Multi-line composer (textarea) — same look as the old input */
+.composer-row textarea {
+  flex: 1; min-width: 0; background: transparent; border: none;
+  padding: 12px 6px; color: var(--ink); font-family: var(--font-body);
+  font-size: 0.97rem; resize: none; line-height: 1.5; max-height: 150px; overflow-y: auto;
+}
+.composer-row textarea:focus { outline: none; }
+.composer-row textarea::placeholder { color: var(--ink-faint); }

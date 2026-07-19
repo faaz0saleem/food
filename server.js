@@ -137,7 +137,7 @@ You are helping a student at the "${userLevel || 'Newbie'}" level.
 - Explorer/Scholar: give more detailed explanations with worked examples.
 - Master: offer advanced insights and complex problem-solving.
 
-Be encouraging, clear, and keep responses concise (2-4 sentences) unless the question needs a worked example.${persona ? `\n\n${persona}` : ''}`;
+Be encouraging and clear. Use markdown (headings, bullets, bold, code blocks). Match length to the question — short for quick facts, a full structured explanation with worked examples for real learning questions.${persona ? `\n\n${persona}` : ''}`;
 }
 
 // Run a plain-text prompt through an engine, walking its provider fallback chain.

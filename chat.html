@@ -102,7 +102,7 @@
         <div class="composer-row">
           <button id="attachButton" class="attach-btn" type="button" aria-label="Attach file or image" title="Attach file or image">+</button>
           <input id="fileInput" type="file" accept="image/*,.pdf,.txt,.md,.csv,.json,.js,.ts,.py,.java,.c,.cpp,.html,.css" multiple hidden />
-          <input id="chatInput" type="text" placeholder="Ask anything — math, essays, exam prep…" autocomplete="off" />
+          <textarea id="chatInput" rows="1" placeholder="Ask anything — math, essays, exam prep… (Shift+Enter for a new line)"></textarea>
           <button id="micButton" class="attach-btn" type="button" aria-label="Speak your question" title="Speak your question" style="display:none;">🎤</button>
           <button id="sendButton" class="send-btn" type="button" aria-label="Send message">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M12 5l7 7-7 7"/></svg>
@@ -830,11 +830,16 @@
 
   updateEngineButtons();
 
-  chatInput.addEventListener('keypress', (event) => {
-    if (event.key === 'Enter') {
+  chatInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
       sendMessage();
     }
+  });
+  // Auto-grow like a normal AI composer (caps at ~6 lines).
+  chatInput.addEventListener('input', () => {
+    chatInput.style.height = 'auto';
+    chatInput.style.height = Math.min(chatInput.scrollHeight, 150) + 'px';
   });
 
   // Pass no arguments — the click event must not become overrideText.

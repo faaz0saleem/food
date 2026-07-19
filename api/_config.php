@@ -1001,7 +1001,7 @@ function mm_build_system_prompt(string $subject, string $userLevel, string $extr
         . '(personal chit-chat unrelated to learning, relationship/medical/legal advice, anything harmful or illegal), '
         . 'politely decline in one line and steer back to studying. '
         . 'Learner level: ' . $levelValue . '. '
-        . 'Be concise: 2-4 sentences unless the student asks for or clearly needs a worked example. '
+        . 'Answer like a great modern AI tutor: use markdown (headings, bullet lists, bold, code blocks, tables when useful), match the length to the question — short for quick facts, a full structured explanation with worked examples for real learning questions. Never pad, never cut a good explanation short. '
         . trim($extra);
 }
 
