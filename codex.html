@@ -31,8 +31,7 @@
   .cx-gh:hover { border-color: var(--lime); box-shadow: var(--glow-lime); }
 
   /* Workspace split */
-  .cxw { display: grid; grid-template-columns: minmax(0, 440px) minmax(0, 1fr); gap: 0; height: calc(100vh - 4px - 62px); min-height: 520px; }
-  .cxw.solo { grid-template-columns: minmax(0, 1fr); }
+  .cxw { display: grid; grid-template-columns: minmax(0, 440px) minmax(0, 1fr); gap: 0; height: calc(100vh - 4px - 62px - 104px); min-height: 520px; }
   .cxw-chat { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--border); background: rgba(4,6,15,0.4); }
   .cxw-head { padding: 16px 18px 10px; }
   .cxw-head .eyebrow { color: var(--lime); font-family: var(--font-mono); font-size: 0.64rem; letter-spacing: 0.16em; text-transform: uppercase; }
@@ -73,12 +72,29 @@
   @keyframes pipepulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.045); } }
   .cx-pipe-ico { font-size: 0.9rem; }
   .cx-pipe-arr { color: var(--lime); font-size: 0.72rem; margin: 0 1px; }
-  /* Idle Orchestra card */
-  .cx-orchestra { background: var(--surface); border: 1px solid var(--border-glow); border-radius: var(--radius); padding: 22px 20px 12px; margin-bottom: 18px; box-shadow: var(--shadow-sm); }
-  .cx-orch-title { font-family: var(--font-display); font-size: 1.05rem; margin: 0 0 2px; color: var(--ink); }
-  .cx-orch-sub { color: var(--ink-soft); font-size: 0.8rem; margin: 0 0 10px; }
-  .cx-orch-live { display: inline-flex; align-items: center; gap: 7px; font-family: var(--font-mono); font-size: 0.64rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--lime); border: 1px solid rgba(200,255,77,0.35); background: rgba(200,255,77,0.07); border-radius: 999px; padding: 4px 11px; margin-bottom: 12px; }
-  .cx-orchestra .cx-pipe { border-bottom: none; justify-content: center; }
+  /* The Orchestra — full-width top bar */
+  .cx-orchbar { padding: 14px 22px 12px; border-bottom: 1px solid var(--border); background: rgba(4,6,15,0.55); }
+  .cx-orchbar-top { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 10px; }
+  .cx-orchbar-title { font-family: var(--font-mono); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--violet); }
+  .cx-orchbar-status { color: var(--ink-soft); font-size: 0.85rem; flex: 1; min-width: 200px; }
+  .cx-orch-live { display: inline-flex; align-items: center; gap: 7px; font-family: var(--font-mono); font-size: 0.64rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--lime); }
+  .cx-orchbar-pipe .cx-pipe { border-bottom: none; padding: 0; margin: 0; flex-wrap: nowrap; gap: 6px; }
+  .cx-orchbar-pipe .cx-pipe-step { flex: 1; min-width: 0; padding: 10px 14px; border-radius: 14px; font-size: 0.82rem; }
+  .cx-orchbar-pipe .cx-pipe-ico { font-size: 1.1rem; }
+  .cx-orchbar-pipe .cx-pipe-lbl em { font-size: 0.64rem; }
+  /* Header row: history button + eyebrow */
+  .cxw-head-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .cxw-history { display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--border); background: var(--surface-2); color: var(--ink-soft); border-radius: 999px; padding: 7px 14px; font-family: var(--font-display); font-weight: 600; font-size: 0.78rem; cursor: pointer; transition: all 0.16s ease; }
+  .cxw-history:hover { border-color: var(--cyan); color: var(--cyan); }
+  .cxw-history b { font-family: var(--font-mono); font-size: 0.68rem; color: var(--lime); }
+  .convo-fab { display: none !important; } /* the History button replaces the floating one */
+  /* Right panel idle placeholder */
+  .cx-art-idle { height: 100%; display: grid; place-items: center; padding: 30px 20px; }
+  .cx-art-idle-card { max-width: 460px; text-align: center; border: 1.5px dashed var(--border-glow); border-radius: var(--radius); padding: 44px 34px; }
+  .cx-art-idle-ico { font-size: 2.6rem; margin-bottom: 10px; }
+  .cx-art-idle-card h3 { font-family: var(--font-display); font-size: 1.35rem; margin: 0 0 10px; }
+  .cx-art-idle-card p { color: var(--ink-soft); line-height: 1.65; font-size: 0.9rem; margin: 0; }
+  #cxTask { min-height: 120px; resize: vertical; }
   .cx-agents { display: flex; flex-direction: column; gap: 4px; margin: 8px 0 2px; }
   .cx-agent { font-size: 0.76rem; color: var(--ink-soft); padding: 5px 0; border-top: 1px solid var(--border-soft); }
   .cx-agent:first-child { border-top: none; }
@@ -138,7 +154,7 @@
   .celebrate-btn { border: none; border-radius: 999px; padding: 8px 14px; font-family: var(--font-display); font-weight: 700; font-size: 0.78rem; background: var(--gradient-brand); color: var(--bg-deep); cursor: pointer; }
 
   @media (max-width: 860px) {
-    .cxw, .cxw.solo { grid-template-columns: 1fr; height: auto; }
+    .cxw { grid-template-columns: 1fr; height: auto; }
     .cxw-chat { border-right: none; border-bottom: 1px solid var(--border); }
     .cxw-thread { max-height: 46vh; }
     .cxw-art { min-height: 60vh; }
@@ -163,28 +179,31 @@
 </div>
 
 <!-- Workspace -->
-<main class="cxw solo" id="cxApp" style="display:none;">
+<div id="cxApp" style="display:none;">
+  <!-- The Orchestra — full-width live pipeline -->
+  <div class="cx-orchbar">
+    <div class="cx-orchbar-top">
+      <span class="cx-orchbar-title">The Orchestra</span>
+      <span class="cx-orchbar-status" id="cxOrchStatus">Idle — describe an app below and watch all five stages light up.</span>
+      <span class="cx-orch-live"><span class="hg-live-dot"></span> All 4 AI engines live</span>
+    </div>
+    <div class="cx-orchbar-pipe" id="cxOrchPipe"></div>
+  </div>
+
+  <main class="cxw">
   <section class="cxw-chat">
     <div class="cxw-head">
-      <span class="eyebrow">Codex · AI Orchestrator</span>
+      <div class="cxw-head-row">
+        <button type="button" class="cxw-history" id="cxHistoryBtn">☰ History <b id="cxHistCount"></b></button>
+        <span class="eyebrow">Codex · AI Orchestrator</span>
+      </div>
       <h1>Describe it. <span class="hg-gradient-text">The orchestra builds it.</span></h1>
       <p>One conductor coordinates four AI engines — plans, builds, reviews, tests — then ships a live app on the right.</p>
-      <div class="cxw-team">
-        <span class="cxw-role">🧭 Orchestrator</span>
-        <span class="cxw-role">🛠 Engineer</span>
-        <span class="cxw-role">🔍 Reviewer</span>
-        <span class="cxw-role">🧪 Tester</span>
-      </div>
     </div>
 
     <div class="cxw-thread" id="cxThread">
       <div class="cxw-empty" id="cxEmpty">
-        <div class="cx-orchestra">
-          <h3 class="cx-orch-title">The Orchestra</h3>
-          <p class="cx-orch-sub">Idle — describe an app below and watch all five stages light up.</p>
-          <span class="cx-orch-live"><span class="hg-live-dot"></span> All 4 AI engines live</span>
-          <div id="cxIdlePipe"></div>
-        </div>
+        <div class="big">⚡</div>
         <div class="cx-templates">
           <span class="cx-templates-label">Or start from a template</span>
           <div class="cx-template-row" id="cxTemplateRow"></div>
@@ -197,18 +216,18 @@
         <button type="button" class="cxw-mode on" data-mode="build">🚀 Build new</button>
         <button type="button" class="cxw-mode" data-mode="fix">🛠 Improve</button>
       </div>
-      <textarea id="cxTask" rows="2" placeholder="e.g. A to-do app with dark neon theme, categories, and streaks"></textarea>
+      <textarea id="cxTask" rows="5" placeholder="e.g. A to-do app with dark neon theme, categories, and streaks"></textarea>
       <div class="cxw-opts">
         <input id="cxRepo" type="text" placeholder="repo (optional) — Codex names one" />
       </div>
       <button id="cxSend" class="cxw-send" type="button">⚡ Build with all 4 engines</button>
       <p id="cxErr" class="cxw-err"></p>
-      <p class="cxw-hint"><span id="cxCredits">Stack auto-selected · a build uses 4 credits</span> · <a href="/checkout.html">plans</a></p>
+      <p class="cxw-hint">The engines pick the right language and stack for your idea. <span id="cxCredits">A build uses 4 credits</span> · <a href="/checkout.html">plans</a> · ⌘↵ to send</p>
     </div>
   </section>
 
-  <section class="cxw-art hidden" id="cxArt">
-    <div class="cxw-art-head">
+  <section class="cxw-art" id="cxArt">
+    <div class="cxw-art-head" id="cxArtHead" style="display:none;">
       <div class="cxw-art-tabs">
         <button type="button" class="cxw-art-tab on" data-t="preview">▶ Preview</button>
         <button type="button" class="cxw-art-tab" data-t="code">📄 Code</button>
@@ -216,9 +235,18 @@
       <span class="cxw-art-repo" id="cxArtRepo"></span>
       <div class="cxw-art-actions" id="cxArtActions"></div>
     </div>
-    <div class="cxw-art-body" id="cxArtBody"></div>
+    <div class="cxw-art-body" id="cxArtBody">
+      <div class="cx-art-idle" id="cxArtIdle">
+        <div class="cx-art-idle-card">
+          <div class="cx-art-idle-ico">🚀</div>
+          <h3 class="hg-gradient-text">Your app runs here</h3>
+          <p>After the first build you get a live preview, a Code tab with every file, and one-click Deploy to a public URL — all committed to your GitHub.</p>
+        </div>
+      </div>
+    </div>
   </section>
-</main>
+  </main>
+</div>
 
 <script src="/api-config.js?v=20260713"></script>
 <script src="/script.js?v=20260713"></script>
@@ -244,6 +272,29 @@ const errEl = document.getElementById('cxErr');
 const artEl = document.getElementById('cxArt');
 const appEl = document.getElementById('cxApp');
 
+// The Orchestra top bar: one source of truth for the pipeline + status line.
+let ART_IDLE_HTML = '';
+function setOrch(stage, filesCount) {
+  const pipe = document.getElementById('cxOrchPipe');
+  const status = document.getElementById('cxOrchStatus');
+  if (pipe) pipe.innerHTML = renderPipeline(stage, filesCount);
+  if (status) {
+    if (stage < 0) status.textContent = 'Idle — describe an app below and watch all five stages light up.';
+    else if (stage >= 5) status.textContent = 'Shipped ✓ — your app is live on the right. Ask for any change below.';
+    else status.textContent = ['Planning…', 'Building…', 'Reviewing…', 'Testing…', 'Shipping…'][stage];
+  }
+}
+function resetArtIdle() {
+  const body = document.getElementById('cxArtBody');
+  const head = document.getElementById('cxArtHead');
+  if (head) head.style.display = 'none';
+  if (body && ART_IDLE_HTML) body.innerHTML = ART_IDLE_HTML;
+}
+function refreshHistCount() {
+  const b = document.getElementById('cxHistCount');
+  if (b) { const n = Convo.list(CODEX_KEY).length; b.textContent = n ? String(n) : ''; }
+}
+
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 function md(t) {
   const h = typeof marked !== 'undefined' ? marked.parse(String(t || '')) : esc(t).replace(/\n/g, '<br>');
@@ -253,9 +304,12 @@ function md(t) {
 // ── Gate / GitHub ────────────────────────────────────────────────────────────
 function openWorkspace() {
   document.getElementById('cxGate').style.display = 'none';
-  appEl.style.display = 'grid';
-  const idle = document.getElementById('cxIdlePipe');
-  if (idle) idle.innerHTML = renderPipeline(-1);
+  appEl.style.display = 'block';
+  ART_IDLE_HTML = document.getElementById('cxArtBody').innerHTML;
+  setOrch(-1);
+  const hb = document.getElementById('cxHistoryBtn');
+  if (hb) hb.addEventListener('click', () => { if (codexDrawer) codexDrawer.open(); });
+  refreshHistCount();
   mountTemplates();
   mountHistory();
   restoreSession();
@@ -329,8 +383,8 @@ let artState = { files: null, repo: '', repoUrl: '', tab: 'preview' };
 function showArtifact(files, repo, repoUrl) {
   artState.files = files; artState.repo = repo || ''; artState.repoUrl = repoUrl || '';
   lastFiles = files;
-  appEl.classList.remove('solo');
-  artEl.classList.remove('hidden');
+  const head = document.getElementById('cxArtHead');
+  if (head) head.style.display = '';
   const hasHtml = Object.keys(files || {}).some((p) => /\.html$/i.test(p));
   const pvTab = document.querySelector('.cxw-art-tab[data-t="preview"]');
   if (pvTab) pvTab.style.display = hasHtml ? '' : 'none';
@@ -432,15 +486,15 @@ function addThinking(runMode) {
     ? ['🧭 Gemini is planning the fix…', '🛠 Claude is repairing the code…', '🔍 ChatGPT is reviewing changes…', '🧪 Groq is writing test cases…', '🚀 Codex is committing…']
     : ['🧭 Gemini is planning the build…', '🛠 Claude is writing the app…', '🔍 ChatGPT is reviewing the plan…', '🧪 Groq is writing test cases…', '🚀 Codex is creating the repo & shipping…'];
   const row = document.createElement('div'); row.className = 'cx-msg codex';
-  row.innerHTML = '<div class="cx-ava">⚡</div><div class="cx-bubble"><div id="cxLivePipe">' + renderPipeline(0) + '</div>' +
+  row.innerHTML = '<div class="cx-ava">⚡</div><div class="cx-bubble">' +
     '<div class="cx-log" id="cxNarrLine"><span class="spinner"></span>' + lines[0] + '</div></div>';
   thread.appendChild(row); scrollThread();
+  setOrch(0); // the top Orchestra bar lights up stage by stage
   let i = 1;
-  const pipe = row.querySelector('#cxLivePipe');
   const line = row.querySelector('#cxNarrLine');
   const timer = setInterval(() => {
     if (i < lines.length) {
-      if (pipe) pipe.innerHTML = renderPipeline(i);
+      setOrch(i);
       if (line) line.innerHTML = '<span class="spinner"></span>' + lines[i];
       i++;
     }
@@ -479,7 +533,6 @@ function orchestratorPipeline(data) {
 function addCodexMsg(data, fresh) {
   const row = document.createElement('div'); row.className = 'cx-msg codex';
   let inner = '<div class="cx-ava">⚡</div><div class="cx-bubble">';
-  if (data.sections || data.built || (data.files && Object.keys(data.files).length)) inner += orchestratorPipeline(data);
   if ((data.log || []).length) inner += '<div>' + data.log.map((l) => '<div class="cx-log">' + esc(l) + '</div>').join('') + '</div>';
   if ((data.sections || []).length) inner += '<div class="cx-agents">' + data.sections.map(agentLine).join('') + '</div>';
   if (data.teacher) inner += '<h4>🎓 Quick lesson — how this is coded</h4><div class="cx-body">' + md(data.teacher) + '</div>';
@@ -552,6 +605,7 @@ async function send() {
     if (data.error) { errEl.textContent = data.error; errEl.style.display = 'block'; return; }
 
     addCodexMsg(data, true);
+    setOrch(5, (data.committed || []).length);
     const cr = document.getElementById('cxCredits');
     if (cr && data.credits) {
       cr.textContent = data.payg
@@ -590,12 +644,14 @@ function saveSession(lastText, data) {
     repoUrl: data.repoUrl || (prev && prev.repoUrl) || '',
   });
   if (codexDrawer) codexDrawer.refresh();
+  refreshHistCount();
 }
 function newChat() {
   currentCodexId = Convo.newId(); sessionRepo = ''; lastFiles = null;
   thread.querySelectorAll('.cx-msg, .celebrate-share').forEach((n) => n.remove());
   if (emptyEl) emptyEl.style.display = '';
-  artEl.classList.add('hidden'); appEl.classList.add('solo');
+  resetArtIdle();
+  setOrch(-1);
   document.getElementById('cxTask').value = ''; document.getElementById('cxRepo').value = '';
   document.getElementById('cxSend').textContent = mode === 'fix' ? '🛠 Improve with all 4 engines' : '⚡ Build with all 4 engines';
   errEl.style.display = 'none';
@@ -611,8 +667,8 @@ function openSession(id) {
     if (turn.role === 'user') addUserMsg(turn.text);
     else if (turn.sum) addCodexMsg(Object.assign({ files: null }, turn.sum), false);
   });
-  if (t.files && Object.keys(t.files).length) { artState.tab = 'preview'; showArtifact(t.files, t.repo, t.repoUrl); }
-  else { artEl.classList.add('hidden'); appEl.classList.add('solo'); }
+  if (t.files && Object.keys(t.files).length) { artState.tab = 'preview'; showArtifact(t.files, t.repo, t.repoUrl); setOrch(5, Object.keys(t.files).length); }
+  else { resetArtIdle(); setOrch(-1); }
   if (sessionRepo) { document.getElementById('cxSend').textContent = '🛠 Improve with all 4 engines'; document.getElementById('cxTask').placeholder = 'Ask for a change…'; }
 }
 function restoreSession() {
