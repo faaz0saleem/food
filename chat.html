@@ -899,6 +899,7 @@
   }
   loadModelInfo();
   refreshTopBar();
+  try { chatInput.focus(); } catch {}
 
   // History drawer + restore the last open thread (unless arriving with ?q=).
   historyDrawer = Convo.mountDrawer({

@@ -183,10 +183,13 @@ function cx_put_file(string $token, string $owner, string $repo, string $path, s
     return cx_gh_api($token, 'PUT', "/repos/$owner/$repo/contents/$encoded", $payload);
 }
 
-/** Pull "===FILE: path===\n```lang\n...\n```" blocks out of an engine reply. */
+/** Pull "===FILE: path===\n```lang\n...\n```" blocks out of an engine reply.
+ *  Tolerant of common drift: "### FILE: x", "FILE: x", extra spacing — and if
+ *  no blocks parse at all, the largest ```html fence becomes index.html so a
+ *  web build ALWAYS has a previewable file. */
 function cx_parse_files(string $text): array {
     $files = [];
-    if (preg_match_all('/===\s*FILE:\s*([^\n=]+?)\s*===\s*```[a-zA-Z0-9._+-]*\r?\n(.*?)```/s', $text, $matches, PREG_SET_ORDER)) {
+    if (preg_match_all('/(?:={2,}|#{1,4})?\s*FILE:\s*([^\n=]+?)\s*(?:={2,})?\s*\r?\n\s*```[a-zA-Z0-9._+-]*\r?\n(.*?)```/s', $text, $matches, PREG_SET_ORDER)) {
         foreach ($matches as $m) {
             $path = trim($m[1]);
             // Block path traversal and absolute paths.
@@ -197,6 +200,15 @@ function cx_parse_files(string $text): array {
                 continue;
             }
             $files[$path] = rtrim($m[2], "\r\n") . "\n";
+        }
+    }
+    if (count($files) === 0) {
+        // Last resort: any full HTML document in a fence (or bare) previews.
+        if (preg_match_all('/```(?:html)?\r?\n(<!(?:DOCTYPE|doctype)[\s\S]*?)```/', $text, $m) && count($m[1]) > 0) {
+            usort($m[1], fn ($a, $b) => strlen($b) <=> strlen($a));
+            $files['index.html'] = rtrim($m[1][0], "\r\n") . "\n";
+        } elseif (preg_match('/<!(?:DOCTYPE|doctype)\s+html[\s\S]*<\/html>/i', $text, $m2)) {
+            $files['index.html'] = rtrim($m2[0], "\r\n") . "\n";
         }
     }
     return $files;

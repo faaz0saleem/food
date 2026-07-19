@@ -13,8 +13,8 @@ const statsFile = path.join(rootDir, 'stats.json');
 const ADMIN_KEY = process.env.ADMIN_KEY || '';
 
 const GROQ_MODEL = process.env.GROQ_MODEL || process.env.GROQ_MODEL_NAME || 'llama-3.3-70b-versatile';
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
-const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-pro';
+const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4.1';
 const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || 'claude-sonnet-5';
 const MODEL_LABEL = process.env.GROQ_MODEL_LABEL || GROQ_MODEL;
 

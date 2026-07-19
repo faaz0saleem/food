@@ -395,6 +395,8 @@ function showArtifact(files, repo, repoUrl) {
   actions.innerHTML = '';
   const paths = Object.keys(files || {});
   if (paths.length) {
+    const re = document.createElement('button'); re.className = 'cxw-abtn'; re.type = 'button'; re.textContent = '↻'; re.title = 'Restart the app';
+    re.addEventListener('click', () => paintArtifact()); actions.appendChild(re);
     const zip = document.createElement('button'); zip.className = 'cxw-abtn'; zip.type = 'button'; zip.innerHTML = '⬇ ZIP';
     zip.addEventListener('click', () => downloadZip(files, repo)); actions.appendChild(zip);
   }

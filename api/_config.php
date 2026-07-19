@@ -1124,8 +1124,8 @@ function mm_provider_api_key(string $provider): string {
 function mm_provider_model(string $provider): string {
     return match ($provider) {
         'groq' => mm_env_value('GROQ_MODEL', 'llama-3.3-70b-versatile'),
-        'gemini' => mm_env_value('GEMINI_MODEL', 'gemini-2.5-flash'),
-        'openai' => mm_env_value('OPENAI_MODEL', 'gpt-4o'),
+        'gemini' => mm_env_value('GEMINI_MODEL', 'gemini-2.5-pro'),
+        'openai' => mm_env_value('OPENAI_MODEL', 'gpt-4.1'),
         'anthropic' => mm_env_value('ANTHROPIC_MODEL', 'claude-sonnet-5'),
         default => '',
     };
@@ -1537,23 +1537,44 @@ function mm_route_engine(string $message, string $subject, string $learningStyle
     $haystack = strtolower($message . ' ' . $subject);
     foreach (['story', 'analogy', 'poem', 'imagine', 'narrative'] as $word) {
         if (str_contains($haystack, $word)) {
-            return 'storyteller';
+            return mm_prefer_native('storyteller');
         }
     }
     foreach (['solve', 'calculate', 'equation', 'math', 'algebra', 'geometry', 'calculus', 'derivative', 'integral', 'physics', 'code', 'coding', 'program', 'debug', 'formula', 'simplify', 'factor'] as $word) {
         if (str_contains($haystack, $word)) {
-            return 'solver';
+            return mm_prefer_native('solver');
         }
     }
     foreach (['example', 'real-world', 'real world', 'real life', 'application', 'use case'] as $word) {
         if (str_contains($haystack, $word)) {
-            return 'explorer';
+            return mm_prefer_native('explorer');
         }
     }
     if ($learningStyle === 'Stories') {
-        return 'storyteller';
+        return mm_prefer_native('storyteller');
     }
-    return 'reasoner';
+    return mm_prefer_native('reasoner');
+}
+
+/** If the picked engine's native provider has no key, use the strongest engine
+ *  that DOES have its native key so students get a real frontier model. */
+function mm_prefer_native(string $pick): string {
+    $engines = mm_engines_config();
+    if (mm_provider_ready($engines[$pick]['native'] ?? '')) {
+        return $pick;
+    }
+    foreach (['storyteller', 'explorer', 'solver', 'reasoner'] as $key) {
+        if (mm_provider_ready($engines[$key]['native'] ?? '')) {
+            return $key;
+        }
+    }
+    return $pick;
+}
+
+/** The strongest engine whose native provider is configured (Claude > GPT >
+ *  Gemini > Groq) — used for synthesis/conductor passes. */
+function mm_best_ready_engine(): string {
+    return mm_prefer_native('storyteller');
 }
 
 function mm_engine_details(): array {
