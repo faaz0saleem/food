@@ -367,6 +367,11 @@ function finish() {
   const scores = lsGet('mm_quiz_scores', {});
   (scores[subject] = scores[subject] || []).push(pct);
   lsSet('mm_quiz_scores', scores);
+  // Quiz log + daily XP history — the Progress page reads these (real analytics).
+  const qlog = lsGet('mm_quiz_log', []);
+  qlog.unshift({ subject, total, correct, xp: 15 + Math.round(pct * 0.2), ts: Date.now() });
+  lsSet('mm_quiz_log', qlog.slice(0, 20));
+  if (typeof bumpDailyXP === 'function') bumpDailyXP(15 + Math.round(pct * 0.2));
   if (typeof bumpQuest === 'function') try { bumpQuest('quiz1'); } catch (e) {}
   if (typeof addMilestone === 'function' && pct >= 90) addMilestone('Scored ' + pct + '% in ' + subject);
   if (typeof updateLevel === 'function') updateLevel();

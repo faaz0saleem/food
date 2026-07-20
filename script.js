@@ -359,9 +359,21 @@ function updateStreak() {
   }
 }
 
+// Daily XP history — powers the real Activity chart on the Progress page.
+// Keyed by ISO date, capped at 90 days.
+function bumpDailyXP(amount) {
+  const key = new Date().toISOString().slice(0, 10);
+  const log = lsGet('mm_daily_xp', {});
+  log[key] = (log[key] || 0) + Math.max(0, Math.round(amount));
+  const days = Object.keys(log).sort();
+  while (days.length > 90) { delete log[days.shift()]; }
+  lsSet('mm_daily_xp', log);
+}
+
 function recordChat(subject) {
   const messageCount = lsGet('mm_count', 0) + 1;
   lsSet('mm_count', messageCount);
+  bumpDailyXP(2); // same rate the XP system credits per message
   const subjectsData = lsGet('mm_subjects', {});
   subjectsData[subject] = (subjectsData[subject] || 0) + 1;
   lsSet('mm_subjects', subjectsData);

@@ -1,489 +1,311 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-FHMTQDLHV2"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag("js", new Date());
-
-  gtag("config", "G-FHMTQDLHV2");
-</script>
-
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag("js",new Date());gtag("config","G-FHMTQDLHV2");</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your Progress — Levels, Streaks & Mastery | Hungter</title>
+<meta name="description" content="Your real learning analytics: XP, streaks, accuracy, subject mastery, achievements and recent quizzes.">
+<link rel="canonical" href="https://hungter.com/progress.html">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Fredoka:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap">
-  <title>Detailed Study Analytics & Progress Report | Hungter</title>
-  <meta name="description" content="Deep-dive charts of your study activity, quiz performance by subject, and a printable progress report to share with parents or teachers.">
-  <link rel="canonical" href="https://hungter.com/progress.html">
-  <meta property="og:type" content="website">
-  <meta property="og:title" content="Hungter — Progress">
-  <meta property="og:description" content="See your XP growth, quiz results, and subject mastery over time.">
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/brand.css?v=20260713">
-  <link rel="stylesheet" href="/nav.css?v=20260713">
-  <link rel="stylesheet" href="/styles.css?v=20260713">
-  <link rel="stylesheet" href="/progress.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/brand.css?v=20260728">
+<link rel="stylesheet" href="/nav.css?v=20260713">
+<style>
+  body { background: var(--bg-deep); background-image: var(--gradient-aurora); background-attachment: fixed; }
+  .top-bar { height: 4px; background: var(--surface-2); }
+  .top-bar-fill { height: 100%; background: var(--gradient-brand); width: 0%; box-shadow: var(--glow-lime); }
+  .pg-main { max-width: 1140px; margin: 0 auto; padding: 30px 20px 80px; }
+  .hg-gradient-text { background: var(--gradient-brand); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .mono { font-family: var(--font-mono); }
+
+  .pg-hero { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap; margin-bottom: 24px; }
+  .pg-eyebrow { display: inline-flex; align-items: center; gap: 9px; font-family: var(--font-mono); font-size: 0.68rem; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--lime); }
+  .pg-hero h1 { font-family: var(--font-display); font-size: clamp(2rem, 4.4vw, 2.9rem); letter-spacing: -0.02em; margin: 8px 0 6px; }
+  .pg-hero .sub { color: var(--ink-soft); font-size: 1rem; }
+  .pg-quizbtn { border: none; border-radius: 14px; padding: 15px 26px; font-family: var(--font-display); font-weight: 700; font-size: 0.98rem; background: var(--gradient-brand); color: var(--bg-deep); box-shadow: var(--glow-lime); white-space: nowrap; }
+
+  .kpis { display: grid; grid-template-columns: 1.35fr 1fr 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+  .kpi { background: rgba(13,20,40,0.72); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; position: relative; }
+  .kpi .up { position: absolute; top: 16px; right: 16px; font-family: var(--font-mono); font-size: 0.7rem; color: var(--lime); }
+  .kpi .ico { font-size: 1.4rem; }
+  .kpi b { display: block; font-family: var(--font-display); font-size: 2.3rem; letter-spacing: -0.03em; margin-top: 10px; font-variant-numeric: tabular-nums; }
+  .kpi span.lbl { color: var(--ink-soft); font-size: 0.88rem; }
+  .kpi-level { display: flex; gap: 18px; align-items: center; border-color: var(--border-glow); }
+  .ring { position: relative; width: 108px; height: 108px; flex: 0 0 108px; }
+  .ring svg { transform: rotate(-90deg); }
+  .ring .in { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; }
+  .ring .in b { font-family: var(--font-display); font-size: 1.9rem; margin: 0; }
+  .ring .in span { font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.16em; color: var(--ink-faint); }
+  .kpi-level .tot .cap { font-family: var(--font-mono); font-size: 0.64rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-faint); }
+  .kpi-level .tot b { font-size: 2.5rem; margin: 2px 0 8px; }
+  .lvlbar { height: 8px; width: 170px; max-width: 100%; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+  .lvlbar i { display: block; height: 100%; background: var(--gradient-brand); border-radius: 999px; }
+  .kpi-level .tot .sub { font-size: 0.76rem; color: var(--ink-faint); margin-top: 6px; }
+
+  .mid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 14px; margin-bottom: 18px; }
+  .card { background: rgba(13,20,40,0.72); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; }
+  .card h2 { font-family: var(--font-display); font-size: 1.25rem; margin: 0 0 2px; }
+  .card .sub { color: var(--ink-soft); font-size: 0.85rem; margin: 0 0 16px; }
+  .act-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .toggle { display: inline-flex; gap: 4px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; padding: 4px; }
+  .toggle button { border: none; background: transparent; color: var(--ink-soft); font-family: var(--font-display); font-weight: 600; font-size: 0.8rem; padding: 7px 16px; border-radius: 999px; cursor: pointer; }
+  .toggle button.on { background: var(--gradient-brand); color: var(--bg-deep); }
+  .bars { display: flex; align-items: flex-end; gap: 10px; height: 190px; margin-top: 18px; }
+  .bcol { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 7px; min-width: 0; }
+  .bval { font-family: var(--font-mono); font-size: 0.72rem; color: var(--ink-soft); }
+  .bfill { width: 100%; max-width: 54px; border-radius: 10px 10px 4px 4px; background: linear-gradient(180deg, rgba(200,255,77,0.85), rgba(200,255,77,0.25)); min-height: 4px; transition: height 0.8s cubic-bezier(0.22,1,0.36,1); }
+  .bcol.top .bfill { background: linear-gradient(180deg, #C8FF4D, #4DF0FF); box-shadow: var(--glow-lime); }
+  .blab { font-family: var(--font-mono); font-size: 0.68rem; color: var(--ink-faint); }
+  .bcol.top .blab { color: var(--lime); }
+
+  .streak-card { border-color: rgba(255,107,74,0.4); }
+  .streak-num { font-family: var(--font-display); font-size: 3.4rem; color: var(--coral); letter-spacing: -0.03em; line-height: 1; }
+  .streak-num small { font-size: 1rem; color: var(--ink-soft); font-family: var(--font-body); letter-spacing: 0; }
+  .dow { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; margin-top: 22px; }
+  .dow .d { text-align: center; }
+  .dow .box { width: 100%; aspect-ratio: 1; border-radius: 12px; display: grid; place-items: center; font-size: 1rem; background: var(--surface-2); border: 1px solid var(--border-soft); color: var(--ink-faint); }
+  .dow .d.on .box { background: rgba(200,255,77,0.12); border-color: rgba(200,255,77,0.4); color: var(--lime); }
+  .dow .d.fire .box { background: rgba(255,107,74,0.14); border-color: rgba(255,107,74,0.5); }
+  .dow label { font-family: var(--font-mono); font-size: 0.6rem; color: var(--ink-faint); display: block; margin-top: 5px; }
+
+  .bot { display: grid; grid-template-columns: 1.6fr 1fr; gap: 14px; margin-bottom: 18px; }
+  .subj { margin-bottom: 16px; }
+  .subj .row { display: flex; align-items: baseline; gap: 10px; }
+  .subj .row b { font-family: var(--font-display); font-size: 1rem; }
+  .subj .row .n { font-family: var(--font-mono); font-size: 0.72rem; color: var(--ink-faint); }
+  .subj .row .pct { margin-left: auto; font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; }
+  .subj .track { height: 9px; background: var(--surface-2); border-radius: 999px; overflow: hidden; margin-top: 7px; }
+  .subj .fill { height: 100%; border-radius: 999px; transition: width 1s cubic-bezier(0.22,1,0.36,1); }
+  .ach-head { display: flex; justify-content: space-between; align-items: baseline; }
+  .ach-count { font-family: var(--font-mono); font-size: 0.8rem; color: var(--lime); }
+  .ach-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+  .ach { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px 12px; text-align: center; }
+  .ach .e { font-size: 1.6rem; }
+  .ach b { display: block; font-family: var(--font-display); font-size: 0.88rem; margin: 6px 0 2px; }
+  .ach span { font-size: 0.72rem; color: var(--ink-faint); }
+  .ach.earned { border-color: rgba(200,255,77,0.4); background: rgba(200,255,77,0.05); }
+  .ach.locked { opacity: 0.45; filter: grayscale(0.9); }
+
+  .feed .item { display: flex; align-items: center; gap: 14px; padding: 15px 4px; border-bottom: 1px solid var(--border-soft); }
+  .feed .item:last-child { border-bottom: none; }
+  .feed .fic { width: 46px; height: 46px; border-radius: 13px; background: var(--surface-2); border: 1px solid var(--border); display: grid; place-items: center; font-size: 1.3rem; flex: 0 0 46px; }
+  .feed .fmain b { display: block; font-family: var(--font-display); font-size: 1rem; }
+  .feed .fmain span { font-size: 0.8rem; color: var(--ink-faint); }
+  .feed .fright { margin-left: auto; text-align: right; display: flex; gap: 18px; align-items: center; }
+  .feed .score { font-family: var(--font-mono); font-weight: 700; color: var(--lime); }
+  .feed .fxp { font-family: var(--font-mono); font-size: 0.8rem; color: var(--lime); }
+  .feed .when { font-family: var(--font-mono); font-size: 0.74rem; color: var(--ink-faint); min-width: 74px; }
+  .empty { color: var(--ink-faint); text-align: center; padding: 26px 10px; font-size: 0.9rem; }
+  .empty a { color: var(--cyan); }
+
+  @media (max-width: 960px) { .kpis { grid-template-columns: 1fr 1fr; } .mid, .bot { grid-template-columns: 1fr; } .kpi-level { grid-column: 1 / -1; } }
+  @media (max-width: 560px) { .kpis { grid-template-columns: 1fr; } .bars { gap: 5px; } }
+</style>
 </head>
 <body data-page="progress">
-  <div class="top-bar"><div class="top-bar-fill" id="topBar" style="width:0%"></div></div>
-  <header class="site-nav"></header>
+<div class="top-bar"><div class="top-bar-fill" id="topBar" style="width:0%"></div></div>
+<header class="site-nav"></header>
 
-  <main class="progress-page">
-    <section class="progress-hero">
-      <div class="progress-hero-head">
-        <div>
-          <p class="eyebrow">Live Analytics</p>
-          <h1>Your learning graph, not just your streak.</h1>
-          <p>Hungter tracks how often you practice, how your quiz accuracy shifts over time, and which subjects need a closer look next.</p>
-        </div>
-        <span class="progress-tag">Student Snapshot</span>
+<main class="pg-main">
+  <div class="pg-hero">
+    <div>
+      <span class="pg-eyebrow"><span class="hg-live-dot"></span> Your Progress</span>
+      <h1>Level <span id="lvlNum">1</span> · <span class="hg-gradient-text" id="lvlName">Newbie</span></h1>
+      <div class="sub"><span id="xpToNext">— XP to next level</span> · <span id="quizDone">0 quizzes completed</span></div>
+    </div>
+    <a class="pg-quizbtn" href="/quiz.html">🖊 Take a quiz</a>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi kpi-level">
+      <div class="ring">
+        <svg width="108" height="108" viewBox="0 0 108 108">
+          <circle cx="54" cy="54" r="46" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="9"/>
+          <circle id="lvlArc" cx="54" cy="54" r="46" fill="none" stroke="url(#lg)" stroke-width="9" stroke-linecap="round" stroke-dasharray="289" stroke-dashoffset="289" style="transition:stroke-dashoffset 1.1s cubic-bezier(0.22,1,0.36,1);"/>
+          <defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#C8FF4D"/><stop offset="100%" stop-color="#4DF0FF"/></linearGradient></defs>
+        </svg>
+        <div class="in"><div><b id="ringLvl">1</b><span>LEVEL</span></div></div>
       </div>
-      <div class="progress-hero-stats">
-        <article class="summary-card">
-          <p class="quiz-label">Day Streak</p>
-          <div class="summary-value" id="streak-count">0</div>
-          <p>Consistency compounds faster than long cramming sessions.</p>
-        </article>
-        <article class="summary-card">
-          <p class="quiz-label">Current Level</p>
-          <div class="summary-value" id="level-rank">Newbie</div>
-          <p>Your nav badge and dashboard level stay in sync with stored progress.</p>
-        </article>
+      <div class="tot">
+        <div class="cap">Total XP</div>
+        <b class="hg-gradient-text" id="totalXP">0</b>
+        <div class="lvlbar"><i id="lvlBar" style="width:0%"></i></div>
+        <div class="sub" id="lvlSub">0% through this level</div>
       </div>
-    </section>
+    </div>
+    <div class="kpi"><span class="ico">🎯</span><span class="up" id="accUp"></span><b class="hg-gradient-text" id="avgAcc">—</b><span class="lbl">Avg. accuracy</span></div>
+    <div class="kpi"><span class="ico">🖊</span><b class="hg-gradient-text" id="quizCount">0</b><span class="lbl">Quizzes taken</span></div>
+    <div class="kpi"><span class="ico">⚡</span><span class="up mono" id="qToday"></span><b class="hg-gradient-text" id="msgCount">0</b><span class="lbl">Questions asked</span></div>
+  </div>
 
-    <section class="progress-meter-grid">
-      <article class="progress-card">
-        <div class="progress-meter-head">
-          <div>
-            <p class="quiz-label">Progress Meter</p>
-            <h2>Journey to the next level</h2>
-          </div>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;">
-            <button id="printProgress" class="progress-button" type="button">Print my progress</button>
-            <a id="open-chat" class="progress-link" href="/chat.html">Ask AI</a>
-          </div>
-        </div>
-        <div class="progress-meter-copy">
-          <p>Your XP is estimated from chats and quizzes, then mapped to the shared level ladder used across Hungter.</p>
-        </div>
-        <div class="summary-grid">
-          <article class="summary-card">
-            <p class="quiz-label">XP</p>
-            <div class="xp-value" id="xp-value">0</div>
-            <p>Total earned from quizzes and conversations.</p>
-          </article>
-          <article class="summary-card">
-            <p class="quiz-label">Target</p>
-            <div class="xp-value" id="xp-target">10,000 XP Needed</div>
-            <p>Keep stacking practice to move up.</p>
-          </article>
-          <article class="summary-card">
-            <p class="quiz-label">Weak Area</p>
-            <div class="xp-value" id="weak-area">None</div>
-            <p>Lowest quiz average so you know what to review first.</p>
-          </article>
-        </div>
-        <div class="progress-track"><div id="xp-progress-fill" class="progress-fill" style="width:0%"></div></div>
-      </article>
+  <div class="mid">
+    <div class="card">
+      <div class="act-head">
+        <div><h2>Activity</h2><p class="sub" id="actSub">XP earned over the last 7 days</p></div>
+        <div class="toggle"><button type="button" class="on" data-r="week">Week</button><button type="button" data-r="month">Month</button></div>
+      </div>
+      <div class="bars" id="actBars"></div>
+    </div>
+    <div class="card streak-card">
+      <h2>🔥 Streak</h2>
+      <p class="sub">Keep it alive — practice daily</p>
+      <div class="streak-num"><span id="streakN">0</span> <small>day streak</small></div>
+      <div class="dow" id="dowGrid"></div>
+    </div>
+  </div>
 
-      <article class="coach-card">
-        <div class="coach-head">
-          <div>
-            <p class="quiz-label">AI Coach</p>
-            <h2>Next best study move</h2>
-          </div>
-          <button id="refresh-ai" type="button" class="progress-button">Refresh Insight</button>
-        </div>
-        <p id="ai-coach-text">Loading AI-driven guidance...</p>
-      </article>
-    </section>
+  <div class="bot">
+    <div class="card">
+      <h2>Subject mastery</h2>
+      <p class="sub">Accuracy across your attempts by subject</p>
+      <div id="masteryList"></div>
+    </div>
+    <div class="card">
+      <div class="ach-head"><h2>Achievements</h2><span class="ach-count" id="achCount">0/6</span></div>
+      <div class="ach-grid" id="achGrid"></div>
+    </div>
+  </div>
 
-    <section class="chart-layout">
-      <article class="timeline-card">
-        <div class="timeline-head">
-          <div>
-            <p class="quiz-label">Activity</p>
-            <h2>Recent milestones</h2>
-          </div>
-          <button id="view-milestones" type="button" class="progress-button">View All</button>
-        </div>
-        <div id="activity-timeline" class="timeline-list"></div>
-      </article>
+  <div class="card feed">
+    <h2>Recent quizzes</h2>
+    <p class="sub">Your latest rounds, straight from the arena</p>
+    <div id="feedList"></div>
+  </div>
+</main>
 
-      <article class="chart-card">
-        <div class="chart-head">
-          <div>
-            <p class="quiz-label">Knowledge Retention</p>
-            <h2>Quiz performance over time</h2>
-          </div>
-          <select id="performance-filter" class="filter-select">
-            <option>All Subjects</option>
-            <option>Science</option>
-            <option>Math</option>
-            <option>Philosophy</option>
-          </select>
-        </div>
-        <div class="chart-shell"><canvas id="performanceChart"></canvas></div>
-      </article>
-    </section>
+<footer class="site-footer"></footer>
+<script src="/api-config.js?v=20260713"></script>
+<script src="/script.js?v=20260728"></script>
+<script src="/layout.js?v=20260713" defer></script>
+<script>
+ensureProfile();
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const bar = $('topBar');
 
-    <section class="chart-layout">
-      <article class="chart-card">
-        <div class="chart-head">
-          <div>
-            <p class="quiz-label">Cognitive Profile</p>
-            <h2>Your current balance</h2>
-          </div>
-          <span class="progress-tag">Radar</span>
-        </div>
-        <div class="chart-shell"><canvas id="cognitiveChart"></canvas></div>
-        <p><strong id="logic-label">High</strong> logic and <strong id="memory-label">Strong</strong> memory are inferred from your recent activity mix.</p>
-      </article>
+// ── All numbers below come from the real localStorage records ────────────────
+const prog = getLevelProgress();
+if (bar) bar.style.width = prog.pct + '%';
+const LEVEL_NAMES = ['Newbie', 'Learner', 'Explorer', 'Scholar', 'Master'];
+const lvlNum = Math.max(1, LEVEL_NAMES.indexOf(prog.level) + 1);
+const scores = lsGet('mm_quiz_scores', {});
+const allScores = Object.values(scores).flat();
+const quizCount = allScores.length;
+const avgAcc = quizCount ? Math.round(allScores.reduce((a, b) => a + b, 0) / quizCount) : null;
+const msgCount = lsGet('mm_count', 0);
+const todayCount = lsGet('mm_today_count', 0);
+const streakDays = lsGet('mm_streak', []) || [];
+const dailyXP = lsGet('mm_daily_xp', {});
+const qlog = lsGet('mm_quiz_log', []);
+const subjectsChat = lsGet('mm_subjects', {});
 
-      <article class="chart-card">
-        <div class="mastery-head">
-          <div>
-            <p class="quiz-label">Subject Mastery</p>
-            <h2>Which lanes are strongest?</h2>
-          </div>
-          <span class="progress-tag">Updated Live</span>
-        </div>
-        <div class="mastery-grid">
-          <article class="mastery-card" id="science-card">
-            <div class="mastery-icon">🧬</div>
-            <div>
-              <h3>Science</h3>
-              <p class="mastery-rank" id="science-label">Rank S</p>
-            </div>
-            <div class="mastery-meter">
-              <div class="mastery-meta"><span>Mastery</span><strong id="science-value">92%</strong></div>
-              <div class="progress-track"><div id="science-fill" class="progress-fill" style="width:92%"></div></div>
-            </div>
-          </article>
-          <article class="mastery-card" id="tech-card">
-            <div class="mastery-icon">💻</div>
-            <div>
-              <h3>Computer Science</h3>
-              <p class="mastery-rank" id="tech-label">Rank A</p>
-            </div>
-            <div class="mastery-meter">
-              <div class="mastery-meta"><span>Mastery</span><strong id="tech-value">78%</strong></div>
-              <div class="progress-track"><div id="tech-fill" class="progress-fill" style="width:78%"></div></div>
-            </div>
-          </article>
-          <article class="mastery-card" id="math-card">
-            <div class="mastery-icon">📐</div>
-            <div>
-              <h3>Mathematics</h3>
-              <p class="mastery-rank" id="math-label">Needs Focus</p>
-            </div>
-            <div class="mastery-meter">
-              <div class="mastery-meta"><span>Mastery</span><strong id="math-value">45%</strong></div>
-              <div class="progress-track"><div id="math-fill" class="progress-fill" style="width:45%"></div></div>
-            </div>
-          </article>
-          <article class="mastery-card" id="history-card">
-            <div class="mastery-icon">🏛️</div>
-            <div>
-              <h3>History</h3>
-              <p class="mastery-rank" id="history-label">Rank B</p>
-            </div>
-            <div class="mastery-meter">
-              <div class="mastery-meta"><span>Mastery</span><strong id="history-value">62%</strong></div>
-              <div class="progress-track"><div id="history-fill" class="progress-fill" style="width:62%"></div></div>
-            </div>
-          </article>
-        </div>
-      </article>
-    </section>
-  </main>
+// Hero + level KPI
+$('lvlNum').textContent = lvlNum;
+$('lvlName').textContent = prog.level;
+$('xpToNext').textContent = prog.nextLevel ? prog.remaining + ' XP to ' + prog.nextLevel : 'Max level reached';
+$('quizDone').textContent = quizCount + ' quiz' + (quizCount === 1 ? '' : 'zes') + ' completed';
+$('ringLvl').textContent = lvlNum;
+$('totalXP').textContent = prog.xp.toLocaleString();
+setTimeout(() => { $('lvlArc').style.strokeDashoffset = Math.round(289 * (1 - prog.pct / 100)); $('lvlBar').style.width = prog.pct + '%'; }, 120);
+$('lvlSub').textContent = prog.pct + '% through this level';
+$('avgAcc').textContent = avgAcc === null ? '—' : avgAcc + '%';
+if (allScores.length >= 4) {
+  const half = Math.floor(allScores.length / 2);
+  const older = allScores.slice(0, half), newer = allScores.slice(half);
+  const d = Math.round(newer.reduce((a, b) => a + b, 0) / newer.length - older.reduce((a, b) => a + b, 0) / older.length);
+  if (d > 0) $('accUp').textContent = '▲ ' + d + '%';
+}
+$('quizCount').textContent = quizCount;
+$('msgCount').textContent = msgCount.toLocaleString();
+$('qToday').textContent = todayCount ? '+' + todayCount + ' today' : '';
 
-  <script src="/api-config.js?v=20260713"></script>
-<script src="/script.js?v=20260713"></script>
-  <script src="/layout.js?v=20260713" defer></script>
-  <script>
-    ensureProfile();
+// Activity chart (real mm_daily_xp)
+function dkey(d) { return d.toISOString().slice(0, 10); }
+function renderActivity(range) {
+  const days = range === 'month' ? 30 : 7;
+  $('actSub').textContent = 'XP earned over the last ' + days + ' days';
+  const wrap = $('actBars'); wrap.innerHTML = '';
+  const vals = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 86400000);
+    vals.push({ label: range === 'month' ? String(d.getDate()) : d.toLocaleDateString('en', { weekday: 'short' }), v: dailyXP[dkey(d)] || 0 });
+  }
+  const max = Math.max(1, ...vals.map((x) => x.v));
+  const best = Math.max(...vals.map((x) => x.v));
+  vals.forEach((x) => {
+    const col = document.createElement('div');
+    col.className = 'bcol' + (x.v === best && best > 0 ? ' top' : '');
+    const showVal = range === 'week' || x.v === best;
+    col.innerHTML = '<span class="bval">' + (showVal && x.v ? x.v : '') + '</span>' +
+      '<div class="bfill" style="height:' + Math.max(3, Math.round((x.v / max) * 140)) + 'px"></div>' +
+      '<span class="blab">' + (range === 'month' && vals.indexOf(x) % 5 !== 0 ? '' : x.label) + '</span>';
+    wrap.appendChild(col);
+  });
+  if (vals.every((x) => x.v === 0)) {
+    wrap.innerHTML = '<div class="empty" style="width:100%">No activity recorded yet — <a href="/chat.html">ask a question</a> or <a href="/quiz.html">take a quiz</a> and this chart comes alive.</div>';
+  }
+}
+renderActivity('week');
+document.querySelectorAll('.toggle button').forEach((b) => b.addEventListener('click', () => {
+  document.querySelectorAll('.toggle button').forEach((x) => x.classList.toggle('on', x === b));
+  renderActivity(b.dataset.r);
+}));
 
-    const topBar = document.getElementById('topBar');
-    const palette = getComputedStyle(document.documentElement);
-    const colorInk = palette.getPropertyValue('--ink').trim();
-    const colorInkSoft = palette.getPropertyValue('--ink-soft').trim();
-    const colorLime = palette.getPropertyValue('--lime').trim();
-    const colorBlue = palette.getPropertyValue('--blue').trim();
-    const colorCoral = palette.getPropertyValue('--coral').trim();
-    const colorPink = palette.getPropertyValue('--pink').trim();
-    const colorSurface = palette.getPropertyValue('--surface').trim();
-    const colorBorder = palette.getPropertyValue('--border').trim();
+// Streak (real mm_streak dates)
+$('streakN').textContent = streakDays.length;
+const dset = new Set(streakDays.map((s) => new Date(s).toDateString()));
+const grid = $('dowGrid');
+for (let i = 6; i >= 0; i--) {
+  const d = new Date(Date.now() - i * 86400000);
+  const on = dset.has(d.toDateString());
+  const isToday = i === 0;
+  const el = document.createElement('div');
+  el.className = 'd' + (on ? (isToday ? ' on fire' : ' on') : '');
+  el.innerHTML = '<div class="box">' + (on ? (isToday ? '🔥' : '✓') : '') + '</div><label>' + d.toLocaleDateString('en', { weekday: 'short' }) + '</label>';
+  grid.appendChild(el);
+}
 
-    function refreshTopBar() {
-      const progress = getLevelProgress();
-      if (topBar) {
-        topBar.style.width = `${progress.pct}%`;
-      }
-    }
+// Subject mastery (real quiz averages; falls back to chat counts)
+const SUBJ_ICO = { 'General Knowledge': '🌍', Science: '🔬', 'Web Dev': '💻', Mathematics: '🔢', Math: '🔢', History: '🏛️', Geography: '🗺️', Space: '🚀', Sports: '⚽', Music: '🎵', Coding: '💻', English: '📚', Physics: '⚡', Chemistry: '⚗️', Biology: '🧬' };
+function accColor(p) { return p >= 85 ? 'linear-gradient(90deg,#C8FF4D,#4DF0FF)' : p >= 65 ? 'linear-gradient(90deg,#4DF0FF,#8B5CFF)' : 'linear-gradient(90deg,#FF6B4A,#FFD14D)'; }
+const mastery = Object.entries(scores).map(([s, arr]) => ({ s, n: arr.length, pct: Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) }))
+  .sort((a, b) => b.n - a.n);
+$('masteryList').innerHTML = mastery.length ? mastery.map((m) =>
+  '<div class="subj"><div class="row"><span>' + (SUBJ_ICO[m.s] || '📘') + '</span><b>' + esc(m.s) + '</b><span class="n">' + m.n + ' quiz' + (m.n === 1 ? '' : 'zes') + '</span><span class="pct" style="color:' + (m.pct >= 65 ? 'var(--lime)' : 'var(--coral)') + '">' + m.pct + '%</span></div>' +
+  '<div class="track"><div class="fill" style="width:' + m.pct + '%;background:' + accColor(m.pct) + '"></div></div></div>').join('')
+  : '<div class="empty">No quizzes yet — <a href="/quiz.html">take your first quiz</a> and mastery bars appear here.</div>';
 
-    function decodeReadonlySnapshot() {
-      const params = new URLSearchParams(window.location.search);
-      const encoded = params.get('readonly');
-      if (!encoded) return null;
-      try {
-        const json = decodeURIComponent(escape(atob(encoded)));
-        return JSON.parse(json);
-      } catch {
-        return null;
-      }
-    }
+// Achievements — every one is computed from real records
+const subjTried = new Set([...Object.keys(scores), ...Object.keys(subjectsChat)]).size;
+const ACH = [
+  ['🎓', 'First Steps', 'Finish your first quiz', quizCount >= 1],
+  ['💯', 'Perfectionist', 'Score 100% on a quiz', allScores.some((s) => s >= 100)],
+  ['🔥', 'On Fire', 'Reach a 5-day streak', streakDays.length >= 5],
+  ['💬', 'Chatterbox', 'Ask 50 questions', msgCount >= 50],
+  ['🏆', 'Champion', 'Reach Scholar level', lvlNum >= 4],
+  ['🧠', 'Polymath', 'Study 5 different subjects', subjTried >= 5],
+];
+const earned = ACH.filter((a) => a[3]).length;
+$('achCount').textContent = earned + '/6';
+$('achGrid').innerHTML = ACH.map((a) =>
+  '<div class="ach ' + (a[3] ? 'earned' : 'locked') + '"><span class="e">' + a[0] + '</span><b>' + a[1] + '</b><span>' + a[2] + '</span></div>').join('');
 
-    const readonlySnapshot = decodeReadonlySnapshot();
-    if (readonlySnapshot) {
-      document.getElementById('refresh-ai')?.remove();
-      document.getElementById('view-milestones')?.remove();
-      const printBtn = document.getElementById('printProgress');
-      if (printBtn) {
-        printBtn.textContent = 'Print shared snapshot';
-      }
-    }
-
-    const stats = readonlySnapshot ? {
-      count: Number(readonlySnapshot.count || 0),
-      level: String(readonlySnapshot?.progress?.level || 'Newbie'),
-      streak: Array.isArray(readonlySnapshot.streak) ? readonlySnapshot.streak : [],
-      subjects: readonlySnapshot.subjectCounts && typeof readonlySnapshot.subjectCounts === 'object' ? readonlySnapshot.subjectCounts : {},
-      quizzes: readonlySnapshot.quizScores && typeof readonlySnapshot.quizScores === 'object' ? readonlySnapshot.quizScores : {},
-      milestones: Array.isArray(readonlySnapshot.milestones) ? readonlySnapshot.milestones : [],
-      favorite: Object.keys(readonlySnapshot.subjectCounts || {})[0] || 'Science',
-    } : {
-      count: lsGet('mm_count', 0),
-      level: lsGet('mm_level', 'Newbie'),
-      streak: lsGet('mm_streak', []),
-      subjects: lsGet('mm_subjects', {}),
-      quizzes: lsGet('mm_quiz_scores', {}),
-      milestones: lsGet('mm_milestones', []),
-      favorite: lsGet('mm_subject', 'Science')
-    };
-    const hasAnyData = Number(stats.count || 0) > 0 || Object.keys(stats.subjects || {}).length > 0 || Object.keys(stats.quizzes || {}).length > 0;
-
-    const scores = Object.values(stats.quizzes).flat();
-    const quizCount = scores.length;
-    const avgScore = quizCount ? Math.round(scores.reduce((sum, value) => sum + value, 0) / quizCount) : 0;
-    const xpValue = readonlySnapshot ? Number(readonlySnapshot.totalXP || 0) : calculateXP();
-    const xpTarget = 10000;
-    const progressPercent = Math.min(100, Math.round((xpValue / xpTarget) * 100));
-    const weakArea = getWeakArea();
-    const subjectAverages = Object.fromEntries(
-      Object.entries(stats.quizzes).map(([subject, values]) => [
-        subject,
-        values.length ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length) : 0
-      ])
-    );
-
-    const mastery = {
-      Science: subjectAverages.Science || 82,
-      'Computer Science': subjectAverages.Coding || 74,
-      Mathematics: subjectAverages.Math || 52,
-      History: subjectAverages.History || 64
-    };
-
-    const labels = ['Logic', 'Memory', 'Creativity', 'Analysis', 'Focus', 'Speed'];
-    const radarValues = [
-      Math.min(100, mastery['Computer Science'] + 10),
-      Math.min(100, mastery.Science + 5),
-      Math.min(100, mastery.History + 15),
-      Math.min(100, mastery.Mathematics + 10),
-      Math.min(100, avgScore + 5),
-      Math.min(100, Math.round((stats.count / 20) * 10 + 50))
-    ];
-
-    document.getElementById('streak-count').textContent = stats.streak.length || 0;
-    document.getElementById('level-rank').textContent = stats.level || 'Newbie';
-    document.getElementById('xp-value').textContent = xpValue;
-    document.getElementById('xp-target').textContent = `${xpTarget} XP Needed`;
-    document.getElementById('weak-area').textContent = weakArea;
-    document.getElementById('xp-progress-fill').style.width = `${progressPercent}%`;
-    document.getElementById('logic-label').textContent = radarValues[0] >= 80 ? 'High' : 'Balanced';
-    document.getElementById('memory-label').textContent = radarValues[1] >= 80 ? 'Strong' : 'Growing';
-    document.getElementById('printProgress')?.addEventListener('click', () => window.print());
-
-    const activityTimeline = document.getElementById('activity-timeline');
-    const timelineItems = stats.milestones.slice(-5).reverse();
-    activityTimeline.innerHTML = timelineItems.length
-      ? timelineItems.map((item) => `
-          <article class="timeline-item">
-            <h3>${item.event}</h3>
-            <p class="timeline-date">${item.date}</p>
-          </article>
-        `).join('')
-      : '<article class="timeline-item"><h3>No recent activity yet.</h3><p class="timeline-date">Take a quiz or send a chat to start building your history.</p></article>';
-    if (!hasAnyData) {
-      const emptyState = `
-      <article class="timeline-item" style="background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius-sm); box-shadow: var(--shadow-sm);">
-        <h3>No data yet</h3>
-        <p class="timeline-date">Your analytics will appear after your first study action.</p>
-        <p class="timeline-date"><a href="/chat.html" class="learn-link">Ask your first question →</a></p>
-      </article>
-      `;
-      const performanceShell = document.querySelector('#performanceChart')?.parentElement;
-      const cognitiveShell = document.querySelector('#cognitiveChart')?.parentElement;
-      if (performanceShell) performanceShell.innerHTML = emptyState;
-      if (cognitiveShell) cognitiveShell.innerHTML = emptyState;
-    }
-
-    function buildPerformanceChart(data, chartLabels) {
-      const chart = document.getElementById('performanceChart');
-      if (!chart || !window.Chart) {
-        const shell = chart?.parentElement;
-        if (shell) {
-          shell.innerHTML = `<article class="timeline-item" style="background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius-sm); box-shadow: var(--shadow-sm);"><h3>Chart unavailable</h3><p class="timeline-date">Recent quiz trend: ${data.join('%, ')}%</p></article>`;
-        }
-        return;
-      }
-      const ctx = chart.getContext('2d');
-      new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: chartLabels,
-          datasets: [{
-            label: 'Accuracy %',
-            data,
-            borderColor: colorLime,
-            backgroundColor: colorBlue,
-            pointBackgroundColor: colorSurface,
-            pointBorderColor: colorLime,
-            pointBorderWidth: 2,
-            pointRadius: 4,
-            fill: false,
-            tension: 0.35
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              backgroundColor: colorSurface,
-              titleColor: colorInk,
-              bodyColor: colorInkSoft,
-              borderColor: colorBorder,
-              borderWidth: 1,
-              displayColors: false
-            }
-          },
-          scales: {
-            x: {
-              ticks: { color: colorInkSoft },
-              grid: { color: colorBorder }
-            },
-            y: {
-              min: 40,
-              max: 100,
-              ticks: {
-                color: colorInkSoft,
-                callback: (value) => `${value}%`
-              },
-              grid: { color: colorBorder }
-            }
-          }
-        }
-      });
-    }
-
-    function buildRadarChart() {
-      const chart = document.getElementById('cognitiveChart');
-      if (!chart || !window.Chart) {
-        const shell = chart?.parentElement;
-        if (shell) {
-          const pairs = labels.map((label, idx) => `${label}: ${radarValues[idx]}%`).join(' · ');
-          shell.innerHTML = `<article class="timeline-item" style="background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius-sm); box-shadow: var(--shadow-sm);"><h3>Profile summary</h3><p class="timeline-date">${pairs}</p></article>`;
-        }
-        return;
-      }
-      const ctx = chart.getContext('2d');
-      new Chart(ctx, {
-        type: 'radar',
-        data: {
-          labels,
-          datasets: [{
-            label: 'Current Profile',
-            data: radarValues,
-            backgroundColor: colorBlue,
-            borderColor: colorLime,
-            pointBackgroundColor: colorLime,
-            pointBorderColor: colorSurface,
-            pointHoverBackgroundColor: colorInk,
-            pointHoverBorderColor: colorLime,
-            borderWidth: 2
-          }]
-        },
-        options: {
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            r: {
-              angleLines: { color: colorBorder },
-              grid: { color: colorBorder },
-              pointLabels: { color: colorInkSoft },
-              ticks: { display: false, min: 0, max: 100 }
-            }
-          }
-        }
-      });
-    }
-
-    function refreshSubjectCard(valueId, fillId, labelId, average) {
-      const normalized = Math.max(20, Math.min(100, average || 0));
-      document.getElementById(valueId).textContent = `${normalized}%`;
-      document.getElementById(fillId).style.width = `${normalized}%`;
-      document.getElementById(labelId).textContent = normalized >= 90 ? 'Rank S' : normalized >= 75 ? 'Rank A' : normalized >= 60 ? 'Rank B' : 'Needs Focus';
-    }
-
-    refreshSubjectCard('science-value', 'science-fill', 'science-label', mastery.Science);
-    refreshSubjectCard('tech-value', 'tech-fill', 'tech-label', mastery['Computer Science']);
-    refreshSubjectCard('math-value', 'math-fill', 'math-label', mastery.Mathematics);
-    refreshSubjectCard('history-value', 'history-fill', 'history-label', mastery.History);
-
-    const historyData = scores.slice(-6);
-    const performanceData = historyData.length ? historyData : [58, 64, 71, 79, 84, avgScore || 68];
-    const performanceLabels = historyData.length ? historyData.map((_, index) => `Quiz ${index + 1}`) : ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6'];
-
-    async function loadGrokInsight() {
-      const aiCard = document.getElementById('ai-coach-text');
-      aiCard.textContent = 'Asking Hungter for the next best study move...';
-      try {
-        const response = await apiPost('/api/chat', {
-          visitorId: getSessionId(),
-          subject: stats.favorite,
-          userLevel: stats.level,
-          message: `I have ${stats.count} interactions, a ${quizCount}-quiz history, and an average score of ${avgScore}%. Give me three focused study instructions and one weakness to improve.`
-        });
-        aiCard.textContent = response.reply || 'Hungter could not generate guidance right now.';
-      } catch {
-        aiCard.textContent = 'Unable to connect right now. Try again later.';
-      }
-    }
-
-    document.getElementById('refresh-ai')?.addEventListener('click', loadGrokInsight);
-    document.getElementById('view-milestones')?.addEventListener('click', () => {
-      window.location.href = '/dashboard.html';
-    });
-
-    refreshTopBar();
-    if (hasAnyData) {
-      buildPerformanceChart(performanceData, performanceLabels);
-      buildRadarChart();
-    }
-    if (!readonlySnapshot) {
-      loadGrokInsight();
-    } else {
-      const aiText = document.getElementById('ai-coach-text');
-      if (aiText) aiText.textContent = `Readonly snapshot generated on ${new Date(readonlySnapshot.generatedAt || Date.now()).toLocaleString()}.`;
-    }
-  </script>
+// Recent quizzes feed (real mm_quiz_log)
+function ago(ts) {
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 3600) return Math.max(1, Math.floor(s / 60)) + 'm ago';
+  if (s < 86400) return Math.floor(s / 3600) + 'h ago';
+  if (s < 172800) return 'Yesterday';
+  return Math.floor(s / 86400) + 'd ago';
+}
+$('feedList').innerHTML = qlog.length ? qlog.map((q) =>
+  '<div class="item"><div class="fic">' + (SUBJ_ICO[q.subject] || '📘') + '</div>' +
+  '<div class="fmain"><b>' + esc(q.subject) + '</b><span>' + q.total + ' questions</span></div>' +
+  '<div class="fright"><span class="score">' + q.correct + '/' + q.total + '</span><span class="fxp">+' + q.xp + ' XP</span><span class="when">' + ago(q.ts) + '</span></div></div>').join('')
+  : '<div class="empty">Your quiz history shows up here after your first round — <a href="/quiz.html">start one now</a>.</div>';
+</script>
 </body>
 </html>
