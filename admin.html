@@ -151,7 +151,7 @@
       <div class="card hide" id="gaConnectCard">
         <h2>📈 Website analytics</h2>
         <p class="muted" id="gaSetup">Loading…</p>
-        <p class="muted" style="margin-top:8px;">Analytics appear here automatically once a Google service-account key is on the server. Add <code>GA_SA_JSON</code> (or <code>GA_SA_KEY_FILE</code>) in your <code>.env</code> and give that service account <b>Viewer</b> access to GA4 property <b>543528938</b> — no sign-in needed after that.</p>
+        <p class="muted" style="margin-top:8px;">Just upload the <code>key.json</code> Google gave you into your <code>domains/hungter.com</code> folder (the one containing <code>public_html</code>) — it's detected automatically, no <code>.env</code> editing. Then give that service account <b>Viewer</b> access to GA4 property <b>543528938</b>.</p>
       </div>
       <div id="gaData" class="hide">
         <div class="row" style="justify-content:space-between;">
@@ -319,6 +319,7 @@
   }
 
   function show(view) {
+    try { localStorage.setItem('mm_admin_tab', view); } catch (e) {}
     document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('on', t.dataset.t === view));
     ['overview', 'website', 'users', 'access', 'geo'].forEach((v) => $('v-' + v).classList.toggle('hide', v !== view));
     if (view === 'overview') loadOverview();
@@ -327,7 +328,13 @@
     if (view === 'access') loadAdmins();
     if (view === 'geo') loadGeo();
   }
-  function enterPanel() { $('login').classList.add('hide'); $('panel').classList.remove('hide'); show('overview'); }
+  function enterPanel() {
+    $('login').classList.add('hide'); $('panel').classList.remove('hide');
+    const valid = ['overview', 'website', 'users', 'access', 'geo'];
+    let last = 'overview';
+    try { const t = localStorage.getItem('mm_admin_tab'); if (valid.indexOf(t) >= 0) last = t; } catch (e) {}
+    show(last);
+  }
 
   async function login() {
     $('loginErr').textContent = '';
