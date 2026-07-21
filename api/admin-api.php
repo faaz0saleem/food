@@ -101,6 +101,83 @@ function admin_ip_allowed(): bool {
     return false;
 }
 
+// ── Google Analytics (server-side, service account — no user sign-in) ─────────
+// Configure with a service-account key so analytics load automatically:
+//   GA_SA_JSON       = the full service-account JSON (as one string), or
+//   GA_SA_KEY_FILE   = path to the downloaded .json key file, or
+//   GA_SA_EMAIL + GA_SA_PRIVATE_KEY  = the two fields separately.
+// Then add that service account's email as a Viewer on the GA4 property.
+function ga_service_account(): ?array {
+    $json = trim(mm_env_value('GA_SA_JSON', ''));
+    if ($json === '') {
+        $file = trim(mm_env_value('GA_SA_KEY_FILE', ''));
+        if ($file !== '' && is_readable($file)) { $json = (string) file_get_contents($file); }
+    }
+    if ($json !== '') {
+        $d = json_decode($json, true);
+        if (is_array($d) && !empty($d['client_email']) && !empty($d['private_key'])) return $d;
+    }
+    $email = trim(mm_env_value('GA_SA_EMAIL', ''));
+    $key = trim(mm_env_value('GA_SA_PRIVATE_KEY', ''));
+    if ($email !== '' && $key !== '') {
+        return ['client_email' => $email, 'private_key' => str_replace('\\n', "\n", $key)];
+    }
+    return null;
+}
+function ga_b64url(string $s): string { return rtrim(strtr(base64_encode($s), '+/', '-_'), '='); }
+function ga_access_token(array $sa): ?string {
+    $cache = sys_get_temp_dir() . '/hungter_ga_tok_' . md5((string) $sa['client_email']) . '.json';
+    if (is_readable($cache)) {
+        $c = json_decode((string) file_get_contents($cache), true);
+        if (is_array($c) && ($c['exp'] ?? 0) > time() + 60 && !empty($c['token'])) return (string) $c['token'];
+    }
+    if (!function_exists('openssl_sign')) return null;
+    $now = time();
+    $head = ga_b64url(json_encode(['alg' => 'RS256', 'typ' => 'JWT']));
+    $claim = ga_b64url(json_encode([
+        'iss' => $sa['client_email'],
+        'scope' => 'https://www.googleapis.com/auth/analytics.readonly',
+        'aud' => 'https://oauth2.googleapis.com/token',
+        'iat' => $now, 'exp' => $now + 3600,
+    ]));
+    $input = $head . '.' . $claim;
+    $sig = '';
+    if (!openssl_sign($input, $sig, $sa['private_key'], OPENSSL_ALGO_SHA256)) return null;
+    $jwt = $input . '.' . ga_b64url($sig);
+    $ch = curl_init('https://oauth2.googleapis.com/token');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true, CURLOPT_TIMEOUT => 15,
+        CURLOPT_POSTFIELDS => http_build_query(['grant_type' => 'urn:ietf:params:oauth:grant-type:jwt-bearer', 'assertion' => $jwt]),
+        CURLOPT_HTTPHEADER => ['Content-Type: application/x-www-form-urlencoded'],
+    ]);
+    $resp = curl_exec($ch); $code = curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
+    $d = json_decode((string) $resp, true);
+    if ($code === 200 && !empty($d['access_token'])) {
+        @file_put_contents($cache, json_encode(['token' => $d['access_token'], 'exp' => $now + (int) ($d['expires_in'] ?? 3600)]));
+        return (string) $d['access_token'];
+    }
+    return null;
+}
+function ga_call(string $token, string $propertyId, string $method, array $body): array {
+    $ch = curl_init('https://analyticsdata.googleapis.com/v1beta/properties/' . $propertyId . ':' . $method);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true, CURLOPT_POST => true, CURLOPT_TIMEOUT => 20,
+        CURLOPT_POSTFIELDS => json_encode($body),
+        CURLOPT_HTTPHEADER => ['Authorization: Bearer ' . $token, 'Content-Type: application/json'],
+    ]);
+    $resp = curl_exec($ch); $code = curl_getinfo($ch, CURLINFO_HTTP_CODE); curl_close($ch);
+    $d = json_decode((string) $resp, true);
+    if ($code === 200 && is_array($d)) return $d;
+    return ['_error' => is_array($d) && isset($d['error']['message']) ? $d['error']['message'] : ('HTTP ' . $code)];
+}
+function ga_rows(array $rep): array {
+    $out = [];
+    foreach (($rep['rows'] ?? []) as $r) {
+        $out[] = ['label' => (string) ($r['dimensionValues'][0]['value'] ?? ''), 'value' => (int) round((float) ($r['metricValues'][0]['value'] ?? 0))];
+    }
+    return $out;
+}
+
 if ($db !== null) { mm_ensure_runtime_tables(); } // provisions tables on Supabase
 admin_ensure($db);
 
@@ -165,6 +242,56 @@ if (!admin_authed($body)) {
 }
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+
+// ── Google Analytics summary (auto-loads, no user sign-in) ───────────────────
+if ($action === 'analytics') {
+    $propertyId = trim(mm_env_value('GA_PROPERTY_ID', '543528938'));
+    $sa = ga_service_account();
+    if ($sa === null) {
+        mm_json_response(200, ['status' => 'ok', 'configured' => false,
+            'hint' => 'Add a Google service-account key (GA_SA_JSON or GA_SA_KEY_FILE in .env) and give that account Viewer access to GA4 property ' . $propertyId . '.']);
+        exit;
+    }
+    $token = ga_access_token($sa);
+    if ($token === null) {
+        mm_json_response(200, ['status' => 'ok', 'configured' => false,
+            'hint' => 'Service-account sign-in failed. Check the key is valid and PHP has the openssl + curl extensions.']);
+        exit;
+    }
+    // Serve a cached snapshot for up to 5 minutes to respect API quotas.
+    $cache = sys_get_temp_dir() . '/hungter_ga_report_' . md5($propertyId) . '.json';
+    if (is_readable($cache)) {
+        $c = json_decode((string) file_get_contents($cache), true);
+        if (is_array($c) && ($c['_t'] ?? 0) > time() - 300 && isset($c['payload'])) { mm_json_response(200, $c['payload']); exit; }
+    }
+    $range = [['startDate' => '28daysAgo', 'endDate' => 'today']];
+    $tot = ga_call($token, $propertyId, 'runReport', ['dateRanges' => $range, 'metrics' => [['name' => 'activeUsers'], ['name' => 'sessions'], ['name' => 'screenPageViews'], ['name' => 'newUsers']]]);
+    if (isset($tot['_error'])) {
+        mm_json_response(200, ['status' => 'ok', 'configured' => true, 'error' => $tot['_error'],
+            'hint' => 'If this says permission denied, add the service-account email as a Viewer on GA4 property ' . $propertyId . '. If it says API disabled, enable the Google Analytics Data API.']);
+        exit;
+    }
+    $ts = ga_call($token, $propertyId, 'runReport', ['dateRanges' => [['startDate' => '27daysAgo', 'endDate' => 'today']], 'dimensions' => [['name' => 'date']], 'metrics' => [['name' => 'activeUsers']], 'orderBys' => [['dimension' => ['dimensionName' => 'date']]]]);
+    $pages = ga_call($token, $propertyId, 'runReport', ['dateRanges' => $range, 'dimensions' => [['name' => 'pagePath']], 'metrics' => [['name' => 'screenPageViews']], 'orderBys' => [['metric' => ['metricName' => 'screenPageViews'], 'desc' => true]], 'limit' => 8]);
+    $countries = ga_call($token, $propertyId, 'runReport', ['dateRanges' => $range, 'dimensions' => [['name' => 'country']], 'metrics' => [['name' => 'activeUsers']], 'orderBys' => [['metric' => ['metricName' => 'activeUsers'], 'desc' => true]], 'limit' => 10]);
+    $devices = ga_call($token, $propertyId, 'runReport', ['dateRanges' => $range, 'dimensions' => [['name' => 'deviceCategory']], 'metrics' => [['name' => 'activeUsers']], 'orderBys' => [['metric' => ['metricName' => 'activeUsers'], 'desc' => true]]]);
+    $live = ga_call($token, $propertyId, 'runRealtimeReport', ['metrics' => [['name' => 'activeUsers']]]);
+    $m = $tot['rows'][0]['metricValues'] ?? [];
+    $series = [];
+    foreach (ga_rows($ts) as $row) { $d = $row['label']; $series[] = ['date' => substr($d, 4, 2) . '-' . substr($d, 6, 2), 'value' => $row['value']]; }
+    $payload = [
+        'status' => 'ok', 'configured' => true, 'property' => $propertyId,
+        'totals' => [
+            'users' => (int) ($m[0]['value'] ?? 0), 'sessions' => (int) ($m[1]['value'] ?? 0),
+            'views' => (int) ($m[2]['value'] ?? 0), 'newUsers' => (int) ($m[3]['value'] ?? 0),
+        ],
+        'series' => $series, 'pages' => ga_rows($pages), 'countries' => ga_rows($countries), 'devices' => ga_rows($devices),
+        'live' => (int) ($live['rows'][0]['metricValues'][0]['value'] ?? 0),
+    ];
+    @file_put_contents($cache, json_encode(['_t' => time(), 'payload' => $payload]));
+    mm_json_response(200, $payload);
+    exit;
+}
 
 function cx_series(?PDO $db, string $sql, int $days = 14): array {
     $map = [];
