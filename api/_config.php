@@ -85,6 +85,11 @@ function mm_should_expose_dev_codes(): bool {
 function mm_json_response(int $statusCode, array $payload): void {
     http_response_code($statusCode);
     header('Content-Type: application/json; charset=utf-8');
+    // Never let a browser or a server-side page cache (e.g. LiteSpeed on
+    // Hostinger) serve a stale API response.
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+    header('Pragma: no-cache');
+    header('X-LiteSpeed-Cache-Control: no-cache');
     header('Access-Control-Allow-Origin: *');
     header('Access-Control-Allow-Methods: GET,POST,OPTIONS');
     header('Access-Control-Allow-Headers: Content-Type,Authorization,X-Admin-Key,X-Admin-Token');

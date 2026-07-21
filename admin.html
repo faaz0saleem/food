@@ -186,7 +186,7 @@
     const method = opts.method || 'GET';
     const headers = { 'Content-Type': 'application/json', 'X-Admin-Token': token };
     const bodyObj = Object.assign({ action, admtok: token }, opts.body || {});
-    const q = method === 'GET' ? '?action=' + encodeURIComponent(action) : '';
+    const q = method === 'GET' ? '?action=' + encodeURIComponent(action) + '&_=' + Date.now() : '';
     const urls = [API + '/api/admin-api.php' + q, API + '/api/admin-api' + q];
     let last = null;
     for (const u of urls) {
