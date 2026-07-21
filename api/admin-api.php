@@ -469,4 +469,11 @@ $series = [
     'signups' => cx_series($db, "SELECT DATE(created_at) d, COUNT(*) c FROM users WHERE created_at >= (UTC_DATE() - INTERVAL 13 DAY) GROUP BY DATE(created_at)"),
     'active' => cx_series($db, "SELECT DATE(last_seen) d, COUNT(*) c FROM visitor_sessions WHERE last_seen >= (UTC_DATE() - INTERVAL 13 DAY) GROUP BY DATE(last_seen)"),
 ];
-mm_json_response(200, ['status' => 'ok', 'dbConnected' => $db !== null, 'totals' => $summary, 'revenue' => $revenue, 'series' => $series]);
+mm_json_response(200, [
+    'status' => 'ok',
+    'dbConnected' => $db !== null,
+    'dbDriver' => mm_db_driver(),
+    'dbHost' => mm_db_driver() === 'mysql' ? mm_env_value('MYSQL_HOST', mm_env_value('DB_HOST', '')) : '',
+    'dbError' => $db === null ? mm_db_last_error() : '',
+    'totals' => $summary, 'revenue' => $revenue, 'series' => $series,
+]);

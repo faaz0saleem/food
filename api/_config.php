@@ -248,6 +248,14 @@ function mm_last_insert_id(PDO $db, string $pgSequence): int {
     return (int) $db->lastInsertId(mm_db_driver() === 'pgsql' ? $pgSequence : null);
 }
 
+// Remembers the most recent DB connection error so the admin/diag can show the
+// exact reason (e.g. "Connection refused", "SSL required", "Access denied").
+function mm_db_last_error(?string $set = null): string {
+    static $err = '';
+    if ($set !== null) $err = $set;
+    return $err;
+}
+
 function mm_db(): ?PDO {
     static $pdo = false;
     if ($pdo !== false) {
@@ -257,7 +265,10 @@ function mm_db(): ?PDO {
     // If a connection failed very recently, don't make every request pay the
     // full connect timeout again — short-circuit to "offline" for 20s.
     $downFile = sys_get_temp_dir() . '/hungter_db_down';
-    if (@filemtime($downFile) > time() - 20) { $pdo = null; return $pdo; }
+    if (@filemtime($downFile) > time() - 20) {
+        mm_db_last_error((string) @file_get_contents($downFile));
+        $pdo = null; return $pdo;
+    }
 
     $opts = [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
@@ -293,7 +304,7 @@ function mm_db(): ?PDO {
             $dsn = sprintf('pgsql:host=%s;port=%s;dbname=%s;sslmode=require;connect_timeout=4', $host, $port, $name);
             $pdo = new MMPgPDO($dsn, $user, $pass, $opts);
             @unlink($downFile);
-        } catch (Throwable $error) { $pdo = null; @touch($downFile); }
+        } catch (Throwable $error) { $pdo = null; mm_db_last_error($error->getMessage()); @file_put_contents($downFile, $error->getMessage()); }
         return $pdo;
     }
 
@@ -314,7 +325,8 @@ function mm_db(): ?PDO {
         @unlink($downFile);
     } catch (Throwable $error) {
         $pdo = null;
-        @touch($downFile);
+        mm_db_last_error($error->getMessage());
+        @file_put_contents($downFile, $error->getMessage());
     }
 
     return $pdo;

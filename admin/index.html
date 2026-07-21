@@ -228,7 +228,15 @@
   let allUsers = [];
   async function loadOverview() {
     const { data } = await api('overview');
-    $('dbNote').textContent = data.dbConnected ? '' : '⚠️ Database not connected — point your .env DB settings at your Google Cloud SQL / MySQL instance.';
+    if (data.dbConnected) {
+      $('dbNote').textContent = '';
+    } else {
+      let msg = '⚠️ Database not connected';
+      if (data.dbDriver) msg += ' (driver: ' + data.dbDriver + (data.dbHost ? ', host: ' + data.dbHost : '') + ')';
+      if (data.dbError) msg += ' — ' + data.dbError;
+      else msg += ' — check your .env DB settings.';
+      $('dbNote').textContent = msg;
+    }
     const t = data.totals || {}, rev = data.revenue || {};
     const stats = [
       ['Total users', rev.totalUsers], ['Paying users', rev.payingUsers], ['MRR', '$' + num(rev.mrr)],
