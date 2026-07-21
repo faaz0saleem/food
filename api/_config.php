@@ -96,6 +96,15 @@ function mm_json_response(int $statusCode, array $payload): void {
     echo json_encode($payload);
 }
 
+// Last-resort safety net: any uncaught error in an API request returns JSON
+// (with the message) instead of a raw 500 HTML page, so the frontend always
+// gets a readable response instead of "could not reach the API".
+set_exception_handler(function ($e) {
+    if (!headers_sent()) {
+        mm_json_response(500, ['error' => 'Server error: ' . $e->getMessage()]);
+    }
+});
+
 function mm_read_json_body(): array {
     $raw = file_get_contents('php://input');
     if ($raw === false || trim($raw) === '') {
@@ -358,6 +367,22 @@ function mm_ensure_runtime_tables(): void {
         return;
     }
 
+    // On a fresh MySQL database (e.g. a brand-new Cloud SQL instance) the app
+    // tables — including `users` — don't exist yet. Auto-import the full schema
+    // the first time, idempotently, so there's no manual step. Wrapped so a
+    // partial failure can never 500 the request.
+    try {
+        $db->query('SELECT 1 FROM users LIMIT 1');
+    } catch (Throwable $probe) {
+        $schema = @file_get_contents(__DIR__ . '/../database/schema.mysql.sql');
+        if (is_string($schema) && $schema !== '') {
+            try { $db->exec($schema); } catch (Throwable $e) { mm_db_last_error('Schema import failed: ' . $e->getMessage()); }
+        }
+    }
+
+    // Belt-and-braces: create the runtime tables individually too (idempotent),
+    // wrapped so a provisioning failure never 500s the request.
+    try {
     $db->exec('CREATE TABLE IF NOT EXISTS auth_sessions (
         token VARCHAR(128) NOT NULL PRIMARY KEY,
         user_id BIGINT UNSIGNED NOT NULL,
@@ -417,6 +442,7 @@ function mm_ensure_runtime_tables(): void {
         KEY idx_book_orders_book_id (book_id),
         KEY idx_book_orders_created_at (created_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci');
+    } catch (Throwable $e) { mm_db_last_error('Table provisioning failed: ' . $e->getMessage()); }
 
     $initialized = true;
 }
