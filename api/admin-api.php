@@ -124,6 +124,31 @@ function ga_service_account(): ?array {
     }
     return null;
 }
+// Explains exactly why a service account couldn't be loaded, so setup is easy.
+function ga_config_hint(): string {
+    $json = trim(mm_env_value('GA_SA_JSON', ''));
+    $file = trim(mm_env_value('GA_SA_KEY_FILE', ''));
+    $email = trim(mm_env_value('GA_SA_EMAIL', ''));
+    if ($json !== '') {
+        $d = json_decode($json, true);
+        if (!is_array($d) || empty($d['client_email']) || empty($d['private_key']))
+            return 'GA_SA_JSON is set but is not valid service-account JSON. It is usually easier to use GA_SA_KEY_FILE with the path to your key.json instead.';
+        return '';
+    }
+    if ($file !== '') {
+        if (strpos($file, '…') !== false || strpos($file, '...') !== false)
+            return 'GA_SA_KEY_FILE still contains the “…” placeholder. Replace it with the real full path to your key.json, e.g. /home/u779661998/domains/hungter.com/key.json';
+        if (!file_exists($file)) return 'GA_SA_KEY_FILE points to a path that does not exist on the server: ' . $file;
+        if (!is_readable($file)) return 'GA_SA_KEY_FILE exists but PHP cannot read it (fix file permissions): ' . $file;
+        $d = json_decode((string) file_get_contents($file), true);
+        if (!is_array($d) || empty($d['client_email']) || empty($d['private_key']))
+            return 'The file at GA_SA_KEY_FILE is not a valid service-account key.json.';
+        return '';
+    }
+    if ($email !== '' && trim(mm_env_value('GA_SA_PRIVATE_KEY', '')) === '')
+        return 'GA_SA_EMAIL is set but GA_SA_PRIVATE_KEY is missing.';
+    return 'No service-account key found. Set GA_SA_KEY_FILE in .env to the full path of your key.json (for example /home/u779661998/domains/hungter.com/key.json).';
+}
 function ga_b64url(string $s): string { return rtrim(strtr(base64_encode($s), '+/', '-_'), '='); }
 function ga_access_token(array $sa): ?string {
     $cache = sys_get_temp_dir() . '/hungter_ga_tok_' . md5((string) $sa['client_email']) . '.json';
@@ -248,8 +273,7 @@ if ($action === 'analytics') {
     $propertyId = trim(mm_env_value('GA_PROPERTY_ID', '543528938'));
     $sa = ga_service_account();
     if ($sa === null) {
-        mm_json_response(200, ['status' => 'ok', 'configured' => false,
-            'hint' => 'Add a Google service-account key (GA_SA_JSON or GA_SA_KEY_FILE in .env) and give that account Viewer access to GA4 property ' . $propertyId . '.']);
+        mm_json_response(200, ['status' => 'ok', 'configured' => false, 'hint' => ga_config_hint()]);
         exit;
     }
     $token = ga_access_token($sa);

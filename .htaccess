@@ -41,7 +41,7 @@ ErrorDocument 404 /404.html
 </IfModule>
 
 # Block sensitive files and directories from public download.
-<FilesMatch "^(\.env|stats\.json|.*\.md|.*\.log)$">
+<FilesMatch "^(\.env|stats\.json|key\.json|.*-key\.json|.*service.*\.json|.*credentials.*\.json|.*\.md|.*\.log)$">
   Require all denied
 </FilesMatch>
 
