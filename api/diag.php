@@ -94,12 +94,22 @@ try {
     if ($db !== null) {
         try { mm_ensure_runtime_tables(); $userCount = (int) $db->query('SELECT COUNT(*) FROM users')->fetchColumn(); } catch (Throwable $e) {}
     }
+    $host = $driver === 'pgsql'
+        ? mm_env_value('SUPABASE_DB_HOST', 'db.' . (defined('HUNGTER_SUPABASE_REF') ? HUNGTER_SUPABASE_REF : '') . '.supabase.co')
+        : mm_env_value('MYSQL_HOST', mm_env_value('DB_HOST', ''));
+    $hint = '';
+    if ($db === null) {
+        $hint = $driver === 'mysql'
+            ? 'MySQL not reachable. Check MYSQL_HOST/USER/PASSWORD in .env, that pdo_mysql is enabled, and that this server IP is allowed in Cloud SQL → Connections → Authorized networks (and SSL is allowed).'
+            : 'Set SUPABASE_DB_PASSWORD in .env (and pdo_pgsql must be enabled).';
+    }
     $checks['database'] = [
         'connected' => $db !== null,
         'driver' => $driver,
         'provider' => $driver === 'pgsql' ? 'Supabase (Postgres)' : 'MySQL',
+        'host' => $host,
         'users' => $userCount,
-        'hint' => $db === null ? 'Set SUPABASE_DB_PASSWORD in .env (and pdo_pgsql must be enabled).' : '',
+        'hint' => $hint,
     ];
 } catch (Throwable $e) {
     $checks['database'] = ['connected' => false, 'error' => $e->getMessage()];

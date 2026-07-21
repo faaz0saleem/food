@@ -258,6 +258,9 @@ function mm_db(): ?PDO {
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         PDO::ATTR_EMULATE_PREPARES => false,
+        // Fail fast if the DB is unreachable so a bad DB config can never hang
+        // the whole site (admin login etc. work without the DB).
+        PDO::ATTR_TIMEOUT => 4,
     ];
 
     if (mm_db_driver() === 'pgsql') {
@@ -282,7 +285,7 @@ function mm_db(): ?PDO {
         // No password yet → treat DB as not configured (login shows a clear msg).
         if ($host === '' || $user === '' || $pass === '') { $pdo = null; return $pdo; }
         try {
-            $dsn = sprintf('pgsql:host=%s;port=%s;dbname=%s;sslmode=require', $host, $port, $name);
+            $dsn = sprintf('pgsql:host=%s;port=%s;dbname=%s;sslmode=require;connect_timeout=4', $host, $port, $name);
             $pdo = new MMPgPDO($dsn, $user, $pass, $opts);
         } catch (Throwable $error) { $pdo = null; }
         return $pdo;
