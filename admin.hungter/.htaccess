@@ -1,0 +1,25 @@
+RewriteEngine On
+
+# Force HTTPS.
+RewriteCond %{HTTPS} !=on
+RewriteCond %{HTTP_HOST} !^localhost(:[0-9]+)?$ [NC]
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+DirectoryIndex index.html
+Options -Indexes
+
+# This subdomain hosts only the admin panel. It loads shared styles from the
+# main domain and talks to the main domain's admin API (CORS is open there).
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Content-Security-Policy "default-src 'self'; img-src 'self' https: data: blob:; script-src 'self' 'unsafe-inline' https://accounts.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://hungter.com; font-src 'self' https://fonts.gstatic.com data:; connect-src 'self' https://hungter.com; frame-src 'self' https://accounts.google.com; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
+</IfModule>
+
+# Never cache the admin shell — always fetch fresh.
+<FilesMatch "^index\.html$">
+  <IfModule mod_headers.c>
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+  </IfModule>
+</FilesMatch>

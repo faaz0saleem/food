@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Hungter Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/brand.css?v=20260720">
+<style>
+  body { margin: 0; font-family: var(--font-body); color: var(--ink); background: var(--bg-deep); background-image: var(--gradient-aurora); background-attachment: fixed; min-height: 100vh; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 26px 20px 70px; }
+  .login { max-width: 380px; margin: 70px auto; background: rgba(13,20,40,0.85); border: 1px solid var(--border-glow); border-radius: var(--radius); padding: 34px 28px; box-shadow: var(--shadow); text-align: center; }
+  .login h1 { font-family: var(--font-display); font-size: 1.4rem; margin: 8px 0 4px; }
+  .login p { color: var(--ink-soft); font-size: 0.86rem; margin: 0 0 18px; }
+  .login input { width: 100%; box-sizing: border-box; border: 1px solid var(--border); background: var(--surface-2); color: var(--ink); border-radius: 10px; padding: 12px 13px; margin: 7px 0; font-family: var(--font-body); }
+  .login input:focus { outline: none; border-color: var(--cyan); }
+  .btn { border: none; border-radius: 999px; padding: 12px 22px; font-family: var(--font-display); font-weight: 700; background: var(--gradient-brand); color: var(--bg-deep); cursor: pointer; box-shadow: var(--glow-lime); }
+  .btn.sm { padding: 8px 15px; font-size: 0.8rem; }
+  .btn.ghost { background: transparent; border: 1px solid var(--border); color: var(--ink-soft); box-shadow: none; }
+  .btn.danger { background: transparent; border: 1px solid var(--coral); color: var(--coral); box-shadow: none; }
+  .err { color: var(--coral); font-size: 0.84rem; min-height: 1em; margin-top: 10px; }
+  .ok { color: var(--lime); font-size: 0.84rem; }
+  .head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+  .head h1 { font-family: var(--font-display); font-size: 1.5rem; margin: 0; }
+  .tabs { display: inline-flex; gap: 5px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; padding: 5px; flex-wrap: wrap; }
+  .tab { border: none; background: transparent; color: var(--ink-soft); font-family: var(--font-display); font-weight: 600; font-size: 0.85rem; padding: 8px 16px; border-radius: 999px; cursor: pointer; }
+  .tab.on { background: var(--gradient-brand); color: var(--bg-deep); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 13px; margin-bottom: 20px; }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; position: relative; overflow: hidden; }
+  .stat::after { content: ''; position: absolute; left: 0; bottom: 0; right: 0; height: 3px; background: var(--gradient-brand); }
+  .stat b { display: block; font-family: var(--font-display); font-weight: 700; font-size: 1.7rem; background: var(--gradient-brand); -webkit-background-clip: text; background-clip: text; color: transparent; font-variant-numeric: tabular-nums; }
+  .stat span { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faint); }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+  .card h2 { font-family: var(--font-display); font-size: 1.02rem; margin: 0 0 14px; }
+  .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+  canvas { width: 100%; height: 150px; display: block; }
+  .chart-t { font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-faint); margin-bottom: 6px; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+  th, td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--border-soft); white-space: nowrap; }
+  th { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-faint); }
+  td .badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); }
+  td .badge.paid { color: var(--lime); border-color: rgba(200,255,77,0.3); }
+  .tools { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+  .tools input, .row input, .row select { border: 1px solid var(--border); background: var(--surface-2); color: var(--ink); border-radius: 9px; padding: 9px 11px; font-family: var(--font-body); font-size: 0.85rem; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 8px 0; }
+  .row input { flex: 1; min-width: 160px; }
+  .scroll { overflow-x: auto; }
+  .bar-row { display: grid; grid-template-columns: 130px 1fr 46px; align-items: center; gap: 10px; margin-bottom: 9px; }
+  .bar-track { height: 11px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+  .bar-fill { height: 100%; background: var(--gradient-brand); box-shadow: 0 0 8px rgba(200,255,77,0.3); }
+  .bar-lbl { overflow: hidden; text-overflow: ellipsis; color: var(--ink-soft); }
+  .bar-val { font-family: var(--font-mono); font-size: 0.78rem; color: var(--ink-soft); text-align: right; }
+  .muted { color: var(--ink-faint); font-size: 0.84rem; }
+  .hide { display: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="login" class="login">
+    <div style="font-size:2.2rem;">🔐</div>
+    <h1>Hungter Admin</h1>
+    <p>Sign in to manage everything.</p>
+    <input id="u" type="text" placeholder="Username" autocomplete="username">
+    <input id="p" type="password" placeholder="Password" autocomplete="current-password">
+    <button class="btn" id="loginBtn" style="width:100%;margin-top:8px;">Sign in</button>
+    <p class="err" id="loginErr"></p>
+    <p class="muted" id="ipLine" style="margin-top:14px;font-size:0.76rem;"></p>
+  </div>
+
+  <div id="panel" class="hide">
+    <div class="head">
+      <h1>📊 Hungter Admin</h1>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <div class="tabs">
+          <button class="tab on" data-t="overview">Overview</button>
+          <button class="tab" data-t="users">Users</button>
+          <button class="tab" data-t="access">Access &amp; Admins</button>
+          <button class="tab" data-t="geo">Geography</button>
+        </div>
+        <button class="btn ghost sm" id="refresh">↻</button>
+        <button class="btn ghost sm" id="logout">Log out</button>
+      </div>
+    </div>
+    <p class="muted" id="dbNote"></p>
+
+    <section id="v-overview">
+      <div class="grid" id="statGrid"></div>
+      <div class="card">
+        <h2>Last 14 days</h2>
+        <div class="charts">
+          <div><div class="chart-t">Chats / day</div><canvas id="cChats"></canvas></div>
+          <div><div class="chart-t">New sign-ups / day</div><canvas id="cSignups"></canvas></div>
+          <div><div class="chart-t">Active visitors / day</div><canvas id="cActive"></canvas></div>
+        </div>
+      </div>
+      <div class="card"><h2>Top subjects</h2><div id="subjects"></div></div>
+    </section>
+
+    <section id="v-users" class="hide">
+      <div class="card">
+        <div class="tools">
+          <input id="userSearch" type="search" placeholder="Search name or email…" style="flex:1;min-width:200px;">
+          <span class="muted" id="userCount"></span>
+        </div>
+        <div class="scroll">
+          <table>
+            <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Plan</th><th>Verified</th><th>Level</th><th>Joined</th><th>Actions</th></tr></thead>
+            <tbody id="userRows"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="v-access" class="hide">
+      <div class="card">
+        <h2>🔒 IP lock</h2>
+        <p class="muted" id="ipCard">Checking your address…</p>
+        <p class="muted" style="margin-top:8px;">To lock this admin to only your address, set <code>ADMIN_ALLOWED_IPS</code> in your <code>.env</code> to your IP (comma-separated for several). Leave it empty to allow any IP.</p>
+      </div>
+      <div class="card">
+        <h2>🎁 Give free access</h2>
+        <p class="muted">Grant a paid tier for free (price $0) by email.</p>
+        <div class="row">
+          <input id="grantEmail" type="email" placeholder="user@email.com">
+          <select id="grantPlan"><option value="pro">Pro (free)</option><option value="student">Student (free)</option><option value="free">Remove access</option></select>
+          <button class="btn sm" id="grantBtn">Apply</button>
+        </div>
+        <p id="grantMsg" class="ok"></p>
+      </div>
+      <div class="card">
+        <h2>👤 Create another admin</h2>
+        <div class="row">
+          <input id="newAdminU" type="text" placeholder="username">
+          <input id="newAdminP" type="password" placeholder="password (min 6)">
+          <button class="btn sm" id="createAdminBtn">Create admin</button>
+        </div>
+        <p id="adminMsg" class="ok"></p>
+        <div id="adminList" style="margin-top:12px;"></div>
+      </div>
+    </section>
+
+    <section id="v-geo" class="hide">
+      <div class="card"><h2>🌍 Where users come from</h2><div id="geoBody"></div></div>
+    </section>
+  </div>
+</div>
+
+<script>
+(function () {
+  const host = location.hostname;
+  const API = host.startsWith('admin.') ? location.protocol + '//' + host.replace(/^admin\./, '') : '';
+  let token = sessionStorage.getItem('mm_admin_tok') || '';
+
+  const $ = (id) => document.getElementById(id);
+  const num = (n) => Number(n || 0).toLocaleString();
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  async function api(action, opts) {
+    opts = opts || {};
+    const method = opts.method || 'GET';
+    const headers = { 'Content-Type': 'application/json', 'X-Admin-Token': token };
+    const bodyObj = Object.assign({ action, admtok: token }, opts.body || {});
+    const q = method === 'GET' ? '?action=' + encodeURIComponent(action) : '';
+    const urls = [API + '/api/admin-api.php' + q, API + '/api/admin-api' + q];
+    let last = null;
+    for (const u of urls) {
+      try {
+        const r = await fetch(u, { method, headers, body: method === 'GET' ? undefined : JSON.stringify(bodyObj) });
+        const ct = String(r.headers.get('content-type') || '');
+        if (r.ok || ct.includes('application/json')) return { ok: r.ok, status: r.status, data: await r.json() };
+        last = new Error('HTTP ' + r.status);
+      } catch (e) { last = e; }
+    }
+    throw (last || new Error('unreachable'));
+  }
+
+  function lineChart(canvas, series) {
+    const dpr = Math.min(devicePixelRatio || 1, 2);
+    const W = canvas.clientWidth || 300, H = 150;
+    canvas.width = W * dpr; canvas.height = H * dpr;
+    const ctx = canvas.getContext('2d'); ctx.scale(dpr, dpr);
+    ctx.clearRect(0, 0, W, H);
+    const vals = series.map((s) => s.value);
+    const max = Math.max(1, ...vals);
+    const pad = 8, bw = (W - pad * 2) / Math.max(1, series.length - 1);
+    const y = (v) => H - 22 - (v / max) * (H - 40);
+    ctx.beginPath();
+    series.forEach((s, i) => { const x = pad + i * bw; i ? ctx.lineTo(x, y(s.value)) : ctx.moveTo(x, y(s.value)); });
+    ctx.lineTo(pad + (series.length - 1) * bw, H - 22); ctx.lineTo(pad, H - 22); ctx.closePath();
+    const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, 'rgba(200,255,77,0.28)'); g.addColorStop(1, 'rgba(200,255,77,0)');
+    ctx.fillStyle = g; ctx.fill();
+    ctx.beginPath();
+    series.forEach((s, i) => { const x = pad + i * bw; i ? ctx.lineTo(x, y(s.value)) : ctx.moveTo(x, y(s.value)); });
+    ctx.strokeStyle = '#C8FF4D'; ctx.lineWidth = 2; ctx.stroke();
+    const lx = pad + (series.length - 1) * bw, lv = vals[vals.length - 1] || 0;
+    ctx.fillStyle = '#4DF0FF'; ctx.beginPath(); ctx.arc(lx, y(lv), 3, 0, 7); ctx.fill();
+    ctx.fillStyle = '#A9B2D6'; ctx.font = '11px monospace';
+    ctx.fillText(series[0].date, pad, H - 6);
+    ctx.textAlign = 'right'; ctx.fillText(series[series.length - 1].date, W - pad, H - 6); ctx.textAlign = 'left';
+  }
+
+  let allUsers = [];
+  async function loadOverview() {
+    const { data } = await api('overview');
+    $('dbNote').textContent = data.dbConnected ? '' : '⚠️ Database not connected — point your .env DB settings at your Google Cloud SQL / MySQL instance.';
+    const t = data.totals || {}, rev = data.revenue || {};
+    const stats = [
+      ['Total users', rev.totalUsers], ['Paying users', rev.payingUsers], ['MRR', '$' + num(rev.mrr)],
+      ['Active now', t.activeNow], ['Active today', t.dailyActiveUsers], ['Active / month', t.monthlyActiveUsers],
+      ['Total chats', t.totalChats], ['Chats today', t.chatsToday],
+    ];
+    $('statGrid').innerHTML = stats.map(([l, v]) => '<div class="stat"><b>' + (typeof v === 'string' ? v : num(v)) + '</b><span>' + l + '</span></div>').join('');
+    const s = data.series || {};
+    if (s.chats) lineChart($('cChats'), s.chats);
+    if (s.signups) lineChart($('cSignups'), s.signups);
+    if (s.active) lineChart($('cActive'), s.active);
+    const subs = (t.topSubjects || []); const mx = Math.max(1, ...subs.map((x) => x.count || 0));
+    $('subjects').innerHTML = subs.length ? subs.map((x) =>
+      '<div class="bar-row"><div class="bar-lbl">' + esc(x.subject) + '</div><div class="bar-track"><div class="bar-fill" style="width:' + Math.round((x.count / mx) * 100) + '%"></div></div><div class="bar-val">' + num(x.count) + '</div></div>').join('') : '<p class="muted">No chats yet.</p>';
+  }
+  function renderUsers(list) {
+    $('userCount').textContent = list.length + ' users';
+    $('userRows').innerHTML = list.map((u) =>
+      '<tr><td>' + u.id + '</td><td>' + esc(u.name || '—') + '</td><td>' + esc(u.email) + '</td>' +
+      '<td><span class="badge' + (u.active ? ' paid' : '') + '">' + esc(u.plan) + (u.active ? ' ·active' : '') + '</span></td>' +
+      '<td>' + (u.verified ? '✓' : '—') + '</td><td>' + esc(u.level || '—') + '</td><td>' + esc((u.joined || '').slice(0, 10)) + '</td>' +
+      '<td><button class="btn ghost sm" data-grant="' + esc(u.email) + '">Free Pro</button> ' +
+      '<button class="btn danger sm" data-del="' + u.id + '" data-email="' + esc(u.email) + '">Delete</button></td></tr>').join('') ||
+      '<tr><td colspan="8" class="muted">No users yet.</td></tr>';
+  }
+  async function loadUsers() {
+    const { data } = await api('users');
+    allUsers = data.users || [];
+    renderUsers(allUsers);
+  }
+  async function loadAdmins() {
+    const { data } = await api('admins');
+    $('adminList').innerHTML = '<p class="muted">Admins: ' + ((data.admins || []).map((a) => esc(a.username)).join(', ') || '—') + '</p>';
+    try {
+      const w = (await api('whoami')).data || {};
+      $('ipCard').innerHTML = 'Your current IP: <b style="color:var(--ink)">' + esc(w.ip || '?') + '</b> — ' +
+        (w.ipLockEnabled ? (w.allowed ? '<span style="color:var(--lime)">allowlisted ✓</span>' : '<span style="color:var(--coral)">not on the allowlist</span>') : 'lock is <b>off</b> (any IP allowed).');
+    } catch (e) { $('ipCard').textContent = 'Could not read your IP.'; }
+  }
+  async function loadWhoami() {
+    try {
+      const w = (await api('whoami')).data || {};
+      $('ipLine').innerHTML = 'Your IP: <b style="color:var(--ink)">' + esc(w.ip || '?') + '</b>' +
+        (w.ipLockEnabled && !w.allowed ? ' · <span style="color:var(--coral)">not allowlisted</span>' : '');
+    } catch (e) {}
+  }
+  async function loadGeo() {
+    const { data } = await api('geography');
+    const rows = data.countries || [];
+    const mx = Math.max(1, ...rows.map((r) => r.count));
+    $('geoBody').innerHTML = rows.length ? rows.map((r) =>
+      '<div class="bar-row"><div class="bar-lbl">' + esc(r.country) + '</div><div class="bar-track"><div class="bar-fill" style="width:' + Math.round((r.count / mx) * 100) + '%"></div></div><div class="bar-val">' + num(r.count) + '</div></div>').join('') :
+      '<p class="muted">' + esc(data.note || 'No location data yet.') + '</p>';
+  }
+
+  function show(view) {
+    document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('on', t.dataset.t === view));
+    ['overview', 'users', 'access', 'geo'].forEach((v) => $('v-' + v).classList.toggle('hide', v !== view));
+    if (view === 'overview') loadOverview();
+    if (view === 'users') loadUsers();
+    if (view === 'access') loadAdmins();
+    if (view === 'geo') loadGeo();
+  }
+  function enterPanel() { $('login').classList.add('hide'); $('panel').classList.remove('hide'); show('overview'); }
+
+  async function login() {
+    $('loginErr').textContent = '';
+    try {
+      const { data } = await api('login', { method: 'POST', body: { username: $('u').value.trim(), password: $('p').value } });
+      if (data && data.token) { token = data.token; sessionStorage.setItem('mm_admin_tok', token); enterPanel(); }
+      else { $('loginErr').textContent = (data && data.error) || 'Login failed.'; }
+    } catch (e) { $('loginErr').textContent = 'Could not reach the admin API.'; }
+  }
+  $('loginBtn').addEventListener('click', login);
+  $('p').addEventListener('keydown', (e) => { if (e.key === 'Enter') login(); });
+  $('logout').addEventListener('click', () => { sessionStorage.removeItem('mm_admin_tok'); location.reload(); });
+  $('refresh').addEventListener('click', () => show(document.querySelector('.tab.on').dataset.t));
+  document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => show(t.dataset.t)));
+
+  $('userRows').addEventListener('click', async (e) => {
+    const del = e.target.closest('[data-del]');
+    if (del) {
+      if (!confirm('Delete ' + del.dataset.email + '? This removes their account permanently.')) return;
+      await api('delete_user', { method: 'POST', body: { id: Number(del.dataset.del) } });
+      loadUsers(); return;
+    }
+    const g = e.target.closest('[data-grant]');
+    if (g) { await api('grant', { method: 'POST', body: { email: g.dataset.grant, plan: 'pro' } }); loadUsers(); }
+  });
+  $('userSearch').addEventListener('input', (e) => {
+    const q = e.target.value.toLowerCase();
+    renderUsers(allUsers.filter((u) => (u.name + ' ' + u.email).toLowerCase().includes(q)));
+  });
+
+  $('grantBtn').addEventListener('click', async () => {
+    $('grantMsg').textContent = '';
+    try {
+      const { data } = await api('grant', { method: 'POST', body: { email: $('grantEmail').value.trim(), plan: $('grantPlan').value } });
+      $('grantMsg').textContent = (data && (data.message || data.error)) || '';
+    } catch (e) { $('grantMsg').textContent = 'Failed.'; }
+  });
+  $('createAdminBtn').addEventListener('click', async () => {
+    $('adminMsg').textContent = '';
+    try {
+      const { data } = await api('create_admin', { method: 'POST', body: { username: $('newAdminU').value.trim(), password: $('newAdminP').value } });
+      $('adminMsg').textContent = (data && (data.message || data.error)) || '';
+      $('newAdminU').value = ''; $('newAdminP').value = ''; loadAdmins();
+    } catch (e) { $('adminMsg').textContent = 'Failed.'; }
+  });
+
+  loadWhoami();
+  if (token) enterPanel();
+})();
+</script>
+</body>
+</html>
