@@ -198,12 +198,16 @@ if (!defined('HUNGTER_SUPABASE_REF')) {
 function mm_db_driver(): string {
     static $d = null;
     if ($d === null) {
-        $d = 'mysql';
-        $sup = HUNGTER_SUPABASE_REF !== ''
-            || mm_env_value('SUPABASE_DB_HOST', '') !== ''
-            || mm_env_value('SUPABASE_DB_URL', '') !== ''
-            || strtolower(mm_env_value('DB_DRIVER', '')) === 'pgsql';
-        if ($sup) $d = 'pgsql';
+        // An explicit DB_DRIVER always wins.
+        $explicit = strtolower(mm_env_value('DB_DRIVER', ''));
+        if ($explicit === 'mysql' || $explicit === 'pgsql') { $d = $explicit; return $d; }
+        // Otherwise: if MySQL host creds are set (e.g. Google Cloud SQL) use
+        // MySQL; if Supabase host/url is set use Postgres; else the wired
+        // Supabase project is the default.
+        $hasMysql = mm_env_value('MYSQL_HOST', '') !== '' || mm_env_value('DB_HOST', '') !== '';
+        $hasSup = mm_env_value('SUPABASE_DB_HOST', '') !== '' || mm_env_value('SUPABASE_DB_URL', '') !== '';
+        if ($hasMysql && !$hasSup) { $d = 'mysql'; return $d; }
+        $d = (HUNGTER_SUPABASE_REF !== '' || $hasSup) ? 'pgsql' : 'mysql';
     }
     return $d;
 }
