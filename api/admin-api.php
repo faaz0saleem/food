@@ -133,6 +133,20 @@ function ga_service_account(): ?array {
     if ($email !== '' && $key !== '') {
         return ['client_email' => $email, 'private_key' => str_replace('\\n', "\n", $key)];
     }
+    // Auto-detect: just upload the key file anywhere sensible — no .env needed.
+    // Scan common folders for any *.json that is a service-account key.
+    $skip = ['stats.json', 'manifest.json', 'composer.json', 'package.json', 'package-lock.json', 'netlify.json'];
+    $dirs = [dirname(__DIR__, 2), dirname(__DIR__, 2) . '/private', dirname(__DIR__), dirname(__DIR__) . '/private', __DIR__];
+    foreach ($dirs as $dir) {
+        foreach (@glob($dir . '/*.json') ?: [] as $path) {
+            if (in_array(basename($path), $skip, true)) continue;
+            $d = @json_decode((string) @file_get_contents($path), true);
+            if (is_array($d) && ($d['type'] ?? '') === 'service_account' && !empty($d['client_email']) && !empty($d['private_key'])) {
+                $d['private_key'] = str_replace('\\n', "\n", (string) $d['private_key']);
+                return $d;
+            }
+        }
+    }
     return null;
 }
 // Explains exactly why a service account couldn't be loaded, so setup is easy.
@@ -160,7 +174,7 @@ function ga_config_hint(): string {
         return 'GA_SA_EMAIL is set but GA_SA_PRIVATE_KEY is missing.';
     if (trim(mm_env_value('GA_SA_JSON_B64', '')) !== '')
         return 'GA_SA_JSON_B64 is set but did not decode to valid service-account JSON — re-copy the full base64 string with no spaces or line breaks.';
-    return 'No service-account key found. Easiest: upload your key.json and set GA_SA_KEY_FILE to its full path (e.g. /home/u779661998/domains/hungter.com/key.json). Or paste the base64 of the key into GA_SA_JSON_B64.';
+    return 'No service-account key found yet. Just upload the key.json Google gave you (any name is fine) into your domains/hungter.com folder — the one that contains public_html — and refresh. It is detected automatically; no .env editing needed.';
 }
 function ga_b64url(string $s): string { return rtrim(strtr(base64_encode($s), '+/', '-_'), '='); }
 function ga_access_token(array $sa): ?string {
