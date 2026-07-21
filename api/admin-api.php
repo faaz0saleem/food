@@ -60,26 +60,101 @@ function admin_authed(array $body): bool {
     return $expected !== '' && hash_equals($expected, $key);
 }
 
+// ── Built-in primary admin (works without any database) ──────────────────────
+// Username defaults to `admin`, password to ADMIN_SEED_PASSWORD (default
+// Faaz12345). This lets the owner log in even before the DB is connected.
+function admin_builtin_check(string $u, string $p): bool {
+    $wantUser = mm_env_value('ADMIN_USERNAME', 'admin');
+    $wantPass = mm_env_value('ADMIN_SEED_PASSWORD', 'Faaz12345');
+    if ($wantPass === '') return false;
+    return hash_equals($wantUser, $u) && hash_equals($wantPass, $p);
+}
+
+// ── IP allowlist ─────────────────────────────────────────────────────────────
+// Set ADMIN_ALLOWED_IPS in .env to a comma-separated list of IPs / CIDR ranges
+// to lock the whole admin to just those addresses. Empty = allow everyone (so
+// you never get permanently locked out before you've set your IP).
+function admin_ip_in_cidr(string $ip, string $cidr): bool {
+    if (strpos($cidr, '/') === false) return false;
+    [$subnet, $bits] = explode('/', $cidr, 2);
+    $bits = (int) $bits;
+    $ipBin = @inet_pton($ip);
+    $subBin = @inet_pton($subnet);
+    if ($ipBin === false || $subBin === false || strlen($ipBin) !== strlen($subBin)) return false;
+    $bytes = intdiv($bits, 8);
+    $rem = $bits % 8;
+    if ($bytes > 0 && strncmp($ipBin, $subBin, $bytes) !== 0) return false;
+    if ($rem === 0) return true;
+    $mask = chr(0xff << (8 - $rem) & 0xff);
+    return (ord($ipBin[$bytes]) & ord($mask)) === (ord($subBin[$bytes]) & ord($mask));
+}
+function admin_ip_allowed(): bool {
+    $raw = trim(mm_env_value('ADMIN_ALLOWED_IPS', ''));
+    if ($raw === '') return true; // no allowlist configured — allow all
+    $ip = mm_client_ip();
+    foreach (explode(',', $raw) as $entry) {
+        $entry = trim($entry);
+        if ($entry === '') continue;
+        if ($entry === $ip) return true;
+        if (strpos($entry, '/') !== false && admin_ip_in_cidr($ip, $entry)) return true;
+    }
+    return false;
+}
+
 if ($db !== null) { mm_ensure_runtime_tables(); } // provisions tables on Supabase
 admin_ensure($db);
+
+// ── Public: whoami — tells you your IP so you can set ADMIN_ALLOWED_IPS ───────
+// Never IP-gated: you must be able to discover your own address to allowlist it.
+if ($action === 'whoami') {
+    $raw = trim(mm_env_value('ADMIN_ALLOWED_IPS', ''));
+    mm_json_response(200, [
+        'status' => 'ok',
+        'ip' => mm_client_ip(),
+        'ipLockEnabled' => $raw !== '',
+        'allowed' => admin_ip_allowed(),
+        'dbConnected' => $db !== null,
+    ]);
+    exit;
+}
+
+// ── IP lock — applies to login and every admin action below ──────────────────
+if (!admin_ip_allowed()) {
+    mm_json_response(403, [
+        'error' => 'This admin is locked to specific IP addresses and yours (' . mm_client_ip() . ') is not on the list.',
+        'ip' => mm_client_ip(),
+        'hint' => 'Add this IP to ADMIN_ALLOWED_IPS in .env (comma-separated) to allow it.',
+    ]);
+    exit;
+}
 
 // ── Public: login ────────────────────────────────────────────────────────────
 if ($action === 'login') {
     // Brute-force lock: max 5 attempts per IP per minute.
     mm_require_rate_limit('admin-login|' . mm_client_ip(), 5, 60);
-    if ($db === null) { mm_json_response(503, ['error' => 'Database offline — connect the DB in .env first (the admin needs MySQL to store admins and users).']); exit; }
     $u = trim((string) ($body['username'] ?? ''));
     $p = (string) ($body['password'] ?? '');
-    try {
-        $stmt = $db->prepare('SELECT password_hash FROM admins WHERE username = :u LIMIT 1');
-        $stmt->execute([':u' => $u]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        if (!$row || !password_verify($p, (string) $row['password_hash'])) {
-            mm_json_response(401, ['error' => 'Wrong username or password.']);
-            exit;
-        }
+
+    // 1) Built-in primary admin — works even with no database connected.
+    if (admin_builtin_check($u, $p)) {
         mm_json_response(200, ['status' => 'ok', 'token' => admin_make_token($u), 'username' => $u]);
-    } catch (Throwable $e) { mm_json_response(500, ['error' => 'Login failed: ' . $e->getMessage()]); }
+        exit;
+    }
+
+    // 2) Database-backed admins (secondary accounts you create in the panel).
+    if ($db !== null) {
+        try {
+            $stmt = $db->prepare('SELECT password_hash FROM admins WHERE username = :u LIMIT 1');
+            $stmt->execute([':u' => $u]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($row && password_verify($p, (string) $row['password_hash'])) {
+                mm_json_response(200, ['status' => 'ok', 'token' => admin_make_token($u), 'username' => $u]);
+                exit;
+            }
+        } catch (Throwable $e) { mm_json_response(500, ['error' => 'Login failed: ' . $e->getMessage()]); exit; }
+    }
+
+    mm_json_response(401, ['error' => 'Wrong username or password.']);
     exit;
 }
 

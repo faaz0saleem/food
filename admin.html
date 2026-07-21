@@ -67,6 +67,7 @@
     <input id="p" type="password" placeholder="Password" autocomplete="current-password">
     <button class="btn" id="loginBtn" style="width:100%;margin-top:8px;">Sign in</button>
     <p class="err" id="loginErr"></p>
+    <p class="muted" id="ipLine" style="margin-top:14px;font-size:0.76rem;"></p>
   </div>
 
   <div id="panel" class="hide">
@@ -114,6 +115,11 @@
     </section>
 
     <section id="v-access" class="hide">
+      <div class="card">
+        <h2>🔒 IP lock</h2>
+        <p class="muted" id="ipCard">Checking your address…</p>
+        <p class="muted" style="margin-top:8px;">To lock this admin to only your address, set <code>ADMIN_ALLOWED_IPS</code> in your <code>.env</code> to your IP (comma-separated for several). Leave it empty to allow any IP.</p>
+      </div>
       <div class="card">
         <h2>🎁 Give free access</h2>
         <p class="muted">Grant a paid tier for free (price $0) by email.</p>
@@ -233,6 +239,18 @@
   async function loadAdmins() {
     const { data } = await api('admins');
     $('adminList').innerHTML = '<p class="muted">Admins: ' + ((data.admins || []).map((a) => esc(a.username)).join(', ') || '—') + '</p>';
+    try {
+      const w = (await api('whoami')).data || {};
+      $('ipCard').innerHTML = 'Your current IP: <b style="color:var(--ink)">' + esc(w.ip || '?') + '</b> — ' +
+        (w.ipLockEnabled ? (w.allowed ? '<span style="color:var(--lime)">allowlisted ✓</span>' : '<span style="color:var(--coral)">not on the allowlist</span>') : 'lock is <b>off</b> (any IP allowed).');
+    } catch (e) { $('ipCard').textContent = 'Could not read your IP.'; }
+  }
+  async function loadWhoami() {
+    try {
+      const w = (await api('whoami')).data || {};
+      $('ipLine').innerHTML = 'Your IP: <b style="color:var(--ink)">' + esc(w.ip || '?') + '</b>' +
+        (w.ipLockEnabled && !w.allowed ? ' · <span style="color:var(--coral)">not allowlisted</span>' : '');
+    } catch (e) {}
   }
   async function loadGeo() {
     const { data } = await api('geography');
@@ -298,6 +316,7 @@
     } catch (e) { $('adminMsg').textContent = 'Failed.'; }
   });
 
+  loadWhoami();
   if (token) enterPanel();
 })();
 </script>
