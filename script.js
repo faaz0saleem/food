@@ -514,7 +514,7 @@ function getQuestionOfDay() {
   const prompt = prompts[dayOfYear % prompts.length];
   return {
     prompt,
-    href: `chat.html?q=${encodeURIComponent(prompt)}`,
+    href: `chat?q=${encodeURIComponent(prompt)}`,
   };
 }
 
@@ -541,8 +541,8 @@ function buildNav() {
     <div class="nav-brand"><a href="/">🧠 Hungter</a></div>
     <nav class="nav-links">${links}</nav>
     <div class="nav-right">
-      <a href="/chat.html" class="chat-btn">Ask AI →</a>
-      <a href="/profile.html" class="avatar">${initials}</a>
+      <a href="/chat" class="chat-btn">Ask AI →</a>
+      <a href="/profile" class="avatar">${initials}</a>
     </div>
   `;
 }
@@ -560,7 +560,7 @@ function registerVisitor() {
 }
 
 document.addEventListener('click', (event) => {
-  const target = event.target instanceof Element ? event.target.closest('a[href*="/checkout.html"]') : null;
+  const target = event.target instanceof Element ? event.target.closest('a[href*="/checkout"]') : null;
   if (!target) return;
   const href = target.getAttribute('href') || '';
   const plan = href.includes('plan=pro') ? 'pro' : href.includes('plan=student') ? 'student' : 'unknown';
@@ -590,7 +590,7 @@ function renderSubjectCards(container, category = 'All', search = '') {
           </div>
           <div class="subject-card-actions">
             ${count ? '<span class="badge">Explored ✓</span>' : '<span class="badge badge-muted">New</span>'}
-            <a class="button button-secondary" href="chat.html?subject=${encodeURIComponent(item.name)}">Start →</a>
+            <a class="button button-secondary" href="chat?subject=${encodeURIComponent(item.name)}">Start →</a>
           </div>
         </article>
       `;
@@ -600,7 +600,7 @@ function renderSubjectCards(container, category = 'All', search = '') {
 
 function initOnboarding() {
   // Onboarding is now a fully self-contained gamified page.
-  // All logic lives inline in onboarding.html.
+  // All logic lives inline in onboarding.
 }
 
 function initSignup() {
@@ -729,10 +729,10 @@ function initSignup() {
     if (successMessage) {
       successMessage.classList.add('visible');
       setTimeout(() => {
-        window.location.href = 'onboarding.html';
+        window.location.href = 'onboarding';
       }, 1200);
     } else {
-      window.location.href = 'onboarding.html';
+      window.location.href = 'onboarding';
     }
   });
 
@@ -862,7 +862,7 @@ async function initPage() {
   const hasProfile = Boolean((lsGet('mm_name', '') || '').trim());
 
   if (pageId && appPages.includes(pageId) && !hasProfile) {
-    window.location.href = 'onboarding.html';
+    window.location.href = 'onboarding';
     return;
   }
 

@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Fredoka:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap">
   <title>Hungter — Book</title>
   <meta name="description" content="Buy real study books with chapter-aware AI quizzes, flashcards, notes, and guess papers built in.">
-  <link rel="canonical" href="https://hungter.com/book.html">
+  <link rel="canonical" href="https://hungter.com/book">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Hungter — Book">
   <meta property="og:description" content="Study books with AI tools built around every chapter.">
@@ -342,7 +342,7 @@
             <p style="margin:0;color:var(--ink-soft);">${score} of ${questions.length} correct — saved to your progress.</p>
             <div class="btn-secondary-row" style="margin-top:10px;">
               <button type="button" class="btn-sm" id="bqAgain">Try another quiz</button>
-              <a class="btn-sm" href="/progress.html" style="text-decoration:none;">See my progress →</a>
+              <a class="btn-sm" href="/progress" style="text-decoration:none;">See my progress →</a>
             </div>
           </div>
         `;
@@ -396,12 +396,12 @@
         .then((res) => { if (!res.ok) throw new Error('Failed to load catalog'); return res.json(); })
         .then((books) => {
           const book = books.find((b) => b.id === bookId);
-          if (!book) { container.innerHTML = '<p>Book not found. <a href="/books.html">Back to catalog</a></p>'; return; }
+          if (!book) { container.innerHTML = '<p>Book not found. <a href="/books">Back to catalog</a></p>'; return; }
           renderBook(book, books);
         })
         .catch((error) => {
           console.error('Book load failed:', error.message);
-          container.innerHTML = '<p>Unable to load this book right now. <a href="/books.html">Back to catalog</a></p>';
+          container.innerHTML = '<p>Unable to load this book right now. <a href="/books">Back to catalog</a></p>';
         });
 
       function renderBook(book, allBooks) {
@@ -411,7 +411,7 @@
         const similar = allBooks.filter((b) => b.id !== book.id && b.section === book.section && b.subject === book.subject).slice(0, 3);
 
         container.innerHTML = `
-          <p class="crumb"><a href="/books.html">Books</a> › <a href="/books.html?section=${encodeURIComponent(book.section)}">${book.section}</a> › ${book.subject}</p>
+          <p class="crumb"><a href="/books">Books</a> › <a href="/books?section=${encodeURIComponent(book.section)}">${book.section}</a> › ${book.subject}</p>
 
           <div class="product-grid">
             <div class="cover-col">
@@ -478,7 +478,7 @@
           <div class="section-card">
             <h2>📚 Similar books</h2>
             <div class="similar-row">
-              ${similar.length ? similar.map((item) => `<a class="similar-card" href="/book.html?id=${item.id}"><strong>${item.title}</strong><p style="margin:6px 0 0;color:var(--ink-faint);font-size:0.82rem;">${item.section} · ${item.subject}</p></a>`).join('') : '<p style="color:var(--ink-soft);">No close matches yet.</p>'}
+              ${similar.length ? similar.map((item) => `<a class="similar-card" href="/book?id=${item.id}"><strong>${item.title}</strong><p style="margin:6px 0 0;color:var(--ink-faint);font-size:0.82rem;">${item.section} · ${item.subject}</p></a>`).join('') : '<p style="color:var(--ink-soft);">No close matches yet.</p>'}
             </div>
           </div>
 
@@ -618,7 +618,7 @@
           const chapter = topicSelect.value;
           const params = new URLSearchParams({ book: book.id });
           if (chapter) params.set('chapter', chapter);
-          window.location.href = `/guess-papers.html?${params.toString()}`;
+          window.location.href = `/guess-papers?${params.toString()}`;
         });
 
         document.getElementById('chapterNotesBtn')?.addEventListener('click', async () => {

@@ -23,7 +23,7 @@ if ('serviceWorker' in navigator) {
     let token = null;
     try { token = JSON.parse(localStorage.getItem('mm_auth_token') || 'null'); } catch (e) {}
     if (!token) {
-      location.replace('/signin.html');
+      location.replace('/signin');
     }
   })();
 
@@ -133,7 +133,7 @@ if ('serviceWorker' in navigator) {
     }
 
     const name = lsGet('mm_name', '');
-    const brandHref = name ? '/dashboard.html' : '/';
+    const brandHref = name ? '/dashboard' : '/';
     const avatarColor = lsGet('mm_avatarColor', '#7b7cff');
     const initials = getInitials(name);
     const level = getLevelMeta();
@@ -162,8 +162,8 @@ if ('serviceWorker' in navigator) {
               <small>${Math.max(0, Number(level.xp || 0))} XP</small>
             </span>
           </div>
-          <a href="/chat.html" class="chat-btn">💬 Ask AI</a>
-          <a href="/profile.html" class="avatar" style="background-color:${avatarColor}" title="Profile">${initials}</a>
+          <a href="/chat" class="chat-btn">💬 Ask AI</a>
+          <a href="/profile" class="avatar" style="background-color:${avatarColor}" title="Profile">${initials}</a>
         </div>
       </div>
     `;
@@ -243,23 +243,23 @@ if ('serviceWorker' in navigator) {
           </div>
           <div class="footer-col">
             <h4>Product</h4>
-            <a href="/learn.html">Learn</a>
-            <a href="/subjects.html">Subjects</a>
-            <a href="/quiz.html">Quiz</a>
-            <a href="/chat.html">AI Chat</a>
+            <a href="/learn">Learn</a>
+            <a href="/subjects">Subjects</a>
+            <a href="/quiz">Quiz</a>
+            <a href="/chat">AI Chat</a>
           </div>
           <div class="footer-col">
             <h4>Company</h4>
             <a href="/#pricing">Pricing</a>
-            <a href="/signup.html">Get started</a>
-            <a href="/checkout.html?plan=student">Upgrade</a>
+            <a href="/signup">Get started</a>
+            <a href="/checkout?plan=student">Upgrade</a>
           </div>
           <div class="footer-col">
             <h4>Legal</h4>
-            <a href="/terms.html">Terms</a>
-            <a href="/privacy.html">Privacy</a>
-            <a href="/faq.html">FAQ</a>
-            <a href="/complaints.html">Complaints</a>
+            <a href="/terms">Terms</a>
+            <a href="/privacy">Privacy</a>
+            <a href="/faq">FAQ</a>
+            <a href="/complaints">Complaints</a>
           </div>
           <div class="footer-col" data-footer-status>
             <h4>Status</h4>

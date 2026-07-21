@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Fredoka:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap">
 <title>AI Tutor Chat — Ask Any Study Question | Hungter</title>
 <meta name="description" content="Ask any homework or exam question and get an explanation matched to your learning style — visual, step-by-step, examples, or stories. Free during beta.">
-<link rel="canonical" href="https://hungter.com/chat.html">
+<link rel="canonical" href="https://hungter.com/chat">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Hungter — Chat">
 <meta property="og:description" content="Ask Hungter's AI tutor anything — explanations tuned to how you learn.">
@@ -541,7 +541,7 @@
       c.type = 'button'; c.className = 'followup-chip'; c.textContent = label;
       c.addEventListener('click', () => {
         if (prompt) sendMessage(prompt);
-        else window.location.href = '/quiz.html?subject=' + encodeURIComponent(subject || lsGet('mm_subject', 'General'));
+        else window.location.href = '/quiz?subject=' + encodeURIComponent(subject || lsGet('mm_subject', 'General'));
       });
       wrap.appendChild(c);
     });

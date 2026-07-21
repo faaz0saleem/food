@@ -42,7 +42,7 @@
     </div>
     <div class="spinner" id="spin"></div>
     <p class="err" id="err"></p>
-    <p class="fine">By continuing you agree to our <a href="/terms.html">Terms</a> and <a href="/privacy.html">Privacy Policy</a>.</p>
+    <p class="fine">By continuing you agree to our <a href="/terms">Terms</a> and <a href="/privacy">Privacy Policy</a>.</p>
   </div>
 
 <script src="/api-config.js?v=20260720"></script>
@@ -51,7 +51,7 @@
   function apiBase() { return String(window.HUNGTER_API_BASE || '').replace(/\/$/, ''); }
 
   // Already signed in? Skip straight in.
-  try { if (JSON.parse(localStorage.getItem('mm_auth_token') || 'null')) location.replace('/dashboard.html'); } catch (e) {}
+  try { if (JSON.parse(localStorage.getItem('mm_auth_token') || 'null')) location.replace('/dashboard'); } catch (e) {}
 
   async function onGoogleCredential(resp) {
     const err = document.getElementById('err');
@@ -75,7 +75,7 @@
         if (data.user.email) ls('mm_email', data.user.email);
         if (data.user.picture) ls('mm_avatar', data.user.picture);
       }
-      location.replace(data.isNew ? '/onboarding.html' : '/dashboard.html');
+      location.replace(data.isNew ? '/onboarding' : '/dashboard');
     } else {
       err.textContent = (data && data.error) ? data.error : 'Sign-in failed. Please try again.';
     }

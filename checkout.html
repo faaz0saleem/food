@@ -19,7 +19,7 @@
 <title>Launch Waitlist — Hungter</title>
 <meta name="description" content="Join the Hungter paid-plan waitlist. Billing is not live yet, so no money is charged on this page.">
 <meta name="robots" content="noindex, follow">
-<link rel="canonical" href="https://hungter.com/checkout.html">
+<link rel="canonical" href="https://hungter.com/checkout">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Launch Waitlist — Hungter">
 <meta property="og:description" content="Join the Hungter paid-plan waitlist. Billing is not live yet.">
@@ -122,7 +122,7 @@
         <div class="form-section">
           <div class="checkbox-group">
             <input type="checkbox" id="terms" required>
-            <label for="terms">I agree to the <a href="/terms.html" style="color: var(--lime); text-decoration:underline;">Terms of Service</a> and <a href="/privacy.html" style="color: var(--lime); text-decoration:underline;">Privacy Policy</a></label>
+            <label for="terms">I agree to the <a href="/terms" style="color: var(--lime); text-decoration:underline;">Terms of Service</a> and <a href="/privacy" style="color: var(--lime); text-decoration:underline;">Privacy Policy</a></label>
           </div>
           <div class="checkbox-group" style="margin-top:12px;">
             <input type="checkbox" id="emails">
@@ -289,7 +289,7 @@
       if (window.HungterTrack) {
         window.HungterTrack.upgradeIntent(selectedPlan.id || 'unknown');
       }
-      setTimeout(() => { window.location.href = '/dashboard.html'; }, 1200);
+      setTimeout(() => { window.location.href = '/dashboard'; }, 1200);
     }
 
     function getQueryParam(name) {

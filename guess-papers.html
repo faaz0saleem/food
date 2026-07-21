@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Fredoka:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap">
   <title>AI Guess Paper Generator — Solvable Practice Exams | Hungter</title>
   <meta name="description" content="Generate original AI practice papers from real book topics, solve them on the site with a timer, and get your score plus weak areas instantly.">
-  <link rel="canonical" href="https://hungter.com/guess-papers.html">
+  <link rel="canonical" href="https://hungter.com/guess-papers">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Hungter — Guess Papers">
   <meta property="og:description" content="Solvable AI practice exams with instant scoring and weak-area analysis.">
@@ -212,7 +212,7 @@
           <div id="weakAreas"></div>
         </div>
         <div class="btn-row" style="margin-top:16px;">
-          <a id="practiceWeakLink" class="btn primary" href="/chat.html" style="text-decoration:none;">Practice weak areas in Chat →</a>
+          <a id="practiceWeakLink" class="btn primary" href="/chat" style="text-decoration:none;">Practice weak areas in Chat →</a>
           <button id="newPaperBtn" class="btn" type="button">Generate another paper</button>
         </div>
       </div>
@@ -255,7 +255,7 @@
           select.appendChild(opt);
         });
 
-        // Deep link from a book page: /guess-papers.html?book=<id>&chapter=<topic>
+        // Deep link from a book page: /guess-papers?book=<id>&chapter=<topic>
         const params = new URLSearchParams(location.search);
         const wantBookId = params.get('book');
         const wantChapter = params.get('chapter') || '';
@@ -526,7 +526,7 @@
       const weakPrompt = weak.length
         ? `Help me practice these weak areas from my ${exam.paper.subject} guess paper: ${weak.join(', ')}. Quiz me one question at a time.`
         : `Give me harder ${exam.paper.subject} practice questions on: ${Object.keys(topicStats).join(', ')}`;
-      el('practiceWeakLink').href = `/chat.html?q=${encodeURIComponent(weakPrompt)}`;
+      el('practiceWeakLink').href = `/chat?q=${encodeURIComponent(weakPrompt)}`;
 
       // Review list
       const reviewList = el('reviewList');

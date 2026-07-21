@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Your Progress — Levels, Streaks & Mastery | Hungter</title>
 <meta name="description" content="Your real learning analytics: XP, streaks, accuracy, subject mastery, achievements and recent quizzes.">
-<link rel="canonical" href="https://hungter.com/progress.html">
+<link rel="canonical" href="https://hungter.com/progress">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
@@ -116,7 +116,7 @@
       <h1>Level <span id="lvlNum">1</span> · <span class="hg-gradient-text" id="lvlName">Newbie</span></h1>
       <div class="sub"><span id="xpToNext">— XP to next level</span> · <span id="quizDone">0 quizzes completed</span></div>
     </div>
-    <a class="pg-quizbtn" href="/quiz.html">🖊 Take a quiz</a>
+    <a class="pg-quizbtn" href="/quiz">🖊 Take a quiz</a>
   </div>
 
   <div class="kpis">
@@ -245,7 +245,7 @@ function renderActivity(range) {
     wrap.appendChild(col);
   });
   if (vals.every((x) => x.v === 0)) {
-    wrap.innerHTML = '<div class="empty" style="width:100%">No activity recorded yet — <a href="/chat.html">ask a question</a> or <a href="/quiz.html">take a quiz</a> and this chart comes alive.</div>';
+    wrap.innerHTML = '<div class="empty" style="width:100%">No activity recorded yet — <a href="/chat">ask a question</a> or <a href="/quiz">take a quiz</a> and this chart comes alive.</div>';
   }
 }
 renderActivity('week');
@@ -276,7 +276,7 @@ const mastery = Object.entries(scores).map(([s, arr]) => ({ s, n: arr.length, pc
 $('masteryList').innerHTML = mastery.length ? mastery.map((m) =>
   '<div class="subj"><div class="row"><span>' + (SUBJ_ICO[m.s] || '📘') + '</span><b>' + esc(m.s) + '</b><span class="n">' + m.n + ' quiz' + (m.n === 1 ? '' : 'zes') + '</span><span class="pct" style="color:' + (m.pct >= 65 ? 'var(--lime)' : 'var(--coral)') + '">' + m.pct + '%</span></div>' +
   '<div class="track"><div class="fill" style="width:' + m.pct + '%;background:' + accColor(m.pct) + '"></div></div></div>').join('')
-  : '<div class="empty">No quizzes yet — <a href="/quiz.html">take your first quiz</a> and mastery bars appear here.</div>';
+  : '<div class="empty">No quizzes yet — <a href="/quiz">take your first quiz</a> and mastery bars appear here.</div>';
 
 // Achievements — every one is computed from real records
 const subjTried = new Set([...Object.keys(scores), ...Object.keys(subjectsChat)]).size;
@@ -305,7 +305,7 @@ $('feedList').innerHTML = qlog.length ? qlog.map((q) =>
   '<div class="item"><div class="fic">' + (SUBJ_ICO[q.subject] || '📘') + '</div>' +
   '<div class="fmain"><b>' + esc(q.subject) + '</b><span>' + q.total + ' questions</span></div>' +
   '<div class="fright"><span class="score">' + q.correct + '/' + q.total + '</span><span class="fxp">+' + q.xp + ' XP</span><span class="when">' + ago(q.ts) + '</span></div></div>').join('')
-  : '<div class="empty">Your quiz history shows up here after your first round — <a href="/quiz.html">start one now</a>.</div>';
+  : '<div class="empty">Your quiz history shows up here after your first round — <a href="/quiz">start one now</a>.</div>';
 </script>
 </body>
 </html>

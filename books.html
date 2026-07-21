@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Fredoka:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap">
   <title>Best Study Books for O-Level, A-Level, GCSE, SAT & PSAT | Hungter</title>
   <meta name="description" content="Browse recommended textbooks and revision guides for Cambridge O-Level, A-Level, GCSE, SAT and PSAT — with AI-generated quizzes, flashcards and practice papers for every chapter.">
-  <link rel="canonical" href="https://hungter.com/books.html">
+  <link rel="canonical" href="https://hungter.com/books">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Hungter — Books">
   <meta property="og:description" content="Find trusted study books and open chapter-aware AI actions.">
@@ -172,7 +172,7 @@
           </div>
           <p>No books matched your current section, subject, or search term.</p>
           <div class="learn-progress">
-            <div class="learn-stat-row"><span><a href="/chat.html" class="learn-link">Ask for a recommendation →</a></span></div>
+            <div class="learn-stat-row"><span><a href="/chat" class="learn-link">Ask for a recommendation →</a></span></div>
           </div>
         </article>
         `;
@@ -186,7 +186,7 @@
           ? `<div class="book-stars">${'★★★★★☆☆☆☆☆'.slice(5 - Math.round(avg), 10 - Math.round(avg))}<span class="count">${avg.toFixed(1)} (${reviews.length})</span></div>`
           : '<div><span class="book-new-badge">✦ New arrival</span></div>';
         return `
-        <a class="book-card" href="/book.html?id=${book.id}">
+        <a class="book-card" href="/book?id=${book.id}">
           <div class="book-cover-frame" data-cover-index="${index}"></div>
           <h3>${book.title}</h3>
           <p class="book-meta">${book.author}</p>

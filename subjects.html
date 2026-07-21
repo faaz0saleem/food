@@ -18,7 +18,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Fredoka:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap">
   <title>Browse All Subjects — Math, Science, Coding & More | Hungter</title>
   <meta name="description" content="Pick from Math, Physics, Chemistry, Biology, English, History, Coding, Economics and more — each with an AI tutor that adapts to your level.">
-  <link rel="canonical" href="https://hungter.com/subjects.html">
+  <link rel="canonical" href="https://hungter.com/subjects">
   <meta property="og:type" content="website">
   <meta property="og:title" content="Hungter — Subjects">
   <meta property="og:description" content="Explore subjects and start a focused learning track with Hungter.">
@@ -45,7 +45,7 @@
           <p class="quiz-label">Find a subject</p>
           <input id="subjectSearch" class="subject-search" type="search" placeholder="Search by name or description">
         </div>
-        <a href="/chat.html" class="subject-quick-link">Open AI Tutor</a>
+        <a href="/chat" class="subject-quick-link">Open AI Tutor</a>
       </div>
       <div>
         <p class="quiz-label">Filter</p>
@@ -98,7 +98,7 @@
       const subjectsData = lsGet('mm_subjects', {});
       subjectsData[subjectName] = (subjectsData[subjectName] || 0) + 1;
       lsSet('mm_subjects', subjectsData);
-      window.location.href = '/dashboard.html';
+      window.location.href = '/dashboard';
     }
 
     function populateCategoryFilter() {

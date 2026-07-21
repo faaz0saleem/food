@@ -10,7 +10,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap">
 <title>Codex — Chat, Build & Preview with 4 AI Engines | Hungter</title>
 <meta name="description" content="Chat to Codex and watch four AI engines build your app — code on the left, a live preview on the right. Claude, ChatGPT, Gemini and Groq, one dev team.">
-<link rel="canonical" href="https://hungter.com/codex.html">
+<link rel="canonical" href="https://hungter.com/codex">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/brand.css?v=20260718">
 <link rel="stylesheet" href="/nav.css?v=20260713">
@@ -222,7 +222,7 @@
       </div>
       <button id="cxSend" class="cxw-send" type="button">⚡ Build with all 4 engines</button>
       <p id="cxErr" class="cxw-err"></p>
-      <p class="cxw-hint">The engines pick the right language and stack for your idea. <span id="cxCredits">A build uses 4 credits</span> · <a href="/checkout.html">plans</a> · ⌘↵ to send</p>
+      <p class="cxw-hint">The engines pick the right language and stack for your idea. <span id="cxCredits">A build uses 4 credits</span> · <a href="/checkout">plans</a> · ⌘↵ to send</p>
     </div>
   </section>
 
@@ -602,7 +602,7 @@ async function send() {
     });
     think.stop(); think.row.remove();
     if (data.needsRepoScope) { errEl.innerHTML = (data.error || 'Connect GitHub to build.') + ' <a href="/api/github-callback.php" style="color:var(--cyan)">Connect →</a>'; errEl.style.display = 'block'; return; }
-    if (data.requiresSignup) { errEl.innerHTML = 'Codex needs an account. <a href="/signup.html" style="color:var(--cyan)">Create one →</a>'; errEl.style.display = 'block'; return; }
+    if (data.requiresSignup) { errEl.innerHTML = 'Codex needs an account. <a href="/signup" style="color:var(--cyan)">Create one →</a>'; errEl.style.display = 'block'; return; }
     if (data.dailyLimitReached) { errEl.textContent = data.error || 'Daily AI credits used up — come back tomorrow.'; errEl.style.display = 'block'; return; }
     if (data.error) { errEl.textContent = data.error; errEl.style.display = 'block'; return; }
 

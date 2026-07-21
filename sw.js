@@ -3,9 +3,9 @@
 const CACHE = 'hungter-v20260730';
 const SHELL = [
   '/',
-  '/chat.html',
-  '/dashboard.html',
-  '/codex.html',
+  '/chat',
+  '/dashboard',
+  '/codex',
   '/brand.css',
   '/nav.css',
   '/styles.css',
