@@ -254,6 +254,11 @@ function mm_db(): ?PDO {
         return $pdo;
     }
 
+    // If a connection failed very recently, don't make every request pay the
+    // full connect timeout again — short-circuit to "offline" for 20s.
+    $downFile = sys_get_temp_dir() . '/hungter_db_down';
+    if (@filemtime($downFile) > time() - 20) { $pdo = null; return $pdo; }
+
     $opts = [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
@@ -287,7 +292,8 @@ function mm_db(): ?PDO {
         try {
             $dsn = sprintf('pgsql:host=%s;port=%s;dbname=%s;sslmode=require;connect_timeout=4', $host, $port, $name);
             $pdo = new MMPgPDO($dsn, $user, $pass, $opts);
-        } catch (Throwable $error) { $pdo = null; }
+            @unlink($downFile);
+        } catch (Throwable $error) { $pdo = null; @touch($downFile); }
         return $pdo;
     }
 
@@ -305,8 +311,10 @@ function mm_db(): ?PDO {
     try {
         $dsn = sprintf('mysql:host=%s;port=%s;dbname=%s;charset=utf8mb4', $host, $port, $name);
         $pdo = new PDO($dsn, $user, $pass, $opts);
+        @unlink($downFile);
     } catch (Throwable $error) {
         $pdo = null;
+        @touch($downFile);
     }
 
     return $pdo;

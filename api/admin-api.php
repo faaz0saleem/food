@@ -7,7 +7,9 @@ require_once __DIR__ . '/_config.php';
 
 mm_handle_options();
 
-$db = mm_db();
+// The DB is connected lazily (only after login, only for actions that need it)
+// so a broken/unreachable database can never block admin login or whoami.
+$db = null;
 $body = mm_read_json_body();
 $action = strtolower(trim((string) ($_GET['action'] ?? ($body['action'] ?? 'overview'))));
 
@@ -230,11 +232,9 @@ function ga_rows(array $rep): array {
     return $out;
 }
 
-if ($db !== null) { mm_ensure_runtime_tables(); } // provisions tables on Supabase
-admin_ensure($db);
-
 // ── Public: whoami — tells you your IP so you can set ADMIN_ALLOWED_IPS ───────
-// Never IP-gated: you must be able to discover your own address to allowlist it.
+// Never IP-gated, never touches the DB: you must be able to discover your own
+// address to allowlist it even if everything else is down.
 if ($action === 'whoami') {
     $raw = trim(mm_env_value('ADMIN_ALLOWED_IPS', ''));
     mm_json_response(200, [
@@ -242,7 +242,6 @@ if ($action === 'whoami') {
         'ip' => mm_client_ip(),
         'ipLockEnabled' => $raw !== '',
         'allowed' => admin_ip_allowed(),
-        'dbConnected' => $db !== null,
     ]);
     exit;
 }
@@ -271,6 +270,8 @@ if ($action === 'login') {
     }
 
     // 2) Database-backed admins (secondary accounts you create in the panel).
+    //    Only now do we touch the DB — the built-in admin above never needs it.
+    $db = mm_db();
     if ($db !== null) {
         try {
             $stmt = $db->prepare('SELECT password_hash FROM admins WHERE username = :u LIMIT 1');
@@ -292,6 +293,12 @@ if (!admin_authed($body)) {
     mm_json_response(401, ['error' => 'Unauthorized']);
     exit;
 }
+
+// Now (authenticated) connect to the DB for data actions. If it's down, $db is
+// null and each action degrades to a clear "database offline" message.
+$db = mm_db();
+if ($db !== null) { mm_ensure_runtime_tables(); }
+admin_ensure($db);
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
