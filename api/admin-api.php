@@ -108,14 +108,25 @@ function admin_ip_allowed(): bool {
 //   GA_SA_EMAIL + GA_SA_PRIVATE_KEY  = the two fields separately.
 // Then add that service account's email as a Viewer on the GA4 property.
 function ga_service_account(): ?array {
-    $json = trim(mm_env_value('GA_SA_JSON', ''));
+    // Base64 is the paste-proof option: no quotes or newlines to get mangled.
+    $b64 = trim(mm_env_value('GA_SA_JSON_B64', ''));
+    $json = '';
+    if ($b64 !== '') {
+        $decoded = base64_decode(strtr($b64, '-_', '+/'), true);
+        if ($decoded !== false) $json = $decoded;
+    }
+    if ($json === '') $json = trim(mm_env_value('GA_SA_JSON', ''));
     if ($json === '') {
         $file = trim(mm_env_value('GA_SA_KEY_FILE', ''));
         if ($file !== '' && is_readable($file)) { $json = (string) file_get_contents($file); }
     }
     if ($json !== '') {
         $d = json_decode($json, true);
-        if (is_array($d) && !empty($d['client_email']) && !empty($d['private_key'])) return $d;
+        if (is_array($d) && !empty($d['client_email']) && !empty($d['private_key'])) {
+            // Tolerate keys whose newlines arrived escaped as "\n".
+            $d['private_key'] = str_replace('\\n', "\n", (string) $d['private_key']);
+            return $d;
+        }
     }
     $email = trim(mm_env_value('GA_SA_EMAIL', ''));
     $key = trim(mm_env_value('GA_SA_PRIVATE_KEY', ''));
@@ -147,7 +158,9 @@ function ga_config_hint(): string {
     }
     if ($email !== '' && trim(mm_env_value('GA_SA_PRIVATE_KEY', '')) === '')
         return 'GA_SA_EMAIL is set but GA_SA_PRIVATE_KEY is missing.';
-    return 'No service-account key found. Set GA_SA_KEY_FILE in .env to the full path of your key.json (for example /home/u779661998/domains/hungter.com/key.json).';
+    if (trim(mm_env_value('GA_SA_JSON_B64', '')) !== '')
+        return 'GA_SA_JSON_B64 is set but did not decode to valid service-account JSON — re-copy the full base64 string with no spaces or line breaks.';
+    return 'No service-account key found. Easiest: upload your key.json and set GA_SA_KEY_FILE to its full path (e.g. /home/u779661998/domains/hungter.com/key.json). Or paste the base64 of the key into GA_SA_JSON_B64.';
 }
 function ga_b64url(string $s): string { return rtrim(strtr(base64_encode($s), '+/', '-_'), '='); }
 function ga_access_token(array $sa): ?string {
