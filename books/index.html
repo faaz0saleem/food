@@ -186,7 +186,7 @@
           ? `<div class="book-stars">${'★★★★★☆☆☆☆☆'.slice(5 - Math.round(avg), 10 - Math.round(avg))}<span class="count">${avg.toFixed(1)} (${reviews.length})</span></div>`
           : '<div><span class="book-new-badge">✦ New arrival</span></div>';
         return `
-        <a class="book-card" href="/book?id=${book.id}">
+        <a class="book-card" href="/books/${book.id}">
           <div class="book-cover-frame" data-cover-index="${index}"></div>
           <h3>${book.title}</h3>
           <p class="book-meta">${book.author}</p>

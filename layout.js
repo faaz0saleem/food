@@ -19,6 +19,9 @@ if ('serviceWorker' in navigator) {
   const PUBLIC_PAGES = ['', 'index', 'pricing', 'books', 'book', 'signin', 'signup', 'privacy', 'terms', 'faq', 'contact', 'about', 'complaints', '404', 'verify-email', 'reset-password',
     'ai-tutor-chat', 'ai-quizzes', 'smart-flashcards', 'practice-papers', 'ai-app-builder', 'progress-tracking', 'ai-engines'];
   (function authGate() {
+    const path = location.pathname.toLowerCase();
+    // The whole book store is public (storefront + every /books/<id> page).
+    if (path === '/books' || path.startsWith('/books/') || path.startsWith('/books.')) return;
     const file = (location.pathname.split('/').pop() || '').replace(/\.html$/, '').toLowerCase();
     if (PUBLIC_PAGES.includes(file)) return;
     let token = null;

@@ -761,10 +761,13 @@ const server = http.createServer(async (req, res) => {
     const ext = path.extname(filePath).toLowerCase();
     if (requestedPath && ['.css', '.js', '.png', '.svg', '.ico', '.json'].includes(ext)) return sendFile(res, filePath);
     if (pathname.endsWith('.html')) return sendFile(res, filePath);
-    // Clean URLs: /chat serves chat.html (mirrors the production .htaccess).
+    // Clean URLs: /chat serves chat.html, /books serves books/index.html
+    // (mirrors the production .htaccess + DirectoryIndex).
     if (requestedPath && !ext) {
       const htmlPath = path.join(rootDir, requestedPath + '.html');
       if (fs.existsSync(htmlPath)) return sendFile(res, htmlPath);
+      const indexPath = path.join(rootDir, requestedPath, 'index.html');
+      if (fs.existsSync(indexPath)) return sendFile(res, indexPath);
     }
     if (pathname === '/health') return sendJson(res, 200, { status: 'ok' });
     if (pathname === '/api/status') return sendJson(res, 200, { status: 'ok', model: MODEL_LABEL, engines: getEngineAvailability(), engineDetails: getEngineDetails(), stats: getStatusSummary() });

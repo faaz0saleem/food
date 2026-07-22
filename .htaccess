@@ -22,7 +22,7 @@ RewriteRule ^api/([a-zA-Z0-9_-]+)$ api/$1.php [L]
 
 # Clean URLs, like every standard site: /about serves about.html, and
 # old /about.html links 301 to /about so one canonical URL exists.
-RewriteCond %{THE_REQUEST} \s/([a-zA-Z0-9_-]+)\.html[\s?]
+RewriteCond %{THE_REQUEST} \s/([^\s?]+)\.html[\s?]
 RewriteRule ^ /%1 [R=301,L]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d

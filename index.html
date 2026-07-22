@@ -296,6 +296,19 @@
     </div>
   </section>
 
+  <!-- ═══ 05b · BOOK STORE ═══ -->
+  <section class="lp-section" id="store" style="padding-top:0;">
+    <div class="container">
+      <div class="lp-section-head"><span class="lp-index">05b — THE STORE</span></div>
+      <h2 style="font-family:var(--font-display);font-weight:700;font-size:clamp(1.7rem,3.4vw,2.7rem);letter-spacing:-0.02em;line-height:1.12;margin:0 0 10px;">Buy the books.<br>Get the tutor free.</h2>
+      <p class="lp-section-sub" style="margin-bottom:clamp(28px,4vw,44px);">Real study books as an instant PDF or a physical copy — and <strong style="color:var(--lime);">every book includes a free Student subscription</strong>. Browse and buy without an account.</p>
+      <div id="lpBooks" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px;"></div>
+      <div style="text-align:center;margin-top:32px;">
+        <a href="/books" class="lp-btn-hero" style="font-size:1rem;padding:15px 34px;">Browse all books <span class="arr">→</span></a>
+      </div>
+    </div>
+  </section>
+
   <!-- ═══ 06 · PRICING ═══ -->
   <section class="lp-section" id="pricing" style="padding-top:0;">
     <div class="container">
@@ -389,6 +402,25 @@
 
   <footer class="site-footer"></footer>
   <script src="/layout.js?v=20260713" defer></script>
+  <script>
+    // Featured books on the landing store strip → link to each /books/<id> page.
+    (function () {
+      var host = document.getElementById('lpBooks');
+      if (!host) return;
+      var palette = ['#8B5CFF', '#4DF0FF', '#FF6B4A', '#C8FF4D', '#FF4DE3', '#4DD8FF', '#FFD14D'];
+      function colorFor(s) { s = String(s || ''); var h = 0; for (var i = 0; i < s.length; i++) h = s.charCodeAt(i) + ((h << 5) - h); return palette[Math.abs(h) % palette.length]; }
+      var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]; }); };
+      fetch('/data/books.json').then(function (r) { return r.json(); }).then(function (list) {
+        var pick = (list || []).slice(0, 6);
+        host.innerHTML = pick.map(function (b) {
+          return '<a href="/books/' + encodeURIComponent(b.id) + '" style="text-decoration:none;color:var(--ink);background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px;display:block;">'
+            + '<div style="aspect-ratio:3/4;border-radius:8px;margin-bottom:10px;display:flex;align-items:flex-end;padding:12px;box-sizing:border-box;color:#fff;font-family:var(--font-display);font-weight:700;font-size:0.82rem;line-height:1.2;background:linear-gradient(150deg,' + colorFor(b.subject || b.title) + ',rgba(4,6,15,0.9));">' + esc(b.title) + '</div>'
+            + '<div style="font-size:0.82rem;line-height:1.3;">' + esc(b.title) + '</div>'
+            + '<div style="color:var(--lime);font-family:var(--font-mono);font-size:0.85rem;margin-top:4px;">$' + Number(b.price).toFixed(2) + '</div></a>';
+        }).join('');
+      }).catch(function () { host.parentElement.style.display = 'none'; });
+    })();
+  </script>
   <script>
     (function () {
       'use strict';
