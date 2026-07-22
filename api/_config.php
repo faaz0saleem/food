@@ -392,6 +392,14 @@ function mm_ensure_runtime_tables(): void {
     try { $db->exec('ALTER TABLE users ADD COLUMN ai_spend_usd DECIMAL(10,5) NOT NULL DEFAULT 0'); } catch (Throwable $e) {}
     try { $db->exec('ALTER TABLE users ADD COLUMN ai_spend_month DECIMAL(10,5) NOT NULL DEFAULT 0'); } catch (Throwable $e) {}
     try { $db->exec('ALTER TABLE users ADD COLUMN ai_spend_month_key VARCHAR(7) NULL'); } catch (Throwable $e) {}
+    foreach ([
+        "ALTER TABLE book_orders ADD COLUMN format VARCHAR(16) NOT NULL DEFAULT 'pdf'",
+        'ALTER TABLE book_orders ADD COLUMN full_name VARCHAR(160) NULL',
+        'ALTER TABLE book_orders ADD COLUMN shipping_address TEXT NULL',
+        'ALTER TABLE book_orders ADD COLUMN phone VARCHAR(40) NULL',
+        'ALTER TABLE book_orders ADD COLUMN quantity INT NOT NULL DEFAULT 1',
+        'ALTER TABLE book_orders ADD COLUMN includes_plan VARCHAR(40) NULL',
+    ] as $sql) { try { $db->exec($sql); } catch (Throwable $e) {} }
 
     // Belt-and-braces: create the runtime tables individually too (idempotent),
     // wrapped so a provisioning failure never 500s the request.

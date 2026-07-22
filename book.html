@@ -3,712 +3,275 @@
 <head>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-FHMTQDLHV2"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag("js", new Date());
-
-  gtag("config", "G-FHMTQDLHV2");
-</script>
-
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag("js",new Date());gtag("config","G-FHMTQDLHV2");</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title id="pageTitle">Book — Hungter Store</title>
+<meta name="description" id="metaDesc" content="Buy study books as a PDF or physical copy. Every book includes a free Student subscription to Hungter.">
+<link rel="canonical" id="canon" href="https://hungter.com/books">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Fredoka:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap">
-  <title>Hungter — Book</title>
-  <meta name="description" content="Buy real study books with chapter-aware AI quizzes, flashcards, notes, and guess papers built in.">
-  <link rel="canonical" href="https://hungter.com/book">
-  <meta property="og:type" content="website">
-  <meta property="og:title" content="Hungter — Book">
-  <meta property="og:description" content="Study books with AI tools built around every chapter.">
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="/brand.css?v=20260713">
-  <link rel="stylesheet" href="/nav.css?v=20260713">
-  <link rel="stylesheet" href="/styles.css?v=20260713">
-  <style>
-    .top-bar { height: 4px; background: var(--surface-2); }
-    .top-bar-fill { height: 100%; background: linear-gradient(90deg,var(--lime),var(--blue)); width: 0%; }
-    .book-main { max-width: 1180px; margin: 0 auto; padding: 22px 16px 60px; }
-    .crumb { font-size: 0.8rem; color: var(--ink-faint); margin-bottom: 14px; }
-    .crumb a { color: var(--ink-soft); }
-
-    /* Amazon-style product layout: cover | info | sticky buy box */
-    .product-grid { display: grid; grid-template-columns: 300px 1fr 300px; gap: 26px; align-items: start; }
-    .cover-col { position: sticky; top: 90px; }
-    .book-cover-wrap {
-      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
-      padding: 20px; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm);
-    }
-    .book-cover { width: 100%; max-width: 240px; border-radius: 8px; box-shadow: 0 12px 30px rgba(0,0,0,0.5); }
-    .book-cover-placeholder {
-      width: 200px; height: 280px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
-      font-family: var(--font-display); font-size: 3rem; font-weight: 700; color: var(--bg-deep);
-      background: var(--gradient-brand);
-    }
-    .thumb-row { display: flex; gap: 8px; margin-top: 12px; justify-content: center; }
-    .thumb-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); }
-    .thumb-dot.active { background: var(--lime); }
-
-    .info-col h1 { font-family: var(--font-display); font-size: 1.6rem; margin: 0 0 6px; line-height: 1.25; }
-    .book-author { color: var(--cyan); margin: 0 0 10px; font-size: 0.92rem; }
-    .book-author a { color: var(--cyan); }
-    .rating-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
-    .stars { color: var(--gold); letter-spacing: 1px; font-size: 1rem; }
-    .rating-count { color: var(--ink-faint); font-size: 0.84rem; }
-    .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
-    .prod-badge {
-      font-family: var(--font-mono); font-size: 0.7rem; letter-spacing: 0.05em; text-transform: uppercase;
-      padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border);
-    }
-    .prod-badge.section { color: var(--lime); border-color: rgba(200,255,77,0.3); background: rgba(200,255,77,0.06); }
-    .prod-badge.subject { color: var(--cyan); border-color: rgba(77,240,255,0.3); background: rgba(77,240,255,0.06); }
-    .book-desc { color: var(--ink-soft); line-height: 1.6; margin: 0 0 20px; }
-    .topics-heading { font-family: var(--font-display); font-size: 0.95rem; margin: 0 0 10px; }
-    .topic-pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 22px; }
-    .topic-pill {
-      font-size: 0.8rem; color: var(--ink-soft); background: var(--surface-2); border: 1px solid var(--border);
-      border-radius: 999px; padding: 6px 12px;
-    }
-
-    /* Sticky buy box */
-    .buy-box {
-      position: sticky; top: 90px;
-      background: rgba(13,20,40,0.85); border: 1px solid var(--border-glow); border-radius: var(--radius);
-      padding: 20px; box-shadow: var(--shadow); backdrop-filter: blur(14px);
-    }
-    .buy-price { font-family: var(--font-display); font-size: 2rem; font-weight: 700; color: var(--lime); margin: 0; }
-    .buy-price-note { font-size: 0.78rem; color: var(--ink-faint); margin: 2px 0 14px; }
-    .buy-info-row { display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--ink-soft); margin-bottom: 8px; }
-    .buy-info-row .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 8px rgba(200,255,77,0.7); }
-    .btn-buy {
-      width: 100%; text-align: center; background: var(--gradient-brand); color: var(--bg-deep); border: none;
-      border-radius: 999px; padding: 13px; font-family: var(--font-display); font-weight: 700; font-size: 0.98rem;
-      cursor: pointer; box-shadow: var(--glow-lime); margin-top: 14px; transition: all 0.15s ease;
-    }
-    .btn-buy:hover { transform: translateY(-1px); box-shadow: var(--glow-lime), var(--glow-cyan); }
-    .buy-form input { width: 100%; border: 1px solid var(--border); background: var(--surface-2); color: var(--ink); border-radius: 10px; padding: 11px 12px; margin: 10px 0; font-family: var(--font-body); }
-    .buy-form input:focus { outline: none; border-color: var(--cyan); box-shadow: var(--glow-cyan); }
-    .btn-secondary-row { display: flex; gap: 8px; margin-top: 8px; }
-    .btn-sm { flex: 1; text-align: center; border: 1px solid var(--border); background: transparent; color: var(--ink-soft); border-radius: 999px; padding: 9px; font-size: 0.85rem; cursor: pointer; }
-    .btn-sm:hover { border-color: var(--cyan); color: var(--cyan); }
-
-    /* AI tools section */
-    .ai-tools-card {
-      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px;
-      margin-top: 30px;
-    }
-    .ai-tools-card h2 { font-family: var(--font-display); font-size: 1.2rem; margin: 0 0 4px; }
-    .ai-tools-sub { color: var(--ink-soft); font-size: 0.88rem; margin: 0 0 16px; }
-    .topic-select { width: 100%; max-width: 420px; border: 1px solid var(--border); background: var(--surface-2); color: var(--ink); border-radius: 10px; padding: 11px; margin-bottom: 14px; }
-    .tool-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
-    .tool-btn {
-      display: flex; flex-direction: column; gap: 4px; text-align: left; border: 1px solid var(--border);
-      background: var(--surface-2); border-radius: var(--radius-sm); padding: 14px; cursor: pointer;
-      color: var(--ink); text-decoration: none; transition: all 0.15s ease;
-    }
-    .tool-btn:hover { border-color: var(--cyan); box-shadow: var(--glow-cyan); transform: translateY(-2px); }
-    .tool-btn .icon { font-size: 1.3rem; }
-    .tool-btn strong { font-family: var(--font-display); font-size: 0.92rem; }
-    .tool-btn span { font-size: 0.78rem; color: var(--ink-faint); }
-    .loading { display: none; align-items: center; gap: 8px; margin-top: 14px; color: var(--ink-soft); }
-    .loading.show { display: flex; }
-    .spinner { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--border); border-top-color: var(--lime); animation: spin 1s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .result-box { margin-top: 14px; white-space: pre-wrap; color: var(--ink-soft); }
-
-    /* Quiz */
-    .bq-card { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; margin-top: 10px; }
-    .bq-q { margin: 0 0 10px; font-weight: 600; }
-    .bq-opts { display: grid; gap: 8px; }
-    .bq-opt { text-align: left; cursor: pointer; padding: 10px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--ink); font-family: var(--font-body); transition: border-color 0.15s; }
-    .bq-opt:hover:not(:disabled) { border-color: var(--cyan); }
-    .bq-opt:disabled { cursor: default; opacity: 0.85; }
-    .bq-opt.bq-correct { border-color: var(--lime); box-shadow: 0 0 10px rgba(200,255,77,0.25); }
-    .bq-opt.bq-wrong { border-color: var(--coral); opacity: 0.6; }
-    .bq-expl { margin: 10px 0 0; color: var(--ink-soft); font-size: 0.88rem; border-left: 2px solid var(--lime); padding-left: 10px; }
-    .bq-result { margin-top: 14px; padding: 16px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2); text-align: center; }
-    .bq-score { font-family: var(--font-display); font-size: 2.2rem; color: var(--lime); margin: 0; }
-
-    /* Notes */
-    .notes-panel { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; margin-top: 14px; }
-    .notes-heading { font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.1em; color: var(--cyan); margin: 16px 0 6px; text-transform: uppercase; }
-    .notes-list { margin: 0 0 8px; padding-left: 18px; color: var(--ink-soft); }
-    .notes-list li { margin: 4px 0; }
-    .notes-para { margin: 6px 0; color: var(--ink-soft); }
-
-    /* Similar + reviews */
-    .section-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; margin-top: 20px; }
-    .section-card h2 { font-family: var(--font-display); font-size: 1.15rem; margin: 0 0 14px; }
-    .similar-row { display: grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap: 12px; }
-    .similar-card { padding: 14px; display: block; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); text-decoration: none; color: var(--ink); transition: all 0.15s ease; }
-    .similar-card:hover { border-color: var(--cyan); transform: translateY(-2px); }
-    .similar-card strong { font-family: var(--font-display); font-size: 0.9rem; }
-    .review-form textarea, .review-form input { width: 100%; border: 1px solid var(--border); background: var(--surface-2); color: var(--ink); border-radius: 10px; padding: 10px; margin: 6px 0; font-family: var(--font-body); }
-    .star-picker { display: flex; gap: 4px; margin: 6px 0; font-size: 1.3rem; cursor: pointer; }
-    .star-picker span { color: var(--border); }
-    .star-picker span.on { color: var(--gold); }
-    .review-item { border-top: 1px solid var(--border-soft); padding-top: 12px; margin-top: 12px; }
-    .review-item .stars { font-size: 0.85rem; }
-
-    @media print {
-      body * { visibility: hidden; }
-      #notesPanel, #notesPanel * { visibility: visible; }
-      #notesPanel { position: absolute; left: 0; top: 0; width: 100%; color: #000; background: #fff; border: none; }
-    }
-    @media (max-width: 980px) {
-      .product-grid { grid-template-columns: 1fr; }
-      .cover-col, .buy-box { position: static; }
-      .cover-col { order: 1; }
-      .info-col { order: 2; }
-      .buy-box { order: 3; }
-    }
-  </style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/brand.css?v=20260720">
+<link rel="stylesheet" href="/nav.css">
+<link rel="stylesheet" href="/styles.css">
+<style>
+  body { margin:0; font-family:var(--font-body); color:var(--ink); background:var(--bg-deep); background-image:var(--gradient-aurora); background-attachment:fixed; min-height:100vh; }
+  .wrap { max-width:1080px; margin:0 auto; padding:22px 20px 80px; }
+  .crumbs { font-size:0.82rem; color:var(--ink-faint); margin-bottom:18px; }
+  .crumbs a { color:var(--ink-soft); text-decoration:none; } .crumbs a:hover { color:var(--cyan); }
+  .prod { display:grid; grid-template-columns:260px 1fr 300px; gap:26px; align-items:start; }
+  @media (max-width:900px){ .prod { grid-template-columns:1fr; } }
+  .cover { width:100%; max-width:240px; aspect-ratio:3/4; border-radius:10px; box-shadow:0 16px 40px rgba(0,0,0,0.55); display:flex; flex-direction:column; justify-content:space-between; padding:20px; box-sizing:border-box; color:#fff; }
+  .cover .c-sub { font-family:var(--font-mono); font-size:0.66rem; letter-spacing:0.14em; text-transform:uppercase; opacity:0.85; }
+  .cover .c-title { font-family:var(--font-display); font-weight:700; font-size:1.15rem; line-height:1.2; }
+  .cover .c-auth { font-size:0.76rem; opacity:0.85; }
+  .info h1 { font-family:var(--font-display); font-size:clamp(1.4rem,3vw,2rem); line-height:1.15; margin:0 0 8px; }
+  .info .author { color:var(--ink-soft); margin:0 0 12px; }
+  .badges { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+  .badge { font-size:0.76rem; padding:5px 11px; border-radius:999px; border:1px solid var(--border); background:var(--surface-2); color:var(--ink-soft); }
+  .badge.sec { color:var(--lime); border-color:rgba(200,255,77,0.3); } .badge.sub { color:var(--cyan); border-color:rgba(77,240,255,0.3); }
+  .stars { color:var(--gold); letter-spacing:2px; margin-bottom:14px; font-size:0.95rem; }
+  .stars small { color:var(--ink-faint); margin-left:6px; letter-spacing:0; }
+  .desc { color:var(--ink-soft); line-height:1.65; }
+  .sec-h { font-family:var(--font-display); font-size:1rem; margin:24px 0 10px; }
+  .topics { display:flex; flex-wrap:wrap; gap:8px; }
+  .topic { font-size:0.82rem; color:var(--ink-soft); background:var(--surface-2); border:1px solid var(--border); border-radius:999px; padding:6px 12px; }
+  .incl { background:var(--surface); border:1px solid var(--border-glow); border-radius:var(--radius-sm); padding:14px 16px; margin-top:22px; }
+  .incl b { color:var(--lime); }
+  .incl ul { margin:8px 0 0; padding-left:18px; color:var(--ink-soft); font-size:0.9rem; line-height:1.7; }
+  .buy { position:sticky; top:88px; background:rgba(13,20,40,0.9); border:1px solid var(--border-glow); border-radius:var(--radius); padding:20px; box-shadow:var(--shadow); }
+  .price { font-family:var(--font-display); font-size:2.1rem; font-weight:700; color:var(--lime); }
+  .price small { font-size:0.9rem; color:var(--ink-faint); font-weight:400; }
+  .fmt { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:16px 0; }
+  .fmt button { border:1px solid var(--border); background:var(--surface-2); color:var(--ink-soft); border-radius:10px; padding:11px 8px; cursor:pointer; font-family:var(--font-body); font-size:0.85rem; text-align:center; }
+  .fmt button.on { border-color:var(--lime); color:var(--ink); background:rgba(200,255,77,0.08); box-shadow:var(--glow-lime); }
+  .fmt button small { display:block; color:var(--ink-faint); font-size:0.72rem; margin-top:2px; }
+  .buy-inp { width:100%; box-sizing:border-box; border:1px solid var(--border); background:var(--surface-2); color:var(--ink); border-radius:10px; padding:11px 12px; margin:7px 0; font-family:var(--font-body); font-size:0.9rem; }
+  .buy-inp:focus { outline:none; border-color:var(--cyan); }
+  textarea.buy-inp { resize:vertical; min-height:60px; }
+  .btn-buy { width:100%; border:none; border-radius:999px; padding:14px; font-family:var(--font-display); font-weight:700; font-size:1rem; background:var(--gradient-brand); color:var(--bg-deep); cursor:pointer; box-shadow:var(--glow-lime); }
+  .btn-buy:hover { transform:translateY(-1px); }
+  .buy-note { font-size:0.76rem; color:var(--ink-faint); margin-top:10px; line-height:1.5; }
+  .buy-perk { font-size:0.82rem; color:var(--lime); margin:6px 0 0; }
+  .trust { display:flex; gap:14px; flex-wrap:wrap; margin-top:14px; font-size:0.74rem; color:var(--ink-faint); }
+  .qty { display:flex; align-items:center; gap:10px; margin:8px 0; }
+  .qty button { width:30px; height:30px; border-radius:8px; border:1px solid var(--border); background:var(--surface-2); color:var(--ink); cursor:pointer; }
+  .hide { display:none; }
+  .ok-card { background:var(--surface); border:1px solid var(--border-glow); border-radius:var(--radius); padding:26px; box-shadow:var(--shadow); text-align:center; }
+  .ok-card .big { font-size:2.4rem; }
+  .ok-card h2 { font-family:var(--font-display); margin:10px 0 6px; }
+  .ok-card .ref { font-family:var(--font-mono); color:var(--cyan); }
+  .related { margin-top:60px; }
+  .related h2 { font-family:var(--font-display); font-size:1.3rem; margin:0 0 18px; }
+  .rel-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:14px; }
+  .rel-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px; text-decoration:none; color:var(--ink); display:block; }
+  .rel-card .rc-cov { aspect-ratio:3/4; border-radius:6px; margin-bottom:8px; display:flex; align-items:center; justify-content:center; text-align:center; padding:8px; box-sizing:border-box; font-family:var(--font-display); font-size:0.72rem; color:#fff; }
+  .rel-card .rc-t { font-size:0.8rem; line-height:1.3; }
+  .rel-card .rc-p { color:var(--lime); font-family:var(--font-mono); font-size:0.82rem; margin-top:4px; }
+</style>
 </head>
-<body data-page="book">
-  <div class="top-bar"><div class="top-bar-fill" id="topBar"></div></div>
-  <header class="site-nav"></header>
-  <main class="book-main">
-    <div id="book-content"></div>
-  </main>
-
-  <script src="/api-config.js?v=20260713"></script>
-  <script src="/script.js?v=20260713"></script>
-  <script src="/layout.js?v=20260713" defer></script>
-  <script>
-    ensureProfile();
-    // apiPath is the global from script.js — redeclaring it here is a SyntaxError that kills the page.
-
-    const topBar = document.getElementById('topBar');
-
-    function refreshTopBar() {
-      const progress = getLevelProgress();
-      if (topBar) topBar.style.width = `${progress.pct}%`;
-    }
-
-    function formatPrice(price) {
-      const value = Number(price || 0);
-      return `$${value.toFixed(2)}`;
-    }
-
-    function getPlan() {
-      const raw = lsGet('mm_plan', 'free');
-      return String(raw || 'free').toLowerCase().includes('pro') ? 'pro' : 'free';
-    }
-
-    function starString(rating) {
-      const full = Math.round(rating);
-      return '★★★★★☆☆☆☆☆'.slice(5 - full, 10 - full);
-    }
-
-    function saveReview(bookId, review) {
-      const key = `mm_book_reviews_${bookId}`;
-      const items = lsGet(key, []);
-      items.push({
-        name: String(review?.name || '').slice(0, 120),
-        text: String(review?.text || '').slice(0, 2000),
-        rating: Math.max(1, Math.min(5, Number(review?.rating) || 5)),
-        createdAt: String(review?.createdAt || new Date().toISOString()),
-      });
-      lsSet(key, items.slice(-100));
-    }
-
-    function getReviews(bookId) {
-      return lsGet(`mm_book_reviews_${bookId}`, []);
-    }
-
-    function escapeHtml(value) {
-      return String(value || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-    }
-
-    function appendGeneratedFlashcards(cards, bookTitle) {
-      const existing = lsGet('mm_flashcards', []);
-      const mapped = (cards || []).map((card) => ({
-        front: card.front,
-        back: card.back,
-        source: `Book: ${bookTitle}`,
-        nextReviewDate: new Date(Date.now() + 2 * 86400000).toISOString().slice(0, 10),
-        createdAt: new Date().toISOString(),
-      }));
-      lsSet('mm_flashcards', existing.concat(mapped).slice(-400));
-    }
-
-    async function postJson(path, payload) {
-      const response = await fetch(apiPath(path), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const data = await response.json();
-      if (!response.ok || data?.error) {
-        throw new Error(data?.error || 'Request failed');
-      }
-      return data;
-    }
-
-    function renderInteractiveQuiz(questions, book, chapter, mount) {
-      let answered = 0;
-      let score = 0;
-      const wrongAnswers = [];
-
-      mount.innerHTML = `
-        <div class="bq-head">
-          <h3 style="margin:12px 0 2px;">Quiz: ${chapter || book.subject}</h3>
-          <p style="margin:0 0 10px;color:var(--ink-faint);font-size:0.85rem;">Click an answer for each question. Scores count toward your real progress and XP.</p>
+<body>
+<nav class="site-nav" id="siteNav"></nav>
+<div class="wrap">
+  <div class="crumbs"><a href="/">Home</a> / <a href="/books">Books</a> / <span id="crumbTitle">Book</span></div>
+  <div id="productView">
+    <div class="prod">
+      <div><div class="cover" id="cover"></div></div>
+      <div class="info">
+        <h1 id="title">Loading…</h1>
+        <p class="author" id="author"></p>
+        <div class="badges" id="badges"></div>
+        <div class="stars" id="stars"></div>
+        <p class="desc" id="desc"></p>
+        <div id="topicsWrap" class="hide">
+          <div class="sec-h">What's inside</div>
+          <div class="topics" id="topics"></div>
         </div>
-        <div id="bqQuestions"></div>
-        <div id="bqSummary" style="display:none;"></div>
-      `;
-      const questionsWrap = mount.querySelector('#bqQuestions');
-      const summary = mount.querySelector('#bqSummary');
+        <div class="incl">
+          <b>✨ Every book includes a free Student subscription</b> (worth $5/mo).
+          <ul>
+            <li>$8/month of AI tutoring — thousands of messages</li>
+            <li>⚡ All-4 engine compare mode &amp; priority generation</li>
+            <li>All quizzes, flashcards &amp; progress tracking</li>
+          </ul>
+        </div>
+      </div>
+      <div class="buy">
+        <div class="price" id="price">—</div>
+        <div class="buy-perk">+ Free Student subscription included</div>
+        <div class="fmt">
+          <button id="fmtPdf" class="on" data-fmt="pdf">📄 PDF<small id="pdfPrice"></small></button>
+          <button id="fmtPhys" data-fmt="physical">📦 Physical<small id="physPrice"></small></button>
+        </div>
+        <div id="deliveryNote" class="buy-note"></div>
+        <div class="qty" id="qtyRow">
+          <span style="font-size:0.85rem;color:var(--ink-soft);">Qty</span>
+          <button id="qMinus" type="button">−</button>
+          <span id="qVal" style="font-family:var(--font-mono);min-width:20px;text-align:center;">1</span>
+          <button id="qPlus" type="button">+</button>
+        </div>
+        <button class="btn-buy" id="buyBtn">Buy now</button>
+        <div class="trust"><span>🔒 Secure</span><span>↩︎ 7-day guarantee</span><span>⚡ Instant PDF</span></div>
+      </div>
+    </div>
 
-      questions.forEach((q, qi) => {
-        const correctLetter = String(q.correct || 'A').trim().toUpperCase().charAt(0);
-        const card = document.createElement('article');
-        card.className = 'bq-card';
-        card.innerHTML = `<p class="bq-q">${qi + 1}. ${q.question}</p>`;
-        const optsWrap = document.createElement('div');
-        optsWrap.className = 'bq-opts';
+    <!-- Checkout form (revealed on Buy) -->
+    <div id="checkout" class="hide" style="max-width:520px;margin:32px auto 0;">
+      <div class="buy" style="position:static;">
+        <h2 style="font-family:var(--font-display);font-size:1.15rem;margin:0 0 4px;">Checkout</h2>
+        <p class="buy-note" id="coSummary" style="margin:0 0 12px;"></p>
+        <input class="buy-inp" id="coName" placeholder="Full name" autocomplete="name">
+        <input class="buy-inp" id="coEmail" type="email" placeholder="Email (for your PDF / receipt)" autocomplete="email">
+        <div id="shipFields" class="hide">
+          <textarea class="buy-inp" id="coAddress" placeholder="Full shipping address (street, city, postal code, country)"></textarea>
+          <input class="buy-inp" id="coPhone" placeholder="Phone (for delivery)" autocomplete="tel">
+        </div>
+        <button class="btn-buy" id="placeBtn" style="margin-top:8px;">Place order</button>
+        <p class="err" id="coErr" style="color:var(--coral);font-size:0.82rem;min-height:1em;margin-top:8px;"></p>
+        <p class="buy-note">Payment isn't connected yet — your order is reserved and we'll email you to complete it. The Student subscription activates on your account right away.</p>
+      </div>
+    </div>
+  </div>
 
-        (q.options || []).forEach((optionText, oi) => {
-          const letter = String.fromCharCode(65 + oi);
-          const btn = document.createElement('button');
-          btn.type = 'button';
-          btn.className = 'bq-opt';
-          btn.textContent = optionText;
-          btn.addEventListener('click', () => {
-            if (card.dataset.done) return;
-            card.dataset.done = 'true';
-            answered += 1;
-            const isCorrect = letter === correctLetter;
-            if (isCorrect) score += 1;
-            optsWrap.querySelectorAll('.bq-opt').forEach((b, bi) => {
-              b.disabled = true;
-              const bLetter = String.fromCharCode(65 + bi);
-              if (bLetter === correctLetter) b.classList.add('bq-correct');
-              else if (b === btn) b.classList.add('bq-wrong');
-            });
-            if (!isCorrect) {
-              wrongAnswers.push({
-                subject: book.subject,
-                question: q.question,
-                selected: optionText,
-                correct: (q.options || [])[correctLetter.charCodeAt(0) - 65] || correctLetter,
-              });
-            }
-            if (q.explanation) {
-              const expl = document.createElement('p');
-              expl.className = 'bq-expl';
-              expl.textContent = q.explanation;
-              card.appendChild(expl);
-            }
-            if (answered === questions.length) finishQuiz();
-          });
-          optsWrap.appendChild(btn);
-        });
+  <!-- Confirmation -->
+  <div id="doneView" class="hide" style="max-width:560px;margin:20px auto;">
+    <div class="ok-card">
+      <div class="big">🎉</div>
+      <h2>Order placed!</h2>
+      <p>Reference <span class="ref" id="doneRef"></span></p>
+      <p style="color:var(--ink-soft);line-height:1.6;" id="doneMsg"></p>
+      <a href="/books" class="btn-buy" style="display:inline-block;text-decoration:none;margin-top:12px;max-width:240px;">Browse more books</a>
+    </div>
+  </div>
 
-        card.appendChild(optsWrap);
-        questionsWrap.appendChild(card);
-      });
+  <div class="related" id="relatedWrap" style="display:none;">
+    <h2>You might also like</h2>
+    <div class="rel-grid" id="relGrid"></div>
+  </div>
+</div>
 
-      function finishQuiz() {
-        const percent = Math.round((score / questions.length) * 100);
-        const quizHistory = lsGet('mm_quiz_scores', {});
-        quizHistory[book.subject] = [...(quizHistory[book.subject] || []), percent];
-        lsSet('mm_quiz_scores', quizHistory);
+<footer class="site-footer"></footer>
+<script src="/api-config.js"></script>
+<script src="/layout.js" defer></script>
+<script>
+(function () {
+  var API = String(window.HUNGTER_API_BASE || '').replace(/\/$/, '');
+  var SHIP = 5; // flat shipping for physical
+  var $ = function (id) { return document.getElementById(id); };
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]; }); };
+  var palette = ['#8B5CFF', '#4DF0FF', '#FF6B4A', '#C8FF4D', '#FF4DE3', '#4DD8FF', '#FFD14D'];
+  function colorFor(s) { s = String(s || ''); var h = 0; for (var i = 0; i < s.length; i++) h = s.charCodeAt(i) + ((h << 5) - h); return palette[Math.abs(h) % palette.length]; }
+  function coverStyle(b) { var c = colorFor(b.subject || b.title); return 'background:linear-gradient(150deg,' + c + ',rgba(4,6,15,0.9));'; }
 
-        if (wrongAnswers.length) {
-          const existingWrong = lsGet('mm_wrong_answers', []);
-          lsSet('mm_wrong_answers', existingWrong.concat(wrongAnswers).slice(-200));
-        }
+  var params = new URLSearchParams(location.search);
+  var id = params.get('id') || '';
+  var books = [], book = null;
+  var state = { format: 'pdf', qty: 1 };
 
-        const milestones = lsGet('mm_milestones', []);
-        milestones.push({ event: `Scored ${percent}% on a ${book.title} quiz${chapter ? ` (${chapter})` : ''}`, date: new Date().toLocaleDateString() });
-        lsSet('mm_milestones', milestones);
+  function money(n) { return '$' + Number(n).toFixed(2); }
+  function unitPrice() { return state.format === 'physical' ? (book.price + SHIP) : book.price; }
+  function total() { return unitPrice() * (state.format === 'physical' ? state.qty : 1); }
 
-        if (typeof bumpQuest === 'function') bumpQuest('quiz1');
-        updateLevel();
-        refreshTopBar();
+  function renderPrices() {
+    $('pdfPrice').textContent = money(book.price);
+    $('physPrice').textContent = money(book.price + SHIP) + ' incl. ship';
+    $('price').innerHTML = money(total()) + ' <small>' + (state.format === 'pdf' ? 'PDF download' : state.qty + ' × physical') + '</small>';
+    $('deliveryNote').textContent = state.format === 'pdf'
+      ? '📧 Emailed as a PDF to you within 5 hours of purchase.'
+      : '🚚 Printed book shipped to your address (' + money(SHIP) + ' flat shipping).';
+    $('qtyRow').style.display = state.format === 'physical' ? 'flex' : 'none';
+    if (state.format === 'pdf') { state.qty = 1; $('qVal').textContent = '1'; }
+  }
+  function setFormat(f) {
+    state.format = f;
+    $('fmtPdf').classList.toggle('on', f === 'pdf');
+    $('fmtPhys').classList.toggle('on', f === 'physical');
+    renderPrices();
+  }
 
-        summary.style.display = 'block';
-        summary.innerHTML = `
-          <div class="bq-result">
-            <p class="bq-score">${percent}%</p>
-            <p style="margin:0;color:var(--ink-soft);">${score} of ${questions.length} correct — saved to your progress.</p>
-            <div class="btn-secondary-row" style="margin-top:10px;">
-              <button type="button" class="btn-sm" id="bqAgain">Try another quiz</button>
-              <a class="btn-sm" href="/progress" style="text-decoration:none;">See my progress →</a>
-            </div>
-          </div>
-        `;
-        summary.querySelector('#bqAgain')?.addEventListener('click', () => {
-          document.getElementById('quizBtn')?.click();
-        });
-        summary.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }
+  function render() {
+    document.title = book.title + ' — Hungter Store';
+    $('pageTitle').textContent = document.title;
+    $('metaDesc').setAttribute('content', 'Buy ' + book.title + ' as a PDF or physical book. Every book includes a free Student subscription to Hungter.');
+    $('canon').setAttribute('href', 'https://hungter.com/book?id=' + encodeURIComponent(book.id));
+    $('crumbTitle').textContent = book.title;
+    var cov = $('cover'); cov.setAttribute('style', coverStyle(book));
+    cov.innerHTML = '<div class="c-sub">' + esc(book.subject || '') + '</div><div class="c-title">' + esc(book.title) + '</div><div class="c-auth">' + esc(String(book.author || '').split('/')[0]) + '</div>';
+    $('title').textContent = book.title;
+    $('author').textContent = book.author ? 'by ' + book.author : '';
+    $('badges').innerHTML = (book.section ? '<span class="badge sec">' + esc(book.section) + '</span>' : '') + (book.subject ? '<span class="badge sub">' + esc(book.subject) + '</span>' : '') + (book.isbn ? '<span class="badge">ISBN ' + esc(book.isbn) + '</span>' : '');
+    $('stars').innerHTML = '★★★★★ <small>Trusted coursebook</small>';
+    $('desc').textContent = book.description || '';
+    if (book.topics && book.topics.length) {
+      $('topicsWrap').classList.remove('hide');
+      $('topics').innerHTML = book.topics.map(function (t) { return '<span class="topic">' + esc(t) + '</span>'; }).join('');
     }
+    renderPrices();
+    renderRelated();
+  }
 
-    function renderChapterNotes(rawNotes, engineName, topicLabel, mount) {
-      const KNOWN_HEADINGS = ['OVERVIEW', 'KEY POINTS', 'FORMULAS & DEFINITIONS', 'COMMON MISTAKES', 'EXAM TIPS'];
-      const lines = String(rawNotes || '').split('\n');
-      let html = `<div class="notes-head"><h3 style="margin:0 0 2px;">Chapter notes: ${topicLabel}</h3>` +
-        `<p style="margin:0 0 10px;color:var(--ink-faint);font-size:0.8rem;">AI-generated original notes (${engineName}) — not copied from the book.</p></div>`;
-      let inList = false;
-      lines.forEach((line) => {
-        const trimmed = line.trim();
-        const isHeading = KNOWN_HEADINGS.some((h) => trimmed.toUpperCase().startsWith(h));
-        const isBullet = /^[-•*]\s+/.test(trimmed);
-        if (isHeading) {
-          if (inList) { html += '</ul>'; inList = false; }
-          html += `<h4 class="notes-heading">${trimmed}</h4>`;
-        } else if (isBullet) {
-          if (!inList) { html += '<ul class="notes-list">'; inList = true; }
-          html += `<li>${trimmed.replace(/^[-•*]\s+/, '')}</li>`;
-        } else if (trimmed) {
-          if (inList) { html += '</ul>'; inList = false; }
-          html += `<p class="notes-para">${trimmed}</p>`;
-        }
-      });
-      if (inList) html += '</ul>';
-      html += `<div class="btn-secondary-row" style="margin-top:12px;">
-        <button type="button" class="btn-sm" id="notesCopyBtn">Copy notes</button>
-        <button type="button" class="btn-sm" id="notesPrintBtn">Print / Save as PDF</button>
-      </div>`;
-      mount.innerHTML = `<div class="notes-panel" id="notesPanel">${html}</div>`;
-      mount.querySelector('#notesCopyBtn')?.addEventListener('click', () => {
-        navigator.clipboard.writeText(rawNotes).then(() => {
-          mount.querySelector('#notesCopyBtn').textContent = 'Copied ✓';
-        });
-      });
-      mount.querySelector('#notesPrintBtn')?.addEventListener('click', () => window.print());
-      mount.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  function renderRelated() {
+    var rel = books.filter(function (b) { return b.id !== book.id && (b.subject === book.subject || b.section === book.section); }).slice(0, 6);
+    if (!rel.length) return;
+    $('relatedWrap').style.display = 'block';
+    $('relGrid').innerHTML = rel.map(function (b) {
+      return '<a class="rel-card" href="/book?id=' + encodeURIComponent(b.id) + '"><div class="rc-cov" style="' + coverStyle(b) + '">' + esc(b.title) + '</div><div class="rc-t">' + esc(b.title) + '</div><div class="rc-p">' + money(b.price) + '</div></a>';
+    }).join('');
+  }
+
+  $('buyBtn').addEventListener('click', function () {
+    $('checkout').classList.remove('hide');
+    $('coSummary').textContent = book.title + ' · ' + (state.format === 'pdf' ? 'PDF' : state.qty + ' × physical') + ' · ' + money(total());
+    $('shipFields').classList.toggle('hide', state.format !== 'physical');
+    $('checkout').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+  $('fmtPdf').addEventListener('click', function () { setFormat('pdf'); if (!$('checkout').classList.contains('hide')) $('buyBtn').click(); });
+  $('fmtPhys').addEventListener('click', function () { setFormat('physical'); if (!$('checkout').classList.contains('hide')) $('buyBtn').click(); });
+  $('qMinus').addEventListener('click', function () { state.qty = Math.max(1, state.qty - 1); $('qVal').textContent = state.qty; renderPrices(); });
+  $('qPlus').addEventListener('click', function () { state.qty = Math.min(20, state.qty + 1); $('qVal').textContent = state.qty; renderPrices(); });
+
+  $('placeBtn').addEventListener('click', async function () {
+    $('coErr').textContent = '';
+    var name = $('coName').value.trim(), email = $('coEmail').value.trim();
+    if (!name) { $('coErr').textContent = 'Please enter your name.'; return; }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { $('coErr').textContent = 'Please enter a valid email.'; return; }
+    var payload = { bookId: book.id, bookTitle: book.title, price: unitPrice(), quantity: state.qty, email: email, name: name, format: state.format };
+    if (state.format === 'physical') {
+      payload.address = $('coAddress').value.trim();
+      payload.phone = $('coPhone').value.trim();
+      if (!payload.address) { $('coErr').textContent = 'Please enter your shipping address.'; return; }
     }
+    var tok = null; try { tok = JSON.parse(localStorage.getItem('mm_auth_token') || 'null'); } catch (e) {}
+    $('placeBtn').disabled = true; $('placeBtn').textContent = 'Placing…';
+    var data = null;
+    var urls = [API + '/api/book-order.php', API + '/api/book-order'];
+    for (var i = 0; i < urls.length; i++) {
+      try {
+        var r = await fetch(urls[i], { method: 'POST', headers: Object.assign({ 'Content-Type': 'application/json' }, tok ? { Authorization: 'Bearer ' + tok } : {}), body: JSON.stringify(payload) });
+        var ct = String(r.headers.get('content-type') || '');
+        if (r.ok || ct.indexOf('application/json') >= 0) { data = await r.json(); break; }
+      } catch (e) {}
+    }
+    $('placeBtn').disabled = false; $('placeBtn').textContent = 'Place order';
+    if (data && data.orderRef) {
+      $('productView').classList.add('hide');
+      $('doneView').classList.remove('hide');
+      $('doneRef').textContent = data.orderRef;
+      $('doneMsg').textContent = data.message || data.delivery || '';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      $('coErr').textContent = (data && data.error) ? data.error : 'Could not place the order. Please try again.';
+    }
+  });
 
-    (function () {
-      const bookId = new URLSearchParams(window.location.search).get('id');
-      const container = document.getElementById('book-content');
-      fetch('/data/books.json')
-        .then((res) => { if (!res.ok) throw new Error('Failed to load catalog'); return res.json(); })
-        .then((books) => {
-          const book = books.find((b) => b.id === bookId);
-          if (!book) { container.innerHTML = '<p>Book not found. <a href="/books">Back to catalog</a></p>'; return; }
-          renderBook(book, books);
-        })
-        .catch((error) => {
-          console.error('Book load failed:', error.message);
-          container.innerHTML = '<p>Unable to load this book right now. <a href="/books">Back to catalog</a></p>';
-        });
-
-      function renderBook(book, allBooks) {
-        document.title = `${book.title} | Hungter`;
-        const reviews = getReviews(book.id);
-        const avgRating = reviews.length ? reviews.reduce((sum, r) => sum + (Number(r.rating) || 5), 0) / reviews.length : 4.7;
-        const similar = allBooks.filter((b) => b.id !== book.id && b.section === book.section && b.subject === book.subject).slice(0, 3);
-
-        container.innerHTML = `
-          <p class="crumb"><a href="/books">Books</a> › <a href="/books?section=${encodeURIComponent(book.section)}">${book.section}</a> › ${book.subject}</p>
-
-          <div class="product-grid">
-            <div class="cover-col">
-              <div class="book-cover-wrap" id="coverWrap"></div>
-            </div>
-
-            <div class="info-col">
-              <div class="badge-row">
-                <span class="prod-badge section">${book.section}</span>
-                <span class="prod-badge subject">${book.subject}</span>
-              </div>
-              <h1>${book.title}</h1>
-              <p class="book-author">by <a href="#reviewsSection">${book.author}</a></p>
-              <div class="rating-row">
-                <span class="stars">${starString(avgRating)}</span>
-                <span class="rating-count">${avgRating.toFixed(1)} · ${reviews.length} review${reviews.length === 1 ? '' : 's'}</span>
-              </div>
-              <p class="book-desc">${book.description}</p>
-
-              <p class="topics-heading">📑 Chapters covered</p>
-              <div class="topic-pill-row">
-                ${(book.topics || []).map((t) => `<span class="topic-pill">${t}</span>`).join('') || '<span class="topic-pill">Full syllabus</span>'}
-              </div>
-            </div>
-
-            <div class="buy-col">
-              <div class="buy-box">
-                <p class="buy-price">${formatPrice(book.price)}</p>
-                <p class="buy-price-note">Prices include instant AI study tools for this book.</p>
-                <div class="buy-info-row"><span class="dot"></span> In stock — ships digitally in minutes</div>
-                <div class="buy-info-row"><span class="dot"></span> Free AI quiz &amp; flashcards included</div>
-                <button type="button" class="btn-buy" id="buyBookBtn">🛒 Buy now</button>
-                <form id="buyBookForm" class="buy-form" style="display:none;">
-                  <input id="buyBookEmail" type="email" placeholder="you@school.edu" required>
-                  <button type="submit" class="btn-buy" style="margin-top:0;">Confirm — ${formatPrice(book.price)}</button>
-                  <div class="btn-secondary-row"><button type="button" class="btn-sm" id="cancelBuyBtn">Cancel</button></div>
-                  <p id="buyBookStatus" style="margin:8px 0 0;font-size:0.82rem;color:var(--ink-soft);"></p>
-                </form>
-              </div>
-            </div>
-          </div>
-
-          <div class="ai-tools-card">
-            <h2>🤖 AI Study Tools for this book</h2>
-            <p class="ai-tools-sub">Pick a chapter, then generate original content from all 4 AI engines — nothing copied from the book itself.</p>
-            <select id="topicSelect" class="topic-select">
-              <option value="">Whole subject (all topics)</option>
-              ${(book.topics || []).map((topic) => `<option value="${topic}">${topic}</option>`).join('')}
-            </select>
-            <div class="tool-grid">
-              <button type="button" class="tool-btn" id="chapterNotesBtn"><span class="icon">📖</span><strong>Chapter Notes</strong><span>Key points, formulas &amp; exam tips</span></button>
-              <button type="button" class="tool-btn" id="quizBtn"><span class="icon">🎯</span><strong>Generate Quiz</strong><span>5 questions, instant scoring</span></button>
-              <button type="button" class="tool-btn" id="flashBtn"><span class="icon">🃏</span><strong>Generate Flashcards</strong><span>Adds to your review deck</span></button>
-              <a href="#" class="tool-btn" id="paperBtn"><span class="icon">📝</span><strong>Guess Paper</strong><span>Solvable timed exam + scoring</span></a>
-              <button type="button" class="tool-btn" id="studyPlanBtn"><span class="icon">🗓</span><strong>Study Plan</strong><span>Day-by-day plan to your exam date</span></button>
-              <button type="button" class="tool-btn" id="compareBooksBtn"><span class="icon">⚖️</span><strong>Compare Books</strong><span>vs. similar titles</span></button>
-            </div>
-            <div id="loadingState" class="loading"><span class="spinner"></span><span>All 4 engines are working on it — 15–30 seconds…</span></div>
-            <div id="notesArea"></div>
-            <div id="resultBox" class="result-box"></div>
-            <div id="quizArea"></div>
-          </div>
-
-          <div class="section-card">
-            <h2>📚 Similar books</h2>
-            <div class="similar-row">
-              ${similar.length ? similar.map((item) => `<a class="similar-card" href="/book?id=${item.id}"><strong>${item.title}</strong><p style="margin:6px 0 0;color:var(--ink-faint);font-size:0.82rem;">${item.section} · ${item.subject}</p></a>`).join('') : '<p style="color:var(--ink-soft);">No close matches yet.</p>'}
-            </div>
-          </div>
-
-          <div class="section-card" id="reviewsSection">
-            <h2>⭐ Customer reviews</h2>
-            <form id="reviewForm" class="review-form">
-              <label style="font-size:0.82rem;color:var(--ink-faint);">Your rating</label>
-              <div class="star-picker" id="starPicker">
-                ${[1,2,3,4,5].map((n) => `<span data-star="${n}">★</span>`).join('')}
-              </div>
-              <input id="reviewName" placeholder="Name (optional)">
-              <textarea id="reviewText" rows="3" placeholder="Write your review"></textarea>
-              <button type="submit" class="btn-sm" style="max-width:160px;">Submit review</button>
-            </form>
-            <div id="reviewsList" style="margin-top:8px;">
-              ${reviews.length ? reviews.slice().reverse().map((r) => `<article class="review-item"><div class="stars">${starString(r.rating || 5)}</div><strong>${escapeHtml(r.name || 'Anonymous')}</strong><p style="margin:4px 0 0;color:var(--ink-soft);">${escapeHtml(r.text || '')}</p></article>`).join('') : '<p style="color:var(--ink-soft);">No reviews yet — be the first.</p>'}
-            </div>
-          </div>
-        `;
-
-        // Cover image
-        const coverWrap = document.getElementById('coverWrap');
-        const img = document.createElement('img');
-        img.src = `https://covers.openlibrary.org/b/isbn/${book.isbn}-L.jpg`;
-        img.alt = book.title;
-        img.className = 'book-cover';
-        img.addEventListener('error', () => {
-          img.remove();
-          const placeholder = document.createElement('div');
-          placeholder.className = 'book-cover-placeholder';
-          placeholder.textContent = book.title.charAt(0);
-          coverWrap.appendChild(placeholder);
-        }, { once: true });
-        coverWrap.appendChild(img);
-
-        // Buy flow
-        const buyBookBtn = document.getElementById('buyBookBtn');
-        const buyBookForm = document.getElementById('buyBookForm');
-        const buyBookStatus = document.getElementById('buyBookStatus');
-        const buyBookEmail = document.getElementById('buyBookEmail');
-
-        buyBookBtn?.addEventListener('click', () => {
-          buyBookBtn.style.display = 'none';
-          buyBookForm.style.display = 'block';
-          const savedEmail = lsGet('mm_email', '');
-          if (savedEmail) buyBookEmail.value = savedEmail;
-          buyBookEmail.focus();
-        });
-
-        document.getElementById('cancelBuyBtn')?.addEventListener('click', () => {
-          buyBookForm.style.display = 'none';
-          buyBookBtn.style.display = 'block';
-          buyBookStatus.textContent = '';
-        });
-
-        buyBookForm?.addEventListener('submit', async (event) => {
-          event.preventDefault();
-          const submitBtn = buyBookForm.querySelector('button[type="submit"]');
-          const email = buyBookEmail.value.trim();
-          try {
-            submitBtn.disabled = true;
-            buyBookStatus.style.color = 'var(--ink-soft)';
-            buyBookStatus.textContent = 'Placing your order...';
-            const data = await postJson('/api/book-order', {
-              bookId: book.id,
-              bookTitle: book.title,
-              price: book.price,
-              email,
-            });
-            lsSet('mm_email', email);
-            buyBookStatus.style.color = 'var(--lime)';
-            buyBookStatus.textContent = `Order ${data.orderRef} recorded. ${data.message || ''}`;
-            buyBookForm.querySelector('input').disabled = true;
-            submitBtn.style.display = 'none';
-            document.getElementById('cancelBuyBtn').textContent = 'Done';
-          } catch (error) {
-            buyBookStatus.style.color = 'var(--coral)';
-            buyBookStatus.textContent = error.message || 'Could not place this order right now.';
-          } finally {
-            submitBtn.disabled = false;
-          }
-        });
-
-        const topicSelect = document.getElementById('topicSelect');
-        const resultBox = document.getElementById('resultBox');
-        const loadingState = document.getElementById('loadingState');
-        const showLoading = (flag) => loadingState.classList.toggle('show', flag);
-
-        document.getElementById('quizBtn')?.addEventListener('click', async () => {
-          const quizArea = document.getElementById('quizArea');
-          try {
-            showLoading(true);
-            resultBox.textContent = '';
-            quizArea.innerHTML = '';
-            const chapter = topicSelect.value;
-            const questions = await postJson('/api/quiz', {
-              subject: book.subject,
-              chapter,
-              bookContext: book.title,
-              count: 5,
-              askedQuestions: [],
-            });
-            const list = Array.isArray(questions) ? questions : [];
-            if (!list.length) { quizArea.textContent = 'No quiz generated.'; return; }
-            renderInteractiveQuiz(list, book, chapter, quizArea);
-          } catch (error) {
-            quizArea.textContent = error.message;
-          } finally {
-            showLoading(false);
-          }
-        });
-
-        document.getElementById('flashBtn')?.addEventListener('click', async () => {
-          try {
-            showLoading(true);
-            resultBox.textContent = '';
-            const chapter = topicSelect.value;
-            const data = await postJson('/api/book-flashcards', {
-              subject: book.subject,
-              chapter,
-              bookContext: book.title,
-            });
-            const cards = data.cards || [];
-            appendGeneratedFlashcards(cards, book.title);
-            resultBox.textContent = cards.length
-              ? `✓ ${cards.length} flashcards added to your deck:\n\n` + cards.map((card, i) => `${i + 1}. ${card.front} → ${card.back}`).join('\n\n')
-              : 'No flashcards generated.';
-          } catch (error) {
-            resultBox.textContent = error.message;
-          } finally {
-            showLoading(false);
-          }
-        });
-
-        document.getElementById('paperBtn')?.addEventListener('click', (event) => {
-          event.preventDefault();
-          const chapter = topicSelect.value;
-          const params = new URLSearchParams({ book: book.id });
-          if (chapter) params.set('chapter', chapter);
-          window.location.href = `/guess-papers?${params.toString()}`;
-        });
-
-        document.getElementById('chapterNotesBtn')?.addEventListener('click', async () => {
-          const notesArea = document.getElementById('notesArea');
-          try {
-            showLoading(true);
-            notesArea.innerHTML = '';
-            resultBox.textContent = '';
-            const chapter = topicSelect.value;
-            const data = await postJson('/api/chapter-notes', {
-              subject: book.subject,
-              chapter,
-              bookContext: book.title,
-              userLevel: lsGet('mm_level', 'Newbie'),
-            });
-            renderChapterNotes(data.notes, data.engine, chapter || book.subject, notesArea);
-          } catch (error) {
-            notesArea.textContent = error.message;
-          } finally {
-            showLoading(false);
-          }
-        });
-
-        document.getElementById('studyPlanBtn')?.addEventListener('click', () => {
-          const dateInput = prompt('Enter exam date (YYYY-MM-DD):');
-          if (!dateInput) return;
-          const examDate = new Date(dateInput);
-          if (Number.isNaN(examDate.getTime())) {
-            resultBox.textContent = 'Invalid date format.';
-            return;
-          }
-          const now = new Date();
-          const days = Math.max(1, Math.ceil((examDate - now) / 86400000));
-          const topics = (book.topics || []).length ? book.topics : [book.subject];
-          const plan = [];
-          for (let i = 0; i < days; i += 1) {
-            const day = new Date(now.getTime() + i * 86400000);
-            const topic = topics[i % topics.length];
-            plan.push({ date: day.toISOString().slice(0, 10), topic, bookId: book.id, bookTitle: book.title });
-          }
-          const existing = lsGet('mm_study_plans', []);
-          lsSet('mm_study_plans', existing.concat(plan).slice(-400));
-          resultBox.textContent = `✓ Study plan saved with ${plan.length} day entries. See it on your dashboard.`;
-        });
-
-        document.getElementById('compareBooksBtn')?.addEventListener('click', async () => {
-          try {
-            showLoading(true);
-            const compareTitles = similar.map((s) => s.title).join(', ') || 'none';
-            const data = await postJson('/api/chat', {
-              visitorId: getSessionId(),
-              subject: book.subject,
-              message: `In 3 short bullets, compare ${book.title} with these similar books: ${compareTitles}. Keep it practical for students.`
-            });
-            resultBox.textContent = data.reply || 'No comparison generated.';
-          } catch (error) {
-            resultBox.textContent = error.message;
-          } finally {
-            showLoading(false);
-          }
-        });
-
-        // Star rating picker
-        let pickedRating = 5;
-        const starPicker = document.getElementById('starPicker');
-        function paintStars() {
-          starPicker.querySelectorAll('span').forEach((s) => {
-            s.classList.toggle('on', Number(s.dataset.star) <= pickedRating);
-          });
-        }
-        starPicker?.addEventListener('click', (event) => {
-          const star = event.target.closest('span[data-star]');
-          if (!star) return;
-          pickedRating = Number(star.dataset.star);
-          paintStars();
-        });
-        paintStars();
-
-        document.getElementById('reviewForm')?.addEventListener('submit', (event) => {
-          event.preventDefault();
-          const name = document.getElementById('reviewName').value.trim();
-          const text = document.getElementById('reviewText').value.trim();
-          if (!text) return;
-          saveReview(book.id, { name, text, rating: pickedRating, createdAt: new Date().toISOString() });
-          renderBook(book, allBooks);
-        });
-
-        refreshTopBar();
-      }
-    })();
-  </script>
+  fetch('/data/books.json').then(function (r) { return r.json(); }).then(function (list) {
+    books = list || [];
+    book = books.find(function (b) { return b.id === id; }) || books[0];
+    if (!book) { $('title').textContent = 'Book not found'; return; }
+    render();
+  }).catch(function () { $('title').textContent = 'Unable to load this book.'; });
+})();
+</script>
 </body>
 </html>
