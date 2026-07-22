@@ -55,6 +55,17 @@
   .bar-val { font-family: var(--font-mono); font-size: 0.78rem; color: var(--ink-soft); text-align: right; }
   .muted { color: var(--ink-faint); font-size: 0.84rem; }
   .hide { display: none; }
+  .umodal { position: fixed; inset: 0; background: rgba(4,6,15,0.72); backdrop-filter: blur(6px); display: flex; align-items: flex-start; justify-content: center; padding: 40px 16px; z-index: 50; overflow-y: auto; }
+  .umodal.hide { display: none; }
+  .umodal-card { width: 100%; max-width: 640px; background: var(--surface-solid); border: 1px solid var(--border-glow); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+  .umodal-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 22px; border-bottom: 1px solid var(--border-soft); }
+  .umodal-head h2 { font-family: var(--font-display); margin: 0; font-size: 1.15rem; }
+  .umodal-body { padding: 20px 22px; }
+  .umodal-foot { display: flex; gap: 8px; flex-wrap: wrap; padding: 16px 22px; border-top: 1px solid var(--border-soft); }
+  .umodal-body label { display: flex; flex-direction: column; gap: 4px; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); font-family: var(--font-mono); flex: 1; min-width: 140px; }
+  .umodal-body label input, .umodal-body label select { border: 1px solid var(--border); background: var(--surface-2); color: var(--ink); border-radius: 9px; padding: 9px 11px; font-family: var(--font-body); font-size: 0.9rem; text-transform: none; letter-spacing: 0; }
+  .umodal-body label.chk { flex-direction: row; align-items: center; gap: 8px; text-transform: none; letter-spacing: 0; color: var(--ink-soft); font-family: var(--font-body); font-size: 0.86rem; }
+  .umodal-body label.chk input { flex: none; width: auto; }
 </style>
 </head>
 <body>
@@ -146,6 +157,41 @@
     <section id="v-geo" class="hide">
       <div class="card"><h2>🌍 Where users come from</h2><div id="geoBody"></div></div>
     </section>
+
+    <div id="userModal" class="umodal hide">
+      <div class="umodal-card">
+        <div class="umodal-head">
+          <h2 id="umTitle">User</h2>
+          <button class="btn ghost sm" id="umClose">✕</button>
+        </div>
+        <div class="umodal-body">
+          <div class="grid" id="umStats" style="margin-bottom:16px;"></div>
+          <div class="row"><label>Name<input id="umName"></label><label>Email<input id="umEmail" type="email"></label></div>
+          <div class="row">
+            <label>Plan<select id="umPlan"><option>Free</option><option>Student</option><option>Pro</option><option>Family</option><option>School</option></select></label>
+            <label>Status<select id="umStatus"><option value="inactive">inactive</option><option value="active">active</option></select></label>
+            <label>Price ($/mo)<input id="umPrice" type="number" step="0.01" min="0"></label>
+          </div>
+          <div class="row">
+            <label>Level<input id="umLevel"></label>
+            <label>XP<input id="umXp" type="number" min="0"></label>
+            <label>Learning style<select id="umStyle"><option>Visual</option><option>Examples</option><option>Step-by-step</option><option>Stories</option></select></label>
+          </div>
+          <div class="row">
+            <label class="chk"><input type="checkbox" id="umOnboarded"> Completed onboarding</label>
+            <label class="chk"><input type="checkbox" id="umVerified"> Email verified</label>
+          </div>
+          <p class="muted" id="umMeta"></p>
+          <p id="umMsg" class="ok"></p>
+        </div>
+        <div class="umodal-foot">
+          <button class="btn" id="umSave">Save changes</button>
+          <button class="btn ghost sm" id="umReset">↻ Reset today's usage</button>
+          <button class="btn ghost sm" id="umFreePro">🎁 Grant free Pro</button>
+          <button class="btn danger sm" id="umDelete">Delete user</button>
+        </div>
+      </div>
+    </div>
 
     <section id="v-website" class="hide">
       <div class="card hide" id="gaConnectCard">
@@ -258,7 +304,7 @@
       '<tr><td>' + u.id + '</td><td>' + esc(u.name || '—') + '</td><td>' + esc(u.email) + '</td>' +
       '<td><span class="badge' + (u.active ? ' paid' : '') + '">' + esc(u.plan) + (u.active ? ' ·active' : '') + '</span></td>' +
       '<td>' + (u.verified ? '✓' : '—') + '</td><td>' + esc(u.level || '—') + '</td><td>' + esc((u.joined || '').slice(0, 10)) + '</td>' +
-      '<td><button class="btn ghost sm" data-grant="' + esc(u.email) + '">Free Pro</button> ' +
+      '<td><button class="btn sm" data-view="' + u.id + '">View / Edit</button> ' +
       '<button class="btn danger sm" data-del="' + u.id + '" data-email="' + esc(u.email) + '">Delete</button></td></tr>').join('') ||
       '<tr><td colspan="8" class="muted">No users yet.</td></tr>';
   }
@@ -365,8 +411,66 @@
       await api('delete_user', { method: 'POST', body: { id: Number(del.dataset.del) } });
       loadUsers(); return;
     }
-    const g = e.target.closest('[data-grant]');
-    if (g) { await api('grant', { method: 'POST', body: { email: g.dataset.grant, plan: 'pro' } }); loadUsers(); }
+    const v = e.target.closest('[data-view]');
+    if (v) { openUser(Number(v.dataset.view)); }
+  });
+
+  // ── User profile editor ────────────────────────────────────────────────────
+  let umUser = null;
+  const umMsg = (t, ok) => { const el = $('umMsg'); el.textContent = t || ''; el.className = ok === false ? 'err' : 'ok'; };
+  async function openUser(id) {
+    umMsg('');
+    let data;
+    try { data = (await api('user_detail', { method: 'POST', body: { id } })).data; } catch (e) { alert('Could not load user.'); return; }
+    if (!data || !data.user) { alert((data && data.error) || 'Could not load user.'); return; }
+    umUser = data.user; const u = data.user, a = data.activity || {};
+    $('umTitle').textContent = (u.name || 'User') + ' · #' + u.id;
+    $('umName').value = u.name || '';
+    $('umEmail').value = u.email || '';
+    $('umPlan').value = u.plan_name || 'Free';
+    $('umStatus').value = u.plan_status || 'inactive';
+    $('umPrice').value = Number(u.plan_price || 0);
+    $('umLevel').value = u.level || 'Newbie';
+    $('umXp').value = Number(u.xp || 0);
+    $('umStyle').value = u.learning_style || 'Visual';
+    $('umOnboarded').checked = Number(u.onboarded || 0) === 1;
+    $('umVerified').checked = Number(u.email_verified || 0) === 1;
+    const stats = [['Chats', a.chats], ['Quizzes', a.quizzes], ['Used today', a.usedToday], ['Sessions', a.sessions]];
+    $('umStats').innerHTML = stats.map(([l, val]) => '<div class="stat"><b>' + num(val) + '</b><span>' + l + '</span></div>').join('');
+    $('umMeta').textContent = 'Joined ' + esc((u.created_at || '').slice(0, 10)) + ' · visitor ' + esc(u.visitor_id || '—');
+    $('userModal').classList.remove('hide');
+  }
+  function closeUser() { $('userModal').classList.add('hide'); umUser = null; }
+  $('umClose').addEventListener('click', closeUser);
+  $('userModal').addEventListener('click', (e) => { if (e.target.id === 'userModal') closeUser(); });
+
+  $('umSave').addEventListener('click', async () => {
+    if (!umUser) return;
+    umMsg('Saving…');
+    const body = {
+      id: umUser.id, name: $('umName').value.trim(), email: $('umEmail').value.trim(),
+      planName: $('umPlan').value === 'Free' ? '' : $('umPlan').value, planStatus: $('umStatus').value,
+      planPrice: Number($('umPrice').value || 0), level: $('umLevel').value.trim(), xp: Number($('umXp').value || 0),
+      learningStyle: $('umStyle').value, onboarded: $('umOnboarded').checked, emailVerified: $('umVerified').checked,
+    };
+    try {
+      const { data } = await api('update_user', { method: 'POST', body });
+      umMsg((data && (data.message || data.error)) || 'Saved.', !(data && data.error));
+      loadUsers();
+    } catch (e) { umMsg('Save failed.', false); }
+  });
+  $('umReset').addEventListener('click', async () => {
+    if (!umUser) return;
+    try { const { data } = await api('reset_usage', { method: 'POST', body: { id: umUser.id } }); umMsg((data && (data.message || data.error)) || '', !(data && data.error)); } catch (e) { umMsg('Failed.', false); }
+  });
+  $('umFreePro').addEventListener('click', async () => {
+    if (!umUser) return;
+    try { const { data } = await api('grant', { method: 'POST', body: { email: umUser.email, plan: 'pro' } }); umMsg((data && (data.message || data.error)) || '', !(data && data.error)); openUser(umUser.id); loadUsers(); } catch (e) { umMsg('Failed.', false); }
+  });
+  $('umDelete').addEventListener('click', async () => {
+    if (!umUser) return;
+    if (!confirm('Delete ' + (umUser.email || umUser.name) + '? This permanently removes the account.')) return;
+    try { await api('delete_user', { method: 'POST', body: { id: umUser.id } }); closeUser(); loadUsers(); } catch (e) { umMsg('Delete failed.', false); }
   });
   $('userSearch').addEventListener('input', (e) => {
     const q = e.target.value.toLowerCase();

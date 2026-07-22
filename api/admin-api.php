@@ -453,6 +453,69 @@ if ($action === 'users') {
     exit;
 }
 
+// ── Full profile of one user (everything the owner can see/edit) ─────────────
+if ($action === 'user_detail') {
+    if ($db === null) { mm_json_response(503, ['error' => 'Database offline.']); exit; }
+    $id = (int) ($_GET['id'] ?? ($body['id'] ?? 0));
+    if ($id <= 0) { mm_json_response(400, ['error' => 'Need a user id.']); exit; }
+    try {
+        $stmt = $db->prepare('SELECT * FROM users WHERE id = :id LIMIT 1');
+        $stmt->execute([':id' => $id]);
+        $u = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$u) { mm_json_response(404, ['error' => 'No user with that id.']); exit; }
+        unset($u['password_hash']); // never expose secrets
+        $vid = (string) ($u['visitor_id'] ?? '');
+        $chats = 0; $quizzes = 0; $usedToday = 0; $sessions = 0;
+        try { $s = $db->prepare('SELECT COUNT(*) FROM chats WHERE visitor_id = :v'); $s->execute([':v' => $vid]); $chats = (int) $s->fetchColumn(); } catch (Throwable $e) {}
+        try { $s = $db->prepare('SELECT COUNT(*) FROM quiz_results WHERE visitor_id = :v'); $s->execute([':v' => $vid]); $quizzes = (int) $s->fetchColumn(); } catch (Throwable $e) {}
+        try { $s = $db->prepare("SELECT COALESCE(SUM(calls_used),0) FROM ai_usage_daily WHERE scope_key = :k AND usage_date = UTC_DATE()"); $s->execute([':k' => 'user:' . $id]); $usedToday = (int) $s->fetchColumn(); } catch (Throwable $e) {}
+        try { $s = $db->prepare('SELECT COUNT(*) FROM auth_sessions WHERE user_id = :id'); $s->execute([':id' => $id]); $sessions = (int) $s->fetchColumn(); } catch (Throwable $e) {}
+        mm_json_response(200, ['status' => 'ok', 'user' => $u, 'activity' => ['chats' => $chats, 'quizzes' => $quizzes, 'usedToday' => $usedToday, 'sessions' => $sessions]]);
+    } catch (Throwable $e) { mm_json_response(500, ['error' => $e->getMessage()]); }
+    exit;
+}
+
+// ── Edit any field on a user ────────────────────────────────────────────────
+if ($method === 'POST' && $action === 'update_user') {
+    if ($db === null) { mm_json_response(503, ['error' => 'Database offline.']); exit; }
+    $id = (int) ($body['id'] ?? 0);
+    if ($id <= 0) { mm_json_response(400, ['error' => 'Need a user id.']); exit; }
+    $map = ['name' => 'name', 'email' => 'email', 'learningStyle' => 'learning_style', 'level' => 'level',
+            'xp' => 'xp', 'onboarded' => 'onboarded', 'planName' => 'plan_name', 'planPrice' => 'plan_price',
+            'planStatus' => 'plan_status', 'emailVerified' => 'email_verified'];
+    $set = []; $params = [':id' => $id];
+    foreach ($map as $key => $col) {
+        if (!array_key_exists($key, $body)) continue;
+        if ($col === 'xp') $val = max(0, (int) $body[$key]);
+        elseif ($col === 'plan_price') $val = max(0, (float) $body[$key]);
+        elseif (in_array($col, ['onboarded', 'email_verified'], true)) $val = $body[$key] ? 1 : 0;
+        else $val = trim((string) $body[$key]);
+        $set[] = "$col = :$col";
+        $params[":$col"] = $val;
+    }
+    if (!$set) { mm_json_response(400, ['error' => 'Nothing to change.']); exit; }
+    try {
+        $db->prepare('UPDATE users SET ' . implode(', ', $set) . ', updated_at = UTC_TIMESTAMP() WHERE id = :id')->execute($params);
+        mm_json_response(200, ['status' => 'ok', 'message' => 'Saved changes to user #' . $id . '.']);
+    } catch (Throwable $e) {
+        $msg = strpos($e->getMessage(), 'Duplicate') !== false ? 'That email is already used by another account.' : $e->getMessage();
+        mm_json_response(400, ['error' => $msg]);
+    }
+    exit;
+}
+
+// ── Reset a user's AI usage for today (give their daily credits back) ────────
+if ($method === 'POST' && $action === 'reset_usage') {
+    if ($db === null) { mm_json_response(503, ['error' => 'Database offline.']); exit; }
+    $id = (int) ($body['id'] ?? 0);
+    if ($id <= 0) { mm_json_response(400, ['error' => 'Need a user id.']); exit; }
+    try {
+        $db->prepare('DELETE FROM ai_usage_daily WHERE scope_key = :k')->execute([':k' => 'user:' . $id]);
+        mm_json_response(200, ['status' => 'ok', 'message' => 'Reset AI usage for user #' . $id . ' — full credits restored.']);
+    } catch (Throwable $e) { mm_json_response(500, ['error' => $e->getMessage()]); }
+    exit;
+}
+
 // Default: overview
 $summary = mm_get_admin_summary();
 $revenue = ['mrr' => 0.0, 'payingUsers' => 0, 'totalUsers' => 0, 'bookRevenue' => 0.0];
