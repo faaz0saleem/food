@@ -365,6 +365,7 @@ function mm_ensure_runtime_tables(): void {
         }
         try { $db->exec('ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarded smallint not null default 0'); } catch (Throwable $e) {}
         try { $db->exec('ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_color varchar(20)'); } catch (Throwable $e) {}
+        try { $db->exec('ALTER TABLE users ADD COLUMN IF NOT EXISTS stats_json text'); } catch (Throwable $e) {}
         $initialized = true;
         return;
     }
@@ -384,6 +385,7 @@ function mm_ensure_runtime_tables(): void {
     // Add newer columns to an existing users table (no-op / caught if present).
     try { $db->exec('ALTER TABLE users ADD COLUMN onboarded TINYINT NOT NULL DEFAULT 0'); } catch (Throwable $e) {}
     try { $db->exec('ALTER TABLE users ADD COLUMN avatar_color VARCHAR(20) NULL'); } catch (Throwable $e) {}
+    try { $db->exec('ALTER TABLE users ADD COLUMN stats_json LONGTEXT NULL'); } catch (Throwable $e) {}
 
     // Belt-and-braces: create the runtime tables individually too (idempotent),
     // wrapped so a provisioning failure never 500s the request.

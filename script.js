@@ -377,6 +377,68 @@ function bumpDailyXP(amount) {
   lsSet('mm_daily_xp', log);
 }
 
+// ── Server-synced analytics ──────────────────────────────────────────────────
+// The per-user stats below live in localStorage for speed, and are mirrored to
+// the account (api/stats) so they follow the user across devices and show in
+// the admin. On load we pull the server copy and merge it with the local one.
+const STATS_KEYS = ['mm_count', 'mm_level', 'mm_streak', 'mm_quiz_scores', 'mm_subjects', 'mm_daily_xp', 'mm_quiz_log', 'mm_milestones'];
+
+function collectStats() {
+  const o = {};
+  STATS_KEYS.forEach((k) => { const v = lsGet(k, undefined); if (typeof v !== 'undefined') o[k] = v; });
+  try { o.xp = typeof calculateXP === 'function' ? calculateXP() : Number(lsGet('mm_count', 0)) * 10; } catch (e) {}
+  return o;
+}
+
+// Merge one stat, favouring the richer of the two copies (so no progress is lost
+// when the same account is used on two devices).
+function mergeStat(key, local, server) {
+  if (local == null) return server;
+  if (server == null) return local;
+  if (typeof local === 'number' && typeof server === 'number') return Math.max(local, server);
+  if (Array.isArray(local) && Array.isArray(server)) {
+    if (key === 'mm_streak') return Array.from(new Set([...local, ...server]));
+    const seen = new Set(); const out = [];
+    [...local, ...server].forEach((x) => { const k = JSON.stringify(x); if (!seen.has(k)) { seen.add(k); out.push(x); } });
+    return out.slice(0, 40);
+  }
+  if (typeof local === 'object' && typeof server === 'object') {
+    const out = Object.assign({}, server, local);
+    Object.keys(out).forEach((kk) => {
+      if (typeof local[kk] === 'number' && typeof server[kk] === 'number') out[kk] = Math.max(local[kk], server[kk]);
+      else if (Array.isArray(local[kk]) && Array.isArray(server[kk])) out[kk] = local[kk].length >= server[kk].length ? local[kk] : server[kk];
+    });
+    return out;
+  }
+  return local;
+}
+
+let _statsPushTimer = null;
+function pushStatsToServer(immediate) {
+  if (typeof getAuthToken !== 'function' || !getAuthToken()) return;
+  clearTimeout(_statsPushTimer);
+  const doPush = () => { try { authRequest('/api/stats', 'POST', { stats: collectStats() }).catch(() => {}); } catch (e) {} };
+  if (immediate) doPush(); else _statsPushTimer = setTimeout(doPush, 2500);
+}
+
+async function syncStatsFromServer() {
+  if (typeof getAuthToken !== 'function' || !getAuthToken()) return;
+  try {
+    const { ok, data } = await authRequest('/api/stats', 'GET');
+    if (!ok || !data) return;
+    const server = data.stats;
+    if (server && typeof server === 'object') {
+      STATS_KEYS.forEach((k) => {
+        const merged = mergeStat(k, lsGet(k, undefined), server[k]);
+        if (typeof merged !== 'undefined') lsSet(k, merged);
+      });
+      if (typeof updateLevel === 'function') { try { updateLevel(); } catch (e) {} }
+    }
+    pushStatsToServer(true); // write the merged result back
+  } catch (e) {}
+}
+window.HungterStats = { push: pushStatsToServer, sync: syncStatsFromServer };
+
 function recordChat(subject) {
   const messageCount = lsGet('mm_count', 0) + 1;
   lsSet('mm_count', messageCount);
@@ -406,6 +468,7 @@ function recordChat(subject) {
   if (messageCount === 1) {
     trackEvent('first_chat_message_sent', { subject });
   }
+  pushStatsToServer(); // debounced sync of the updated stats to the account
 }
 
 function recordConversation(subject, userMessage, aiReply) {
@@ -861,6 +924,7 @@ function initProfile() {
 
 async function initPage() {
   await hydrateProfileFromAuth();
+  syncStatsFromServer(); // pull + merge this account's analytics from the server
   // Free tier is real: app pages never require signup or checkout. A first-time
   // visitor is sent through onboarding once (to set name/learning style), and
   // paid gating happens per-feature on the server (e.g. /api/guess-paper), not

@@ -374,6 +374,7 @@ function finish() {
   if (typeof bumpDailyXP === 'function') bumpDailyXP(15 + Math.round(pct * 0.2));
   if (typeof bumpQuest === 'function') try { bumpQuest('quiz1'); } catch (e) {}
   if (typeof addMilestone === 'function' && pct >= 90) addMilestone('Scored ' + pct + '% in ' + subject);
+  if (window.HungterStats) window.HungterStats.push(); // sync quiz result to the account
   if (typeof updateLevel === 'function') updateLevel();
   if (typeof updateStreak === 'function') try { updateStreak(); } catch (e) {}
   const earned = 15 + Math.round(pct * 0.2);

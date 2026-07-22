@@ -15,6 +15,7 @@ create table if not exists users (
   xp             integer not null default 0,
   onboarded      smallint not null default 0,
   avatar_color   varchar(20),
+  stats_json     text,
   plan_name      varchar(60) default '',
   plan_price     numeric(10,2) not null default 0,
   plan_status    varchar(30) not null default 'inactive',
