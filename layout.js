@@ -29,6 +29,7 @@ if ('serviceWorker' in navigator) {
 
   const NAV_LINKS = [
     { label: '💬 Chat', href: '/chat' },
+    { label: '🎭 Round Chat', href: '/roundchat' },
     { label: '⚡ Codex', href: '/codex' },
     { label: '📄 Guess Papers', href: '/guess-papers' },
     { label: '📖 Books', href: '/books' },

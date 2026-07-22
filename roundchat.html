@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-FHMTQDLHV2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag("js", new Date());
+
+  gtag("config", "G-FHMTQDLHV2");
+</script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Fredoka:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap">
+  <title>Round Chat — Watch 4 AI Tutors Debate Your Question | Hungter</title>
+  <meta name="description" content="Ask one question and watch Hungter's four AI engines — Groq, Gemini, ChatGPT, and Claude — debate it in real time, then merge their best ideas into one final answer.">
+  <link rel="canonical" href="https://hungter.com/roundchat">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Round Chat — 4 AI Tutors Debate Your Question">
+  <meta property="og:description" content="Groq, Gemini, ChatGPT, and Claude each take a turn, react to each other, then Hungter merges their best ideas into one answer.">
+  <meta property="og:url" content="https://hungter.com/roundchat">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/brand.css?v=20260722">
+  <link rel="stylesheet" href="/nav.css?v=20260722">
+  <link rel="stylesheet" href="/styles.css?v=20260722">
+  <style>
+    .top-bar { height: 4px; background: var(--surface-2); }
+    .top-bar-fill { height: 100%; background: linear-gradient(90deg, var(--lime), var(--blue)); width: 100%; }
+    .rc-wrap { max-width: 900px; margin: 28px auto 56px; padding: 0 16px; }
+    .rc-card { background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 28px; }
+    .rc-card h1 { font-family: var(--font-display); font-size: 2rem; margin: 0 0 8px; }
+    .rc-sub { color: var(--ink-soft); margin: 0 0 20px; line-height: 1.6; }
+    .rc-form { display: flex; flex-direction: column; gap: 12px; }
+    .rc-form textarea {
+      width: 100%; min-height: 96px; resize: vertical; font-family: var(--font-body); font-size: 1rem;
+      background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      color: var(--ink); padding: 14px; box-sizing: border-box;
+    }
+    .rc-form textarea:focus { outline: none; border-color: var(--border-glow); box-shadow: var(--glow-lime); }
+    .rc-form-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .rc-form-row input[type="text"] {
+      flex: 1 1 180px; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm);
+      color: var(--ink); padding: 10px 12px; font-family: var(--font-body); box-sizing: border-box;
+    }
+    .rc-submit {
+      border: none; border-radius: 999px; padding: 12px 22px; font-weight: 700; cursor: pointer;
+      background: var(--gradient-brand); color: var(--bg-deep); box-shadow: var(--glow-lime); font-family: var(--font-display);
+    }
+    .rc-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+    .rc-error { color: var(--coral); margin: 0; display: none; }
+    .rc-results { margin-top: 28px; display: none; }
+    .rc-round-title {
+      font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.8rem;
+      color: var(--ink-faint); margin: 22px 0 10px;
+    }
+    .rc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+    .rc-bubble {
+      background: var(--surface-2); border: 1px solid var(--border); border-left: 3px solid var(--engine-color, var(--lime));
+      border-radius: var(--radius-sm); padding: 14px; box-shadow: var(--shadow-sm);
+    }
+    .rc-bubble strong { display: block; margin-bottom: 6px; color: var(--engine-color, var(--lime)); }
+    .rc-bubble p { margin: 0; color: var(--ink-soft); line-height: 1.6; font-size: 0.95rem; }
+    .rc-final {
+      margin-top: 22px; background: var(--gradient-aurora), var(--surface); border: 2px solid var(--border-glow);
+      border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow);
+    }
+    .rc-final h2 { font-family: var(--font-display); margin: 0 0 10px; font-size: 1.2rem; }
+    .rc-final p { margin: 0; line-height: 1.7; }
+    .rc-loading { display: none; align-items: center; gap: 10px; color: var(--ink-soft); margin-top: 16px; }
+    .rc-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--lime); animation: rc-pulse 1s infinite ease-in-out; }
+    .rc-dot:nth-child(2) { animation-delay: 0.15s; }
+    .rc-dot:nth-child(3) { animation-delay: 0.3s; }
+    @keyframes rc-pulse { 0%, 100% { opacity: 0.3; transform: scale(0.85); } 50% { opacity: 1; transform: scale(1); } }
+  </style>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Hungter Round Chat","applicationCategory":"EducationalApplication","description":"Ask one question and watch four AI tutoring engines debate it, then merge their answers into a single explanation.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"}}</script>
+</head>
+<body>
+  <div class="top-bar"><div class="top-bar-fill"></div></div>
+  <header class="site-nav"></header>
+  <main class="rc-wrap">
+    <section class="rc-card">
+      <p class="eyebrow">Round Chat</p>
+      <h1>Four AI tutors. One debate. One answer.</h1>
+      <p class="rc-sub">Ask a question and Hungter's four engines — 🟢 Groq, 🟠 Gemini, 🔵 ChatGPT, 🟣 Claude — each give their take, react to each other, then a final answer merges the best of all four.</p>
+      <form class="rc-form" id="rcForm">
+        <textarea id="rcMessage" placeholder="e.g. Why does ice float on water?" required></textarea>
+        <div class="rc-form-row">
+          <input type="text" id="rcSubject" placeholder="Subject (optional)">
+          <button type="submit" class="rc-submit" id="rcSubmit">Start the roundtable →</button>
+        </div>
+      </form>
+      <p class="rc-error" id="rcError"></p>
+      <div class="rc-loading" id="rcLoading"><span class="rc-dot"></span><span class="rc-dot"></span><span class="rc-dot"></span> The tutors are debating…</div>
+      <div class="rc-results" id="rcResults">
+        <div id="rcRound1"></div>
+        <div id="rcRound2"></div>
+        <div class="rc-final" id="rcFinal" style="display:none;">
+          <h2>🏆 Final answer</h2>
+          <p id="rcFinalText"></p>
+        </div>
+      </div>
+    </section>
+  </main>
+  <footer class="site-footer"></footer>
+  <script src="/layout.js?v=20260722" defer></script>
+  <script>
+    (function () {
+      const ENGINE_COLORS = {
+        Groq: 'var(--lime)',
+        Gemini: 'var(--coral)',
+        ChatGPT: 'var(--blue)',
+        Claude: 'var(--pink)',
+      };
+
+      function lsGet(key, fallback) {
+        try {
+          const raw = localStorage.getItem(key);
+          return raw === null ? fallback : raw;
+        } catch { return fallback; }
+      }
+
+      function getSessionId() {
+        let id = lsGet('mm_sessionId', '');
+        if (!id) {
+          id = `s_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+          try { localStorage.setItem('mm_sessionId', id); } catch {}
+        }
+        return id;
+      }
+
+      function joinApi(base, path) {
+        const cleanPath = path.startsWith('/') ? path : `/${path}`;
+        return base ? `${base}${cleanPath}` : cleanPath;
+      }
+
+      async function fetchWithApiFallback(path, options) {
+        const base = String(window.HUNGTER_API_BASE || '').replace(/\/$/, '');
+        const candidates = [joinApi(base, path)];
+        if (path.startsWith('/api/')) candidates.push(joinApi(base, `${path}.php`));
+        let lastError = null;
+        for (const url of candidates) {
+          try {
+            const response = await fetch(url, options);
+            const contentType = String(response.headers.get('content-type') || '');
+            if (response.ok || contentType.includes('application/json')) return response;
+            lastError = new Error(`HTTP ${response.status}`);
+          } catch (error) {
+            lastError = error;
+          }
+        }
+        throw lastError || new Error('API request failed');
+      }
+
+      function escapeHtml(value) {
+        return String(value || '')
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }
+
+      function renderRound(containerId, title, entries) {
+        const container = document.getElementById(containerId);
+        if (!entries.length) { container.innerHTML = ''; return; }
+        const bubbles = entries.map((entry) => {
+          const color = ENGINE_COLORS[entry.engine] || 'var(--lime)';
+          return `<div class="rc-bubble" style="--engine-color:${color}"><strong>${escapeHtml(entry.engine)}</strong><p>${escapeHtml(entry.text)}</p></div>`;
+        }).join('');
+        container.innerHTML = `<p class="rc-round-title">${title}</p><div class="rc-grid">${bubbles}</div>`;
+      }
+
+      const form = document.getElementById('rcForm');
+      const submitBtn = document.getElementById('rcSubmit');
+      const errorEl = document.getElementById('rcError');
+      const loadingEl = document.getElementById('rcLoading');
+      const resultsEl = document.getElementById('rcResults');
+      const finalEl = document.getElementById('rcFinal');
+      const finalTextEl = document.getElementById('rcFinalText');
+
+      const subjectInput = document.getElementById('rcSubject');
+      subjectInput.value = lsGet('mm_subject', '') || '';
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const message = document.getElementById('rcMessage').value.trim();
+        if (!message) return;
+
+        errorEl.style.display = 'none';
+        resultsEl.style.display = 'none';
+        finalEl.style.display = 'none';
+        loadingEl.style.display = 'flex';
+        submitBtn.disabled = true;
+
+        try {
+          const response = await fetchWithApiFallback('/api/roundtable', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              message,
+              subject: subjectInput.value.trim() || 'General',
+              userLevel: lsGet('mm_level', 'Newbie'),
+              visitorId: getSessionId(),
+            }),
+          });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error || 'The roundtable could not run right now.');
+
+          const transcript = Array.isArray(data.transcript) ? data.transcript : [];
+          renderRound('rcRound1', 'Round 1 · Opening takes', transcript.filter((t) => t.round === 1));
+          renderRound('rcRound2', 'Round 2 · Reactions', transcript.filter((t) => t.round === 2));
+          finalTextEl.textContent = data.finalAnswer || 'No answer was generated.';
+          finalEl.style.display = 'block';
+          resultsEl.style.display = 'block';
+        } catch (error) {
+          errorEl.textContent = error.message || 'Something went wrong. Please try again.';
+          errorEl.style.display = 'block';
+        } finally {
+          loadingEl.style.display = 'none';
+          submitBtn.disabled = false;
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
