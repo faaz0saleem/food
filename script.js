@@ -142,7 +142,11 @@ function applyServerUser(user) {
   lsSet('mm_plan_status', user.planStatus || 'inactive');
   lsSet('mm_plan_started', user.planStarted || '');
   if (typeof user.onboarded !== 'undefined') {
-    lsSet('mm_onboarded', Boolean(user.onboarded));
+    // Never downgrade a local completion to false: if the server hasn't recorded
+    // onboarding yet (best-effort save raced the redirect, or failed), keep the
+    // local truth so the user is never sent back through onboarding.
+    const alreadyLocal = lsGet('mm_onboarded', false) === true;
+    lsSet('mm_onboarded', Boolean(user.onboarded) || alreadyLocal);
   }
   if (user.visitorId) {
     lsSet('mm_sessionId', user.visitorId);
