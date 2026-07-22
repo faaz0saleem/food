@@ -130,6 +130,31 @@
   text-transform: uppercase;
 }
 
+.nav-credits {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.82rem;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
+}
+.nav-credits:hover {
+  border-color: var(--border-glow);
+  box-shadow: var(--glow-lime);
+}
+.nav-credits.low {
+  color: var(--coral);
+  border-color: var(--coral);
+}
+
 .chat-btn {
   display: inline-flex;
   align-items: center;

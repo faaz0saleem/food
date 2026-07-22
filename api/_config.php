@@ -674,6 +674,38 @@ function mm_credits_meta(int $used, int $limit, string $plan): array {
     ];
 }
 
+// Read-only snapshot of the current user's daily AI credits, for display in the
+// nav / chat without consuming anything.
+function mm_credits_status(?array $user = null): array {
+    if ($user === null) {
+        $user = mm_current_user();
+    }
+    $paygPerCredit = round((float) mm_env_value('AI_COST_PER_CREDIT_USD', '0.002') * 2, 4);
+    $used = mm_get_ai_usage_today(mm_ai_scope_key([]));
+    if ($user === null) {
+        $limit = max(1, (int) mm_env_value('ANON_DAILY_AI_LIMIT', '3'));
+        $plan = 'Preview';
+        $payg = false;
+    } elseif (mm_is_paid_user($user)) {
+        $limit = max(1, (int) mm_env_value('PAID_DAILY_CREDITS_LIMIT', '300'));
+        $plan = 'Paid';
+        $payg = $used >= $limit;
+    } else {
+        $limit = max(1, (int) mm_env_value('FREE_DAILY_MESSAGES_LIMIT', '20'));
+        $plan = 'Free';
+        $payg = false;
+    }
+    return [
+        'signedIn' => $user !== null,
+        'plan' => $plan,
+        'used' => $used,
+        'limit' => $limit,
+        'left' => max(0, $limit - $used),
+        'payg' => $payg,
+        'paygPerCredit' => $paygPerCredit,
+    ];
+}
+
 function mm_demo_chat_reply(string $subject, string $message): string {
     $topic = trim($subject) !== '' ? $subject : 'your topic';
     return 'The AI engines are taking a quick breather — here\'s a study move that always works for ' . $topic . ': break your question ("' . substr(trim($message), 0, 120) . '") into the smallest piece you don\'t understand, look up just that piece, then try one worked example. Ask me again in a minute and the full engines should be back!';

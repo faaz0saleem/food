@@ -162,6 +162,7 @@ if ('serviceWorker' in navigator) {
               <small>${Math.max(0, Number(level.xp || 0))} XP</small>
             </span>
           </div>
+          <a href="/checkout" class="nav-credits" id="navCredits" title="AI credits left today" style="display:none;"></a>
           <a href="/chat" class="chat-btn">💬 Ask AI</a>
           <a href="/profile" class="avatar" style="background-color:${avatarColor}" title="Profile">${initials}</a>
         </div>
@@ -178,7 +179,28 @@ if ('serviceWorker' in navigator) {
     panel?.querySelectorAll('a').forEach((link) => {
       link.addEventListener('click', () => nav.classList.remove('open'));
     });
+
+    refreshCredits();
   }
+
+  // ── AI credits badge — live daily balance from the server ──────────────────
+  async function refreshCredits() {
+    const el = document.getElementById('navCredits');
+    if (!el) return;
+    let token = null;
+    try { token = JSON.parse(localStorage.getItem('mm_auth_token') || 'null'); } catch (e) {}
+    try {
+      const r = await fetch(apiPath('/api/credits.php'), { headers: token ? { Authorization: 'Bearer ' + token } : {} });
+      if (!r.ok) return;
+      const d = await r.json();
+      if (!d || typeof d.left === 'undefined') return;
+      el.textContent = '⚡ ' + d.left;
+      el.title = d.left + ' AI credits left today · ' + d.plan + ' plan';
+      el.style.display = '';
+      el.classList.toggle('low', d.left <= 3);
+    } catch (e) {}
+  }
+  window.HungterCredits = { refresh: refreshCredits };
 
   function calculateXPForNav() {
     const count = Number(lsGet('mm_count', 0) || 0);

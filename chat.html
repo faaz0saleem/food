@@ -782,6 +782,8 @@
         ? `Pay-as-you-go · $${credits.paygPerCredit}/credit (${credits.plan})`
         : `${credits.left} credits left today · ${credits.plan} plan`;
     }
+    // Keep the nav credits badge in sync after each message.
+    if (window.HungterCredits) window.HungterCredits.refresh();
     if (typingIndicator) {
       typingIndicator.remove();
       typingIndicator = null;
