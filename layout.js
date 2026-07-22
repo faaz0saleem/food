@@ -16,7 +16,7 @@ if ('serviceWorker' in navigator) {
   // ── Auth gate — no one reaches the app without signing in with Google ───────
   // Public pages (landing, sign-in, legal) stay open; everything else requires
   // a session token stored at sign-in.
-  const PUBLIC_PAGES = ['', 'index', 'signin', 'signup', 'privacy', 'terms', 'faq', 'contact', 'about', 'complaints', '404', 'verify-email', 'reset-password'];
+  const PUBLIC_PAGES = ['', 'index', 'pricing', 'signin', 'signup', 'privacy', 'terms', 'faq', 'contact', 'about', 'complaints', '404', 'verify-email', 'reset-password'];
   (function authGate() {
     const file = (location.pathname.split('/').pop() || '').replace(/\.html$/, '').toLowerCase();
     if (PUBLIC_PAGES.includes(file)) return;
@@ -272,7 +272,8 @@ if ('serviceWorker' in navigator) {
           </div>
           <div class="footer-col">
             <h4>Company</h4>
-            <a href="/#pricing">Pricing</a>
+            <a href="/pricing">Pricing</a>
+            <a href="/about">About</a>
             <a href="/signup">Get started</a>
             <a href="/checkout?plan=student">Upgrade</a>
           </div>
