@@ -16,7 +16,8 @@ if ('serviceWorker' in navigator) {
   // ── Auth gate — no one reaches the app without signing in with Google ───────
   // Public pages (landing, sign-in, legal) stay open; everything else requires
   // a session token stored at sign-in.
-  const PUBLIC_PAGES = ['', 'index', 'pricing', 'signin', 'signup', 'privacy', 'terms', 'faq', 'contact', 'about', 'complaints', '404', 'verify-email', 'reset-password'];
+  const PUBLIC_PAGES = ['', 'index', 'pricing', 'signin', 'signup', 'privacy', 'terms', 'faq', 'contact', 'about', 'complaints', '404', 'verify-email', 'reset-password',
+    'ai-tutor-chat', 'ai-quizzes', 'smart-flashcards', 'practice-papers', 'ai-app-builder', 'progress-tracking', 'ai-engines'];
   (function authGate() {
     const file = (location.pathname.split('/').pop() || '').replace(/\.html$/, '').toLowerCase();
     if (PUBLIC_PAGES.includes(file)) return;
@@ -264,11 +265,14 @@ if ('serviceWorker' in navigator) {
             <p class="footer-copy">Four AI engines. One tutor that adapts to how you learn. Built for students, families, and schools.</p>
           </div>
           <div class="footer-col">
-            <h4>Product</h4>
-            <a href="/learn">Learn</a>
-            <a href="/subjects">Subjects</a>
-            <a href="/quiz">Quiz</a>
-            <a href="/chat">AI Chat</a>
+            <h4>Features</h4>
+            <a href="/ai-tutor-chat">AI Tutor Chat</a>
+            <a href="/ai-quizzes">AI Quizzes</a>
+            <a href="/smart-flashcards">Smart Flashcards</a>
+            <a href="/practice-papers">Practice Papers</a>
+            <a href="/ai-app-builder">Codex App Builder</a>
+            <a href="/progress-tracking">Progress Tracking</a>
+            <a href="/ai-engines">The 4 AI Engines</a>
           </div>
           <div class="footer-col">
             <h4>Company</h4>
