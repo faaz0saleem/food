@@ -366,6 +366,9 @@ function mm_ensure_runtime_tables(): void {
         try { $db->exec('ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarded smallint not null default 0'); } catch (Throwable $e) {}
         try { $db->exec('ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_color varchar(20)'); } catch (Throwable $e) {}
         try { $db->exec('ALTER TABLE users ADD COLUMN IF NOT EXISTS stats_json text'); } catch (Throwable $e) {}
+        try { $db->exec('ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_spend_usd numeric(10,5) not null default 0'); } catch (Throwable $e) {}
+        try { $db->exec('ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_spend_month numeric(10,5) not null default 0'); } catch (Throwable $e) {}
+        try { $db->exec('ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_spend_month_key varchar(7)'); } catch (Throwable $e) {}
         $initialized = true;
         return;
     }
@@ -386,6 +389,9 @@ function mm_ensure_runtime_tables(): void {
     try { $db->exec('ALTER TABLE users ADD COLUMN onboarded TINYINT NOT NULL DEFAULT 0'); } catch (Throwable $e) {}
     try { $db->exec('ALTER TABLE users ADD COLUMN avatar_color VARCHAR(20) NULL'); } catch (Throwable $e) {}
     try { $db->exec('ALTER TABLE users ADD COLUMN stats_json LONGTEXT NULL'); } catch (Throwable $e) {}
+    try { $db->exec('ALTER TABLE users ADD COLUMN ai_spend_usd DECIMAL(10,5) NOT NULL DEFAULT 0'); } catch (Throwable $e) {}
+    try { $db->exec('ALTER TABLE users ADD COLUMN ai_spend_month DECIMAL(10,5) NOT NULL DEFAULT 0'); } catch (Throwable $e) {}
+    try { $db->exec('ALTER TABLE users ADD COLUMN ai_spend_month_key VARCHAR(7) NULL'); } catch (Throwable $e) {}
 
     // Belt-and-braces: create the runtime tables individually too (idempotent),
     // wrapped so a provisioning failure never 500s the request.
@@ -602,62 +608,76 @@ function mm_record_ai_usage(string $scopeKey, ?int $userId, int $cost = 1): void
     $stmt->execute();
 }
 
+// Which tier a user is on: 'free', 'student' or 'pro'.
+function mm_plan_tier(?array $user): string {
+    if (!mm_is_paid_user($user)) return 'free';
+    $p = strtolower(trim((string) ($user['plan_name'] ?? '')));
+    if (strpos($p, 'pro') !== false || strpos($p, 'family') !== false || strpos($p, 'school') !== false) return 'pro';
+    return 'student';
+}
+
+// Owner cost for one AI credit; a normal message = 1 credit, All-4 = 3.
+function mm_ai_per_credit_usd(): float { return (float) mm_env_value('AI_COST_PER_CREDIT_USD', '0.002'); }
+
+// The owner-cost budget for a tier (Free is a lifetime cap; paid are monthly).
+function mm_tier_cap_usd(string $tier): float {
+    if ($tier === 'pro') return (float) mm_env_value('PRO_MONTHLY_USD', '30.00');
+    if ($tier === 'student') return (float) mm_env_value('STUDENT_MONTHLY_USD', '8.00');
+    return (float) mm_env_value('FREE_LIFETIME_USD', '3.00');
+}
+
+// Add owner cost to a user's lifetime + current-month spend (monthly resets).
+function mm_record_ai_spend(?array $user, float $costUsd): void {
+    $db = mm_db();
+    if ($db === null || $user === null || $costUsd <= 0) return;
+    $id = (int) ($user['id'] ?? 0);
+    if ($id <= 0) return;
+    $monthKey = gmdate('Y-m');
+    try {
+        if ((string) ($user['ai_spend_month_key'] ?? '') !== $monthKey) {
+            $db->prepare('UPDATE users SET ai_spend_month = 0, ai_spend_month_key = :k WHERE id = :id')->execute([':k' => $monthKey, ':id' => $id]);
+        }
+        $db->prepare('UPDATE users SET ai_spend_usd = ai_spend_usd + :c, ai_spend_month = ai_spend_month + :c WHERE id = :id')->execute([':c' => $costUsd, ':id' => $id]);
+    } catch (Throwable $e) {}
+}
+
 function mm_ai_budget_decision(array $body = [], int $cost = 1): array {
     $user = mm_current_user();
     $scopeKey = mm_ai_scope_key($body);
-    $isPaid = mm_is_paid_user($user);
-    $freeLimit = max(1, (int) mm_env_value('FREE_DAILY_MESSAGES_LIMIT', '20'));
-    $anonLimit = max(1, (int) mm_env_value('ANON_DAILY_AI_LIMIT', '3'));
-    $globalLimit = max(1, (int) mm_env_value('AI_DAILY_GLOBAL_LIMIT', '500'));
+    $callCostUsd = max(0, $cost) * mm_ai_per_credit_usd();
 
-    $globalUsed = mm_get_global_ai_usage_today();
-    if (($globalUsed + $cost) > $globalLimit) {
-        return [
-            'mode' => 'demo',
-            'message' => 'AI is at today\'s capacity. Hungter is temporarily in demo mode until midnight UTC.',
-            'scopeKey' => $scopeKey,
-            'user' => $user,
-        ];
+    // Global daily safety cap protects the owner's overall budget.
+    $globalLimit = max(1, (int) mm_env_value('AI_DAILY_GLOBAL_LIMIT', '5000'));
+    if ((mm_get_global_ai_usage_today() + $cost) > $globalLimit) {
+        return ['mode' => 'demo', 'message' => 'AI is at today\'s capacity — full power returns at midnight UTC.', 'scopeKey' => $scopeKey, 'user' => $user];
     }
 
-    $used = mm_get_ai_usage_today($scopeKey);
+    // Anonymous visitors: a tiny daily preview, then sign-up.
     if ($user === null) {
-        if (($used + $cost) > $anonLimit) {
-            return [
-                'mode' => 'signup',
-                'message' => 'Create a free account to continue after your launch-preview messages.',
-                'scopeKey' => $scopeKey,
-                'user' => null,
-            ];
+        $anonLimit = max(1, (int) mm_env_value('ANON_DAILY_AI_LIMIT', '3'));
+        if ((mm_get_ai_usage_today($scopeKey) + $cost) > $anonLimit) {
+            return ['mode' => 'signup', 'message' => 'Create a free account to keep going — you get $3 of free AI.', 'scopeKey' => $scopeKey, 'user' => null];
         }
-
-        return ['mode' => 'live', 'scopeKey' => $scopeKey, 'user' => null];
+        return ['mode' => 'live', 'scopeKey' => $scopeKey, 'user' => null, 'credits' => mm_credits_status(null)];
     }
 
-    if (!$isPaid && (($used + $cost) > $freeLimit)) {
-        return [
-            'mode' => 'limit',
-            'message' => 'Free plan limit reached for today. Upgrade or come back tomorrow for more AI help.',
-            'scopeKey' => $scopeKey,
-            'user' => $user,
-            'credits' => mm_credits_meta($used, $freeLimit, 'Free'),
-        ];
+    $tier = mm_plan_tier($user);
+    if ($tier === 'free') {
+        // Lifetime $3 of AI, then they must upgrade.
+        $spent = (float) ($user['ai_spend_usd'] ?? 0);
+        if (($spent + $callCostUsd) > mm_tier_cap_usd('free')) {
+            return ['mode' => 'limit', 'message' => 'You\'ve used your $3 of free AI. Upgrade to Student or Pro to keep learning.', 'scopeKey' => $scopeKey, 'user' => $user, 'credits' => mm_credits_status($user)];
+        }
+        return ['mode' => 'live', 'scopeKey' => $scopeKey, 'user' => $user, 'credits' => mm_credits_status($user)];
     }
 
-    // Paid plans get a generous daily credit allowance; past it they continue on
-    // pay-as-you-go, priced at 2x our underlying provider cost.
-    $paidLimit = max(1, (int) mm_env_value('PAID_DAILY_CREDITS_LIMIT', '300'));
-    if ($isPaid && (($used + $cost) > $paidLimit)) {
-        return [
-            'mode' => 'live', 'payg' => true,
-            'scopeKey' => $scopeKey, 'user' => $user,
-            'credits' => mm_credits_meta($used, $paidLimit, 'Paid · pay-as-you-go'),
-        ];
+    // Paid: a monthly $ allowance, then pay-as-you-go (2x owner cost).
+    $monthKey = gmdate('Y-m');
+    $monthSpent = ((string) ($user['ai_spend_month_key'] ?? '') === $monthKey) ? (float) ($user['ai_spend_month'] ?? 0) : 0.0;
+    if (($monthSpent + $callCostUsd) > mm_tier_cap_usd($tier)) {
+        return ['mode' => 'live', 'payg' => true, 'scopeKey' => $scopeKey, 'user' => $user, 'credits' => mm_credits_status($user)];
     }
-
-    $limit = $user === null ? $anonLimit : ($isPaid ? $paidLimit : $freeLimit);
-    $plan = $user === null ? 'Preview' : ($isPaid ? 'Paid' : 'Free');
-    return ['mode' => 'live', 'scopeKey' => $scopeKey, 'user' => $user, 'credits' => mm_credits_meta($used, $limit, $plan)];
+    return ['mode' => 'live', 'scopeKey' => $scopeKey, 'user' => $user, 'credits' => mm_credits_status($user)];
 }
 
 /**
@@ -682,27 +702,40 @@ function mm_credits_status(?array $user = null): array {
     if ($user === null) {
         $user = mm_current_user();
     }
-    $paygPerCredit = round((float) mm_env_value('AI_COST_PER_CREDIT_USD', '0.002') * 2, 4);
-    $used = mm_get_ai_usage_today(mm_ai_scope_key([]));
+    $perCredit = mm_ai_per_credit_usd();
+    $paygPerCredit = round($perCredit * 2, 4);
+
     if ($user === null) {
         $limit = max(1, (int) mm_env_value('ANON_DAILY_AI_LIMIT', '3'));
-        $plan = 'Preview';
-        $payg = false;
-    } elseif (mm_is_paid_user($user)) {
-        $limit = max(1, (int) mm_env_value('PAID_DAILY_CREDITS_LIMIT', '300'));
-        $plan = 'Paid';
-        $payg = $used >= $limit;
-    } else {
-        $limit = max(1, (int) mm_env_value('FREE_DAILY_MESSAGES_LIMIT', '20'));
-        $plan = 'Free';
-        $payg = false;
+        $used = mm_get_ai_usage_today(mm_ai_scope_key([]));
+        return ['signedIn' => false, 'plan' => 'Preview', 'kind' => 'daily',
+                'left' => max(0, $limit - $used), 'limit' => $limit, 'used' => $used,
+                'payg' => false, 'paygPerCredit' => $paygPerCredit];
     }
+
+    $tier = mm_plan_tier($user);
+    $cap = mm_tier_cap_usd($tier);
+    if ($tier === 'free') {
+        $spent = (float) ($user['ai_spend_usd'] ?? 0);
+        $kind = 'lifetime';
+        $payg = false;
+    } else {
+        $monthKey = gmdate('Y-m');
+        $spent = ((string) ($user['ai_spend_month_key'] ?? '') === $monthKey) ? (float) ($user['ai_spend_month'] ?? 0) : 0.0;
+        $kind = 'monthly';
+        $payg = $spent >= $cap;
+    }
+    $remaining = max(0, $cap - $spent);
     return [
-        'signedIn' => $user !== null,
-        'plan' => $plan,
-        'used' => $used,
-        'limit' => $limit,
-        'left' => max(0, $limit - $used),
+        'signedIn' => true,
+        'plan' => ucfirst($tier),
+        'kind' => $kind,
+        'capUsd' => round($cap, 2),
+        'spentUsd' => round($spent, 4),
+        'remainingUsd' => round($remaining, 4),
+        'left' => (int) floor($remaining / max($perCredit, 0.0001)),
+        'limit' => (int) floor($cap / max($perCredit, 0.0001)),
+        'used' => (int) floor($spent / max($perCredit, 0.0001)),
         'payg' => $payg,
         'paygPerCredit' => $paygPerCredit,
     ];

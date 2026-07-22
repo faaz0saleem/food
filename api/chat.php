@@ -145,6 +145,10 @@ try {
     mm_track_visit((string) ($body['visitorId'] ?? ''));
     mm_record_chat($body, $reply, implode(', ', $engineNames), $modelUsed);
     mm_record_ai_usage((string) ($budget['scopeKey'] ?? mm_ai_scope_key($body)), isset($budget['user']['id']) ? (int) $budget['user']['id'] : null, $usageCost);
+    // Charge the user's lifetime/monthly $ budget (owner cost of this call).
+    if (isset($budget['user']) && is_array($budget['user'])) {
+        mm_record_ai_spend($budget['user'], $usageCost * mm_ai_per_credit_usd());
+    }
 } catch (Throwable $error) {
     // Do not fail chat delivery if analytics storage is unavailable.
 }

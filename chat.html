@@ -778,9 +778,10 @@
     const directive = STUDY_DIRECTIVES[studyMode] || '';
     const { reply, engine, ownerHint, credits, payg } = await fetchAIResponse(directive + text, subject, { ...options, attachments, signal: controller.signal });
     if (credits && modelBadge) {
+      const scope = credits.kind === 'lifetime' ? 'free credits left' : (credits.kind === 'monthly' ? 'credits left this month' : 'credits left today');
       modelBadge.textContent = payg
         ? `Pay-as-you-go · $${credits.paygPerCredit}/credit (${credits.plan})`
-        : `${credits.left} credits left today · ${credits.plan} plan`;
+        : `${credits.left} ${scope} · ${credits.plan} plan`;
     }
     // Keep the nav credits badge in sync after each message.
     if (window.HungterCredits) window.HungterCredits.refresh();
