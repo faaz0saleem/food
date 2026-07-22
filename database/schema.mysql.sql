@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS users (
   learning_style VARCHAR(60) DEFAULT 'Visual',
   level VARCHAR(60) DEFAULT 'Newbie',
   xp INT NOT NULL DEFAULT 0,
+  onboarded TINYINT NOT NULL DEFAULT 0,
+  avatar_color VARCHAR(20) NULL,
   plan_name VARCHAR(80),
   plan_price DECIMAL(10,2),
   plan_status VARCHAR(40) DEFAULT 'inactive',

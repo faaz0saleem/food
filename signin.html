@@ -75,7 +75,11 @@
         if (data.user.email) ls('mm_email', data.user.email);
         if (data.user.picture) ls('mm_avatar', data.user.picture);
       }
-      location.replace(data.isNew ? '/onboarding' : '/dashboard');
+      // Only send them to onboarding if they've never finished it — otherwise
+      // straight to the dashboard, so it's never shown twice.
+      const onboarded = data.onboarded || (data.user && data.user.onboarded);
+      ls('mm_onboarded', onboarded ? true : false);
+      location.replace(onboarded ? '/dashboard' : '/onboarding');
     } else {
       err.textContent = (data && data.error) ? data.error : 'Sign-in failed. Please try again.';
     }

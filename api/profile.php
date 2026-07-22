@@ -24,6 +24,12 @@ if (array_key_exists('level', $body)) {
 if (array_key_exists('xp', $body)) {
     $fields['xp'] = max(0, (int) $body['xp']);
 }
+if (array_key_exists('onboarded', $body)) {
+    $fields['onboarded'] = $body['onboarded'] ? 1 : 0;
+}
+if (array_key_exists('avatarColor', $body)) {
+    $fields['avatar_color'] = substr(trim((string) $body['avatarColor']), 0, 20);
+}
 
 $updated = mm_update_user_profile((int) $user['id'], $fields);
 if ($updated === null) {

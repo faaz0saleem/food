@@ -863,10 +863,26 @@
     lsSet('mm_milestones', [{ event: 'Completed onboarding 🎉', date: new Date().toLocaleDateString() }]);
     lsSet('mm_today_count', 0);
     lsSet('mm_theme', 'dark');
+    lsSet('mm_onboarded', true);
     getSessionId();
     if (window.HungterTrack) {
       window.HungterTrack.signupCompleted('onboarding');
     }
+
+    // Persist completion to the account so onboarding is never shown again,
+    // on any device. Best-effort — the local flag already covers this session.
+    try {
+      const tok = JSON.parse(localStorage.getItem('mm_auth_token') || 'null');
+      if (tok) {
+        const host = location.hostname;
+        const base = host.startsWith('admin.') ? location.protocol + '//' + host.replace(/^admin\./, '') : '';
+        fetch(base + '/api/profile.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tok },
+          body: JSON.stringify({ onboarded: true, name: state.name, learningStyle: state.style, avatarColor: state.avatarColor }),
+        }).catch(() => {});
+      }
+    } catch (e) {}
 
     // populate completion screen
     $('totalXpDisplay').innerHTML = `${state.xp} XP<span>earned this setup</span>`;
@@ -888,6 +904,20 @@
     updateHud();
     goTo(5);
   }
+
+  // Short path: if we already know the learner's name (e.g. they just signed in
+  // with Google), skip the name + demographics steps and go straight to the two
+  // quick personalization picks — learning style, then subject.
+  (function shortcutForKnownUsers() {
+    const existing = (lsGet('mm_name', '') || '').trim();
+    if (!existing) return;
+    state.name = existing;
+    if (nameInput) { nameInput.value = existing; updateAvatar(); }
+    state.age = state.age || 'Adult';
+    state.grade = state.grade || 'Self-learner';
+    const b3 = $('back3'); if (b3) b3.style.display = 'none';
+    goTo(3);
+  })();
 
 })();
 </script>

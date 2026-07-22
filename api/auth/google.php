@@ -85,9 +85,11 @@ try {
         ]);
         $userId = mm_last_insert_id($db, 'users_id_seq');
         $isNew = true;
+        $onboarded = false;
     } else {
         $userId = (int) $user['id'];
         $isNew = false;
+        $onboarded = (bool) ((int) ($user['onboarded'] ?? 0));
         // Keep the display name fresh.
         if (trim((string) ($user['name'] ?? '')) === '' && $name !== '') {
             $db->prepare('UPDATE users SET name = :n WHERE id = :id')->execute([':n' => substr($name, 0, 120), ':id' => $userId]);
@@ -99,7 +101,9 @@ try {
         'status' => 'ok',
         'token' => $token,
         'isNew' => $isNew,
-        'user' => ['id' => $userId, 'name' => $name, 'email' => $email, 'picture' => $picture],
+        // The client sends users to onboarding only when they haven't finished it.
+        'onboarded' => $onboarded,
+        'user' => ['id' => $userId, 'name' => $name, 'email' => $email, 'picture' => $picture, 'onboarded' => $onboarded],
     ]);
 } catch (Throwable $e) {
     mm_json_response(500, ['error' => 'Sign-in failed: ' . $e->getMessage()]);

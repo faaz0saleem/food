@@ -141,6 +141,9 @@ function applyServerUser(user) {
   lsSet('mm_plan_price', Number(user.planPrice || 0));
   lsSet('mm_plan_status', user.planStatus || 'inactive');
   lsSet('mm_plan_started', user.planStarted || '');
+  if (typeof user.onboarded !== 'undefined') {
+    lsSet('mm_onboarded', Boolean(user.onboarded));
+  }
   if (user.visitorId) {
     lsSet('mm_sessionId', user.visitorId);
   }
@@ -859,9 +862,15 @@ async function initPage() {
   // paid gating happens per-feature on the server (e.g. /api/guess-paper), not
   // by locking every page behind the checkout simulation.
   const appPages = ['dashboard', 'learn', 'subjects', 'quiz', 'progress', 'chat', 'codex', 'flashcards'];
-  const hasProfile = Boolean((lsGet('mm_name', '') || '').trim());
+  // Signed-in users are sent through onboarding only until they finish it once
+  // (tracked server-side as `onboarded`). Anonymous users fall back to whether
+  // they've set a name locally. Either way it never shows twice.
+  const signedIn = Boolean(getAuthToken());
+  const onboarded = signedIn
+    ? lsGet('mm_onboarded', false) === true
+    : Boolean((lsGet('mm_name', '') || '').trim());
 
-  if (pageId && appPages.includes(pageId) && !hasProfile) {
+  if (pageId && appPages.includes(pageId) && !onboarded) {
     window.location.href = 'onboarding';
     return;
   }

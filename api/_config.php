@@ -363,6 +363,8 @@ function mm_ensure_runtime_tables(): void {
                 try { $db->exec($schema); } catch (Throwable $e) {}
             }
         }
+        try { $db->exec('ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarded smallint not null default 0'); } catch (Throwable $e) {}
+        try { $db->exec('ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_color varchar(20)'); } catch (Throwable $e) {}
         $initialized = true;
         return;
     }
@@ -379,6 +381,9 @@ function mm_ensure_runtime_tables(): void {
             try { $db->exec($schema); } catch (Throwable $e) { mm_db_last_error('Schema import failed: ' . $e->getMessage()); }
         }
     }
+    // Add newer columns to an existing users table (no-op / caught if present).
+    try { $db->exec('ALTER TABLE users ADD COLUMN onboarded TINYINT NOT NULL DEFAULT 0'); } catch (Throwable $e) {}
+    try { $db->exec('ALTER TABLE users ADD COLUMN avatar_color VARCHAR(20) NULL'); } catch (Throwable $e) {}
 
     // Belt-and-braces: create the runtime tables individually too (idempotent),
     // wrapped so a provisioning failure never 500s the request.
@@ -827,6 +832,30 @@ function mm_create_user(string $name, string $email, string $password, string $l
     return $user;
 }
 
+// Update whitelisted columns on a user and return the fresh row. Was referenced
+// by profile.php / subscription.php but never defined (saving a profile 500'd).
+function mm_update_user_profile(int $userId, array $fields): ?array {
+    $db = mm_db();
+    if ($db === null || $userId <= 0) {
+        return null;
+    }
+    $allowed = ['name', 'learning_style', 'level', 'xp', 'onboarded', 'plan_name', 'plan_price', 'plan_status', 'plan_started', 'avatar_color'];
+    $set = [];
+    $params = [':id' => $userId];
+    foreach ($fields as $col => $val) {
+        if (!in_array($col, $allowed, true)) {
+            continue;
+        }
+        $set[] = "$col = :$col";
+        $params[":$col"] = $val;
+    }
+    if ($set) {
+        $sql = 'UPDATE users SET ' . implode(', ', $set) . ', updated_at = UTC_TIMESTAMP() WHERE id = :id';
+        try { $db->prepare($sql)->execute($params); } catch (Throwable $e) { return null; }
+    }
+    return mm_find_user_by_id($userId);
+}
+
 function mm_public_user(array $user): array {
     return [
         'visitorId' => (string) ($user['visitor_id'] ?? ''),
@@ -835,6 +864,7 @@ function mm_public_user(array $user): array {
         'learningStyle' => (string) ($user['learning_style'] ?? 'Visual'),
         'level' => (string) ($user['level'] ?? 'Newbie'),
         'xp' => (int) ($user['xp'] ?? 0),
+        'onboarded' => (bool) ((int) ($user['onboarded'] ?? 0)),
         'planName' => (string) ($user['plan_name'] ?? ''),
         'planPrice' => (float) ($user['plan_price'] ?? 0),
         'planStatus' => (string) ($user['plan_status'] ?? 'inactive'),
