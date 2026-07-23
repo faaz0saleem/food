@@ -31,6 +31,72 @@ if ('serviceWorker' in navigator) {
     }
   })();
 
+  // ── Plan gate — paid-only features blur behind an upgrade wall for Free ──────
+  // Rank: free < student < pro. Pages list the minimum plan they need.
+  const PAID_PAGES = { 'codex': 'pro', 'guess-papers': 'pro' };
+  const PLAN_RANK = { preview: 0, free: 0, student: 1, pro: 2, family: 2, school: 2 };
+  const FEATURE_LABEL = { 'codex': 'the Codex AI app builder', 'guess-papers': 'Solvable Guess Papers' };
+  (function planGate() {
+    const file = (location.pathname.split('/').pop() || '').replace(/\.html$/, '').toLowerCase();
+    const need = PAID_PAGES[file];
+    if (!need) return;
+
+    function overlay(inner, blurOnly) {
+      let o = document.getElementById('planGate');
+      if (!o) { o = document.createElement('div'); o.id = 'planGate'; document.body.appendChild(o); }
+      o.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(4,6,15,0.6);-webkit-backdrop-filter:blur(9px);backdrop-filter:blur(9px);';
+      o.innerHTML = inner;
+      return o;
+    }
+    // Blur immediately so the locked content is never usable while we check.
+    overlay('<div style="color:#A9B2D6;font-family:sans-serif;">Checking your plan…</div>');
+
+    function showUpgrade() {
+      const label = FEATURE_LABEL[file] || 'this feature';
+      overlay('<div style="max-width:430px;text-align:center;background:var(--surface-solid,#0D1428);border:1px solid var(--border-glow,rgba(200,255,77,0.35));border-radius:18px;padding:34px 28px;box-shadow:0 8px 32px rgba(0,0,0,0.5);">'
+        + '<div style="font-size:2.6rem;">🔒</div>'
+        + '<h2 style="font-family:var(--font-display,sans-serif);margin:12px 0 8px;color:var(--ink,#F2F5FF);">A Pro feature</h2>'
+        + '<p style="color:var(--ink-soft,#A9B2D6);line-height:1.6;margin:0 0 20px;">' + label + ' is included with <strong style="color:var(--cyan,#4DF0FF)">Pro</strong>. Upgrade to unlock it — plus $30/month of AI.</p>'
+        + '<a href="/checkout?plan=pro" style="display:inline-block;background:var(--gradient-brand,linear-gradient(120deg,#C8FF4D,#4DF0FF));color:#070B1A;font-family:var(--font-display,sans-serif);font-weight:700;border-radius:999px;padding:13px 30px;text-decoration:none;">Upgrade to Pro →</a>'
+        + '<div style="margin-top:16px;"><a href="/dashboard" style="color:var(--ink-faint,#5F6A94);font-size:0.86rem;text-decoration:none;">← Back to dashboard</a></div>'
+        + '</div>');
+    }
+
+    let token = null;
+    try { token = JSON.parse(localStorage.getItem('mm_auth_token') || 'null'); } catch (e) {}
+    fetch(apiPath('/api/credits.php'), { headers: token ? { Authorization: 'Bearer ' + token } : {} })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        const plan = String((d && d.plan) || 'free').toLowerCase();
+        if ((PLAN_RANK[plan] || 0) >= PLAN_RANK[need]) {
+          const o = document.getElementById('planGate'); if (o) o.remove(); // has access
+        } else { showUpgrade(); }
+      })
+      .catch(showUpgrade);
+  })();
+
+  // Reusable plan check + upgrade wall for in-page actions (e.g. All-4 mode).
+  window.HungterPlan = {
+    check: function (need) {
+      let token = null; try { token = JSON.parse(localStorage.getItem('mm_auth_token') || 'null'); } catch (e) {}
+      return fetch(apiPath('/api/credits.php'), { headers: token ? { Authorization: 'Bearer ' + token } : {} })
+        .then(function (r) { return r.json(); })
+        .then(function (d) { return (PLAN_RANK[String((d && d.plan) || 'free').toLowerCase()] || 0) >= (PLAN_RANK[need] || 0); })
+        .catch(function () { return false; });
+    },
+    wall: function (need, label) {
+      const planName = need === 'pro' ? 'Pro' : 'Student';
+      let o = document.getElementById('planGate');
+      if (!o) { o = document.createElement('div'); o.id = 'planGate'; document.body.appendChild(o); }
+      o.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(4,6,15,0.6);-webkit-backdrop-filter:blur(9px);backdrop-filter:blur(9px);';
+      o.innerHTML = '<div style="max-width:430px;text-align:center;background:var(--surface-solid,#0D1428);border:1px solid var(--border-glow,rgba(200,255,77,0.35));border-radius:18px;padding:34px 28px;box-shadow:0 8px 32px rgba(0,0,0,0.5);">'
+        + '<div style="font-size:2.6rem;">🔒</div><h2 style="font-family:var(--font-display,sans-serif);color:var(--ink,#F2F5FF);margin:12px 0 8px;">A ' + planName + ' feature</h2>'
+        + '<p style="color:var(--ink-soft,#A9B2D6);line-height:1.6;">' + (label || 'This feature') + ' is included with ' + planName + '. Upgrade to unlock it.</p>'
+        + '<a href="/checkout?plan=' + need + '" style="display:inline-block;margin-top:16px;background:var(--gradient-brand,linear-gradient(120deg,#C8FF4D,#4DF0FF));color:#070B1A;font-weight:700;border-radius:999px;padding:13px 30px;text-decoration:none;font-family:var(--font-display,sans-serif);">Upgrade →</a>'
+        + '<div style="margin-top:14px;"><button type="button" onclick="var g=document.getElementById(\'planGate\');if(g)g.remove();" style="background:none;border:none;color:var(--ink-faint,#5F6A94);cursor:pointer;font-size:0.86rem;">Maybe later</button></div></div>';
+    }
+  };
+
   const NAV_LINKS = [
     { label: '💬 Chat', href: '/chat' },
     { label: '⚡ Codex', href: '/codex' },

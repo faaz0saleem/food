@@ -31,6 +31,13 @@
   .auth .fine a { color: var(--ink-soft); }
   .spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--lime); border-radius: 50%; animation: spin 0.9s linear infinite; display: none; margin: 12px auto 0; }
   @keyframes spin { to { transform: rotate(360deg); } }
+  .divider { display: flex; align-items: center; gap: 10px; color: var(--ink-faint); font-size: 0.76rem; margin: 20px 0 14px; }
+  .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border-soft); }
+  .mform input { width: 100%; box-sizing: border-box; border: 1px solid var(--border); background: var(--surface-2); color: var(--ink); border-radius: 10px; padding: 12px 13px; margin: 6px 0; font-family: var(--font-body); font-size: 0.92rem; }
+  .mform input:focus { outline: none; border-color: var(--cyan); }
+  .mbtn { width: 100%; border: none; border-radius: 999px; padding: 12px; margin-top: 8px; font-family: var(--font-display); font-weight: 700; background: var(--gradient-brand); color: var(--bg-deep); cursor: pointer; box-shadow: var(--glow-lime); }
+  .mtoggle { font-size: 0.82rem; color: var(--ink-soft); margin-top: 12px; }
+  .mtoggle a { color: var(--cyan); cursor: pointer; text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -45,6 +52,16 @@
       <div class="g_id_signin" data-type="standard" data-theme="filled_black" data-size="large" data-shape="pill" data-text="continue_with" data-logo_alignment="center"></div>
     </div>
     <div class="spinner" id="spin"></div>
+
+    <div class="divider">or use email</div>
+    <div class="mform">
+      <input id="mName" type="text" placeholder="Your name" autocomplete="name" style="display:none;">
+      <input id="mEmail" type="email" placeholder="Email" autocomplete="email">
+      <input id="mPass" type="password" placeholder="Password" autocomplete="current-password">
+      <button class="mbtn" id="mSubmit" type="button">Sign in</button>
+      <p class="mtoggle" id="mToggle">New to Hungter? <a id="mToggleLink">Create an account</a></p>
+    </div>
+
     <p class="err" id="err"></p>
     <p class="fine">By continuing you agree to our <a href="/terms">Terms</a> and <a href="/privacy">Privacy Policy</a>.</p>
   </div>
@@ -71,24 +88,66 @@
       } catch (e) {}
     }
     spin.style.display = 'none';
-    if (data && data.token) {
-      ls('mm_auth_token', data.token);
-      ls('mm_authed', true);
-      if (data.user) {
-        if (data.user.name) ls('mm_name', data.user.name);
-        if (data.user.email) ls('mm_email', data.user.email);
-        if (data.user.picture) ls('mm_avatar', data.user.picture);
-      }
-      // Only send them to onboarding if they've never finished it — otherwise
-      // straight to the dashboard, so it's never shown twice.
-      const onboarded = data.onboarded || (data.user && data.user.onboarded);
-      ls('mm_onboarded', onboarded ? true : false);
-      location.replace(onboarded ? '/dashboard' : '/onboarding');
-    } else {
+    if (!applyAuth(data)) {
       err.textContent = (data && data.error) ? data.error : 'Sign-in failed. Please try again.';
     }
   }
   window.onGoogleCredential = onGoogleCredential;
+
+  // Store the session and route — shared by Google + email/password sign-in.
+  function applyAuth(data) {
+    if (!data || !data.token) return false;
+    ls('mm_auth_token', data.token);
+    ls('mm_authed', true);
+    if (data.user) {
+      if (data.user.name) ls('mm_name', data.user.name);
+      if (data.user.email) ls('mm_email', data.user.email);
+      if (data.user.picture) ls('mm_avatar', data.user.picture);
+      if (data.user.planName) ls('mm_plan', data.user.planName);
+      if (data.user.planStatus) ls('mm_plan_status', data.user.planStatus);
+    }
+    var onboarded = data.onboarded || (data.user && data.user.onboarded);
+    ls('mm_onboarded', onboarded ? true : false);
+    location.replace(onboarded ? '/dashboard' : '/onboarding');
+    return true;
+  }
+
+  // ── Manual email / password (accounts are stored in the database) ───────────
+  var mMode = 'login';
+  var mName = document.getElementById('mName'), mEmail = document.getElementById('mEmail'),
+      mPass = document.getElementById('mPass'), mSubmit = document.getElementById('mSubmit');
+  document.getElementById('mToggle').addEventListener('click', function (e) {
+    if (e.target.id !== 'mToggleLink') return;
+    mMode = mMode === 'login' ? 'signup' : 'login';
+    mName.style.display = mMode === 'signup' ? 'block' : 'none';
+    mSubmit.textContent = mMode === 'signup' ? 'Create account' : 'Sign in';
+    mPass.setAttribute('autocomplete', mMode === 'signup' ? 'new-password' : 'current-password');
+    this.innerHTML = mMode === 'signup'
+      ? 'Already have an account? <a id="mToggleLink">Sign in</a>'
+      : 'New to Hungter? <a id="mToggleLink">Create an account</a>';
+  });
+  async function manualAuth() {
+    document.getElementById('err').textContent = '';
+    var email = mEmail.value.trim(), pass = mPass.value, name = mName.value.trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { document.getElementById('err').textContent = 'Please enter a valid email.'; return; }
+    if (pass.length < 8) { document.getElementById('err').textContent = 'Password must be at least 8 characters.'; return; }
+    if (mMode === 'signup' && !name) { document.getElementById('err').textContent = 'Please enter your name.'; return; }
+    document.getElementById('spin').style.display = 'block'; mSubmit.disabled = true;
+    var path = mMode === 'signup' ? '/api/auth/signup' : '/api/auth/login';
+    var payload = mMode === 'signup' ? { name: name, email: email, password: pass } : { email: email, password: pass };
+    var data = null, urls = [apiBase() + path + '.php', apiBase() + path];
+    for (var i = 0; i < urls.length; i++) {
+      try {
+        var r = await fetch(urls[i], { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        var ct = String(r.headers.get('content-type') || '');
+        if (r.ok || ct.indexOf('application/json') >= 0) { data = await r.json(); break; }
+      } catch (e) {}
+    }
+    document.getElementById('spin').style.display = 'none'; mSubmit.disabled = false;
+    if (!applyAuth(data)) { document.getElementById('err').textContent = (data && data.error) ? data.error : 'Could not sign in. Please try again.'; }
+  }
+  mSubmit.addEventListener('click', manualAuth);
+  mPass.addEventListener('keydown', function (e) { if (e.key === 'Enter') manualAuth(); });
 </script>
 </body>
 </html>

@@ -818,7 +818,12 @@
   }
 
   document.querySelectorAll('.engine-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
+      // ⚡ All-4 is a Student+ feature — gate it behind the upgrade wall.
+      if (btn.dataset.engine === 'all' && window.HungterPlan) {
+        const ok = await window.HungterPlan.check('student');
+        if (!ok) { window.HungterPlan.wall('student', '⚡ All-4 compare mode'); return; }
+      }
       selectedEngine = btn.dataset.engine;
       updateEngineButtons();
     });

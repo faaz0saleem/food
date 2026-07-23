@@ -81,7 +81,6 @@ $bookJson = json_encode(['id' => $book['id'], 'title' => $title, 'subject' => $b
 <script type="application/ld+json"><?php echo $ld; ?></script>
 </head>
 <body>
-<nav class="site-nav" id="siteNav"></nav>
 <div class="wrap">
   <div class="crumbs"><a href="/">Home</a> / <a href="/books">Books</a> / <span><?php echo bv_e($title); ?></span></div>
   <div id="productView">
