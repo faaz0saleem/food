@@ -1,6 +1,6 @@
 // Hungter Service Worker — network-first so deploys show up immediately,
 // cache only as an offline fallback. Bump CACHE on every deploy.
-const CACHE = 'hungter-v20260740';
+const CACHE = 'hungter-v20260741';
 const SHELL = [
   '/',
   '/chat',

@@ -20,6 +20,12 @@ RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^api/([a-zA-Z0-9_-]+)$ api/$1.php [L]
 
+# Book product pages: a static /books/<id>.html wins when present (the seed
+# catalog); admin-added books with no static file fall through to the dynamic
+# renderer so /books/<id> always resolves.
+RewriteCond %{DOCUMENT_ROOT}/books/$1.html !-f
+RewriteRule ^books/([a-zA-Z0-9_-]+)/?$ book-view.php?id=$1 [L,QSA]
+
 # Clean URLs, like every standard site: /about serves about.html, and
 # old /about.html links 301 to /about so one canonical URL exists.
 RewriteCond %{THE_REQUEST} \s/([^\s?]+)\.html[\s?]

@@ -516,6 +516,79 @@ if ($method === 'POST' && $action === 'reset_usage') {
     exit;
 }
 
+// ── Store books: list / save / delete (admin-managed catalog) ────────────────
+if ($action === 'book_list') {
+    $rows = [];
+    if ($db !== null) {
+        try {
+            $stmt = $db->query('SELECT id, title, author, subject, section, price, isbn, created_at FROM store_books ORDER BY created_at DESC');
+            while ($r = $stmt->fetch(PDO::FETCH_ASSOC)) { $rows[] = $r; }
+        } catch (Throwable $e) {}
+    }
+    mm_json_response(200, ['status' => 'ok', 'books' => $rows]);
+    exit;
+}
+
+if ($method === 'POST' && $action === 'book_save') {
+    if ($db === null) { mm_json_response(503, ['error' => 'Database offline — connect the DB to manage books.']); exit; }
+    $title = trim((string) ($body['title'] ?? ''));
+    if ($title === '') { mm_json_response(400, ['error' => 'Title is required.']); exit; }
+    $id = trim((string) ($body['id'] ?? ''));
+    if ($id === '') {
+        $id = strtolower(preg_replace('/[^a-z0-9]+/i', '-', $title));
+        $id = trim(substr($id, 0, 90), '-') . '-' . substr(bin2hex(random_bytes(2)), 0, 4);
+    } else {
+        $id = strtolower(preg_replace('/[^a-z0-9\-]+/i', '-', $id));
+    }
+    $price = max(0, (float) ($body['price'] ?? 0));
+    $topics = $body['topics'] ?? [];
+    if (is_string($topics)) { $topics = array_values(array_filter(array_map('trim', explode(',', $topics)))); }
+    $topicsJson = json_encode(is_array($topics) ? array_slice($topics, 0, 30) : []);
+    $cover = (string) ($body['coverData'] ?? '');
+    // Keep cover payload sane (a data: URL up to ~1.5MB base64).
+    if ($cover !== '' && (strlen($cover) > 2200000 || strpos($cover, 'data:image/') !== 0)) {
+        mm_json_response(400, ['error' => 'Cover image must be an image under ~1.5MB.']);
+        exit;
+    }
+    try {
+        // Upsert.
+        $exists = false;
+        try { $chk = $db->prepare('SELECT 1 FROM store_books WHERE id = :id'); $chk->execute([':id' => $id]); $exists = (bool) $chk->fetchColumn(); } catch (Throwable $e) {}
+        $params = [
+            ':id' => $id, ':title' => substr($title, 0, 255), ':author' => substr((string) ($body['author'] ?? ''), 0, 255),
+            ':subject' => substr((string) ($body['subject'] ?? ''), 0, 120), ':section' => substr((string) ($body['section'] ?? ''), 0, 120),
+            ':price' => $price, ':isbn' => substr((string) ($body['isbn'] ?? ''), 0, 40),
+            ':description' => (string) ($body['description'] ?? ''), ':topics_json' => $topicsJson,
+        ];
+        if ($exists) {
+            $sql = 'UPDATE store_books SET title=:title, author=:author, subject=:subject, section=:section, price=:price, isbn=:isbn, description=:description, topics_json=:topics_json';
+            if ($cover !== '') { $sql .= ', cover_data=:cover'; $params[':cover'] = $cover; }
+            $sql .= ' WHERE id=:id';
+            $db->prepare($sql)->execute($params);
+        } else {
+            $params[':cover'] = $cover;
+            $db->prepare('INSERT INTO store_books (id, title, author, subject, section, price, isbn, description, topics_json, cover_data, created_at)
+                          VALUES (:id, :title, :author, :subject, :section, :price, :isbn, :description, :topics_json, :cover, ' . (mm_db_driver() === 'pgsql' ? 'now()' : 'UTC_TIMESTAMP()') . ')')->execute($params);
+        }
+        mm_json_response(200, ['status' => 'ok', 'id' => $id, 'url' => '/books/' . $id, 'message' => 'Saved “' . $title . '”. Live at /books/' . $id]);
+    } catch (Throwable $e) {
+        mm_json_response(500, ['error' => 'Could not save the book: ' . $e->getMessage()]);
+    }
+    exit;
+}
+
+if ($method === 'POST' && $action === 'book_delete') {
+    if ($db === null) { mm_json_response(503, ['error' => 'Database offline.']); exit; }
+    $id = trim((string) ($body['id'] ?? ''));
+    if ($id === '') { mm_json_response(400, ['error' => 'Need a book id.']); exit; }
+    try {
+        $stmt = $db->prepare('DELETE FROM store_books WHERE id = :id');
+        $stmt->execute([':id' => $id]);
+        mm_json_response(200, ['status' => 'ok', 'message' => 'Deleted book “' . $id . '”.', 'deleted' => $stmt->rowCount()]);
+    } catch (Throwable $e) { mm_json_response(500, ['error' => $e->getMessage()]); }
+    exit;
+}
+
 // Default: overview
 $summary = mm_get_admin_summary();
 $revenue = ['mrr' => 0.0, 'payingUsers' => 0, 'totalUsers' => 0, 'bookRevenue' => 0.0];

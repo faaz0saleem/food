@@ -80,7 +80,7 @@
   });
 
   function renderRelated() {
-    fetch('/data/books.json').then(function (r) { return r.json(); }).then(function (list) {
+    fetch('/api/books.php').catch(function(){return fetch('/data/books.json');}).then(function (r) { return r.json(); }).then(function (list) {
       var rel = (list || []).filter(function (b) { return b.id !== book.id && (b.subject === book.subject || b.section === book.section); }).slice(0, 6);
       if (!rel.length || !$('relatedWrap')) return;
       $('relatedWrap').style.display = 'block';

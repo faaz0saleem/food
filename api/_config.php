@@ -369,6 +369,11 @@ function mm_ensure_runtime_tables(): void {
         try { $db->exec('ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_spend_usd numeric(10,5) not null default 0'); } catch (Throwable $e) {}
         try { $db->exec('ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_spend_month numeric(10,5) not null default 0'); } catch (Throwable $e) {}
         try { $db->exec('ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_spend_month_key varchar(7)'); } catch (Throwable $e) {}
+        try { $db->exec('CREATE TABLE IF NOT EXISTS store_books (
+            id varchar(120) primary key, title varchar(255) not null, author varchar(255),
+            subject varchar(120), section varchar(120), price numeric(10,2) not null default 0,
+            isbn varchar(40), description text, topics_json text, cover_data text,
+            created_at timestamptz not null default now())'); } catch (Throwable $e) {}
         $initialized = true;
         return;
     }
@@ -400,6 +405,20 @@ function mm_ensure_runtime_tables(): void {
         'ALTER TABLE book_orders ADD COLUMN quantity INT NOT NULL DEFAULT 1',
         'ALTER TABLE book_orders ADD COLUMN includes_plan VARCHAR(40) NULL',
     ] as $sql) { try { $db->exec($sql); } catch (Throwable $e) {} }
+    // Admin-added store books (the static catalog stays in data/books.json).
+    try { $db->exec("CREATE TABLE IF NOT EXISTS store_books (
+        id VARCHAR(120) NOT NULL PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        author VARCHAR(255) NULL,
+        subject VARCHAR(120) NULL,
+        section VARCHAR(120) NULL,
+        price DECIMAL(10,2) NOT NULL DEFAULT 0,
+        isbn VARCHAR(40) NULL,
+        description TEXT NULL,
+        topics_json TEXT NULL,
+        cover_data LONGTEXT NULL,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"); } catch (Throwable $e) {}
 
     // Belt-and-braces: create the runtime tables individually too (idempotent),
     // wrapped so a provisioning failure never 500s the request.

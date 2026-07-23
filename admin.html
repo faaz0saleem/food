@@ -89,6 +89,7 @@
           <button class="tab on" data-t="overview">Overview</button>
           <button class="tab" data-t="website">Analytics</button>
           <button class="tab" data-t="users">Users</button>
+          <button class="tab" data-t="books">Books</button>
           <button class="tab" data-t="access">Access &amp; Admins</button>
           <button class="tab" data-t="geo">Geography</button>
         </div>
@@ -151,6 +152,40 @@
         </div>
         <p id="adminMsg" class="ok"></p>
         <div id="adminList" style="margin-top:12px;"></div>
+      </div>
+    </section>
+
+    <section id="v-books" class="hide">
+      <div class="card">
+        <h2>📚 Add / edit a book</h2>
+        <p class="muted">Fill this in and Save — the book goes live instantly at <code>/books/&lt;id&gt;</code>, shows in the store, and includes a Student subscription like every book.</p>
+        <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;">
+          <div style="flex:0 0 150px;text-align:center;">
+            <img id="bkCoverPreview" alt="cover" style="width:150px;height:200px;object-fit:cover;border-radius:8px;border:1px solid var(--border);background:var(--surface-2);display:block;">
+            <label class="btn ghost sm" style="display:inline-block;margin-top:8px;cursor:pointer;">Upload image<input id="bkCover" type="file" accept="image/*" style="display:none;"></label>
+          </div>
+          <div style="flex:1;min-width:260px;">
+            <div class="row"><input id="bkTitle" placeholder="Book title *"></div>
+            <div class="row"><input id="bkAuthor" placeholder="Author / publisher"></div>
+            <div class="row">
+              <input id="bkSubject" placeholder="Subject (e.g. Physics)">
+              <input id="bkSection" placeholder="Section (e.g. A-Level)">
+            </div>
+            <div class="row">
+              <input id="bkPrice" type="number" step="0.01" min="0" placeholder="Price (USD) *">
+              <input id="bkIsbn" placeholder="ISBN">
+            </div>
+            <div class="row"><input id="bkId" placeholder="Custom URL slug (optional — auto from title)"></div>
+            <div class="row"><input id="bkTopics" placeholder="Topics, comma separated (optional)"></div>
+            <div class="row"><textarea id="bkDesc" placeholder="Description" style="flex:1;min-width:160px;border:1px solid var(--border);background:var(--surface-2);color:var(--ink);border-radius:9px;padding:9px 11px;font-family:var(--font-body);min-height:70px;"></textarea></div>
+            <div class="row"><button class="btn" id="bkSave">Save book</button><button class="btn ghost sm" id="bkClear">Clear</button></div>
+            <p id="bkMsg" class="ok"></p>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Your added books</h2>
+        <div class="scroll"><table><thead><tr><th>Title</th><th>Subject</th><th>Price</th><th>URL</th><th></th></tr></thead><tbody id="bkRows"></tbody></table></div>
       </div>
     </section>
 
@@ -375,10 +410,11 @@
   function show(view) {
     try { localStorage.setItem('mm_admin_tab', view); } catch (e) {}
     document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('on', t.dataset.t === view));
-    ['overview', 'website', 'users', 'access', 'geo'].forEach((v) => $('v-' + v).classList.toggle('hide', v !== view));
+    ['overview', 'website', 'users', 'books', 'access', 'geo'].forEach((v) => $('v-' + v).classList.toggle('hide', v !== view));
     if (view === 'overview') loadOverview();
     if (view === 'website') loadWebsite();
     if (view === 'users') loadUsers();
+    if (view === 'books') loadBooks();
     if (view === 'access') loadAdmins();
     if (view === 'geo') loadGeo();
   }
@@ -494,6 +530,57 @@
   });
 
   $('gaRefresh').addEventListener('click', loadWebsite);
+
+  // ── Book manager ────────────────────────────────────────────────────────────
+  let bkCoverData = '';
+  async function loadBooks() {
+    try {
+      const { data } = await api('book_list');
+      const rows = (data && data.books) || [];
+      $('bkRows').innerHTML = rows.length ? rows.map((b) =>
+        '<tr><td>' + esc(b.title) + '</td><td>' + esc(b.subject || '—') + '</td><td>$' + Number(b.price || 0).toFixed(2) + '</td>' +
+        '<td><a href="/books/' + esc(b.id) + '" target="_blank" style="color:var(--cyan);">/books/' + esc(b.id) + '</a></td>' +
+        '<td><button class="btn danger sm" data-bkdel="' + esc(b.id) + '">Delete</button></td></tr>').join('') :
+        '<tr><td colspan="5" class="muted">No books added yet. Add one above.</td></tr>';
+    } catch (e) { $('bkRows').innerHTML = '<tr><td colspan="5" class="muted">Could not load books.</td></tr>'; }
+  }
+  $('bkCover').addEventListener('change', (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    if (f.size > 1500000) { $('bkMsg').className = 'err'; $('bkMsg').textContent = 'Image too large — please use one under 1.5MB.'; return; }
+    const rd = new FileReader();
+    rd.onload = () => { bkCoverData = rd.result; $('bkCoverPreview').src = rd.result; };
+    rd.readAsDataURL(f);
+  });
+  function clearBookForm() {
+    ['bkTitle', 'bkAuthor', 'bkSubject', 'bkSection', 'bkPrice', 'bkIsbn', 'bkId', 'bkTopics', 'bkDesc'].forEach((id) => { $(id).value = ''; });
+    bkCoverData = ''; $('bkCoverPreview').removeAttribute('src'); $('bkMsg').textContent = '';
+  }
+  $('bkClear').addEventListener('click', clearBookForm);
+  $('bkSave').addEventListener('click', async () => {
+    $('bkMsg').className = 'ok'; $('bkMsg').textContent = '';
+    const title = $('bkTitle').value.trim();
+    if (!title) { $('bkMsg').className = 'err'; $('bkMsg').textContent = 'Title is required.'; return; }
+    const body = {
+      title, author: $('bkAuthor').value.trim(), subject: $('bkSubject').value.trim(), section: $('bkSection').value.trim(),
+      price: Number($('bkPrice').value || 0), isbn: $('bkIsbn').value.trim(), id: $('bkId').value.trim(),
+      topics: $('bkTopics').value.trim(), description: $('bkDesc').value.trim(), coverData: bkCoverData,
+    };
+    $('bkSave').disabled = true; $('bkSave').textContent = 'Saving…';
+    try {
+      const { data } = await api('book_save', { method: 'POST', body });
+      if (data && data.id) { clearBookForm(); $('bkMsg').className = 'ok'; $('bkMsg').textContent = data.message || 'Saved.'; loadBooks(); }
+      else { $('bkMsg').className = 'err'; $('bkMsg').textContent = (data && data.error) || 'Could not save.'; }
+    } catch (e) { $('bkMsg').className = 'err'; $('bkMsg').textContent = 'Save failed.'; }
+    $('bkSave').disabled = false; $('bkSave').textContent = 'Save book';
+  });
+  $('bkRows').addEventListener('click', async (e) => {
+    const d = e.target.closest('[data-bkdel]');
+    if (!d) return;
+    if (!confirm('Delete this book from the store?')) return;
+    await api('book_delete', { method: 'POST', body: { id: d.dataset.bkdel } });
+    loadBooks();
+  });
 
   loadWhoami();
   if (token) enterPanel();

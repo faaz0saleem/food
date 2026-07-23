@@ -208,7 +208,7 @@
     }
 
     async function init() {
-      const res = await fetch('/data/books.json');
+      const res = await fetch('/api/books.php').catch(function(){return fetch('/data/books.json');});
       books = await res.json();
       populateFilters();
       render();

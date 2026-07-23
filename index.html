@@ -410,7 +410,7 @@
       var palette = ['#8B5CFF', '#4DF0FF', '#FF6B4A', '#C8FF4D', '#FF4DE3', '#4DD8FF', '#FFD14D'];
       function colorFor(s) { s = String(s || ''); var h = 0; for (var i = 0; i < s.length; i++) h = s.charCodeAt(i) + ((h << 5) - h); return palette[Math.abs(h) % palette.length]; }
       var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]; }); };
-      fetch('/data/books.json').then(function (r) { return r.json(); }).then(function (list) {
+      fetch('/api/books.php').catch(function(){return fetch('/data/books.json');}).then(function (r) { return r.json(); }).then(function (list) {
         var pick = (list || []).slice(0, 6);
         host.innerHTML = pick.map(function (b) {
           return '<a href="/books/' + encodeURIComponent(b.id) + '" style="text-decoration:none;color:var(--ink);background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:12px;display:block;">'
