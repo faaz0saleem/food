@@ -13,23 +13,11 @@ if ('serviceWorker' in navigator) {
     return `${API_BASE}${clean}`;
   }
 
-  // ── Auth gate — no one reaches the app without signing in with Google ───────
-  // Public pages (landing, sign-in, legal) stay open; everything else requires
-  // a session token stored at sign-in.
-  const PUBLIC_PAGES = ['', 'index', 'pricing', 'books', 'book', 'signin', 'signup', 'privacy', 'terms', 'faq', 'contact', 'about', 'complaints', '404', 'verify-email', 'reset-password',
-    'ai-tutor-chat', 'ai-quizzes', 'smart-flashcards', 'practice-papers', 'ai-app-builder', 'progress-tracking', 'ai-engines'];
-  (function authGate() {
-    const path = location.pathname.toLowerCase();
-    // The whole book store is public (storefront + every /books/<id> page).
-    if (path === '/books' || path.startsWith('/books/') || path.startsWith('/books.')) return;
-    const file = (location.pathname.split('/').pop() || '').replace(/\.html$/, '').toLowerCase();
-    if (PUBLIC_PAGES.includes(file)) return;
-    let token = null;
-    try { token = JSON.parse(localStorage.getItem('mm_auth_token') || 'null'); } catch (e) {}
-    if (!token) {
-      location.replace('/signin');
-    }
-  })();
+  // ── Auth gate DISABLED ──────────────────────────────────────────────────────
+  // Forced sign-in was removed: it was bouncing signed-in users back to /signin
+  // repeatedly (a redirect loop whenever the stored token wasn't seen). Pages are
+  // now open; signing in stays optional via the nav / CTA buttons. Do NOT
+  // re-enable a location.replace('/signin') here without fixing that loop first.
 
   // ── Plan gate — paid-only features blur behind an upgrade wall for Free ──────
   // Rank: free < student < pro. Pages list the minimum plan they need.
