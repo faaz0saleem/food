@@ -61,20 +61,47 @@ RedirectMatch 403 ^/phpMyAdmin-5\.2\.3-all-languages(?:/|$)
 # Avoid listing directories.
 Options -Indexes
 
-# Compression and caching.
+# Compression: shrink text responses (~70% smaller) for faster transfer.
 <IfModule mod_deflate.c>
-  AddOutputFilterByType DEFLATE text/html text/plain text/css application/javascript application/json image/svg+xml
+  AddOutputFilterByType DEFLATE text/html text/plain text/css text/xml
+  AddOutputFilterByType DEFLATE application/javascript application/x-javascript application/json
+  AddOutputFilterByType DEFLATE application/xml application/rss+xml image/svg+xml
+  AddOutputFilterByType DEFLATE application/manifest+json font/ttf font/otf
+</IfModule>
+<IfModule mod_brotli.c>
+  AddOutputFilterByType BROTLI_COMPRESS text/html text/css application/javascript application/json image/svg+xml application/xml
 </IfModule>
 
+# Caching: CSS/JS carry ?v= cache-busters so they're safe to cache for a week;
+# images/fonts rarely change so cache them for a year. HTML is never cached so
+# content updates are instant.
 <IfModule mod_expires.c>
   ExpiresActive On
   ExpiresByType text/html "access plus 0 seconds"
-  ExpiresByType text/css "access plus 1 hour"
-  ExpiresByType application/javascript "access plus 1 hour"
-  ExpiresByType image/svg+xml "access plus 30 days"
-  ExpiresByType image/png "access plus 30 days"
-  ExpiresByType image/jpeg "access plus 30 days"
-  ExpiresByType application/json "access plus 1 hour"
+  ExpiresByType text/css "access plus 7 days"
+  ExpiresByType application/javascript "access plus 7 days"
+  ExpiresByType application/x-javascript "access plus 7 days"
+  ExpiresByType image/svg+xml "access plus 1 year"
+  ExpiresByType image/png "access plus 1 year"
+  ExpiresByType image/jpeg "access plus 1 year"
+  ExpiresByType image/webp "access plus 1 year"
+  ExpiresByType image/gif "access plus 1 year"
+  ExpiresByType image/x-icon "access plus 1 year"
+  ExpiresByType font/woff "access plus 1 year"
+  ExpiresByType font/woff2 "access plus 1 year"
+  ExpiresByType application/font-woff "access plus 1 year"
+  ExpiresByType application/json "access plus 0 seconds"
+  ExpiresByType application/xml "access plus 1 hour"
+</IfModule>
+
+# Cache-Control for static assets: CSS/JS a week (version-busted), media a year.
+<IfModule mod_headers.c>
+  <FilesMatch "\.(css|js)$">
+    Header set Cache-Control "public, max-age=604800"
+  </FilesMatch>
+  <FilesMatch "\.(png|jpe?g|webp|gif|ico|woff2?|svg)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
 </IfModule>
 
 # Never let browsers cache the service worker itself.

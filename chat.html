@@ -40,9 +40,9 @@
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/marked@4/marked.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11.9.0/styles/github-dark.min.css">
 <script defer src="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11.9.0/highlight.min.js"></script>
+<!-- mermaid (~1MB) is loaded on demand only when an answer contains a diagram -->
 </head>
 <body data-page="chat" style="display:flex;flex-direction:column;min-height:100vh;">
 <div class="top-bar"><div class="top-bar-fill" id="topBar" style="width:0%"></div></div>
@@ -121,7 +121,7 @@
 <script src="/api-config.js?v=20260713"></script>
 <script src="/script.js?v=20260713"></script>
 <script src="/convos.js?v=20260723"></script>
-<script src="/layout.js?v=20260723" defer></script>
+<script src="/layout.js?v=20260724" defer></script>
 <script>
 (function () {
   ensureProfile();
@@ -448,6 +448,20 @@
   }
 
   let __mermaidReady = false;
+  let __mermaidLoading = null;
+  // Load mermaid only the first time a diagram is actually rendered.
+  function ensureMermaid() {
+    if (typeof mermaid !== 'undefined') return Promise.resolve(true);
+    if (__mermaidLoading) return __mermaidLoading;
+    __mermaidLoading = new Promise((resolve) => {
+      const sc = document.createElement('script');
+      sc.src = 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js';
+      sc.onload = () => resolve(true);
+      sc.onerror = () => resolve(false);
+      document.head.appendChild(sc);
+    });
+    return __mermaidLoading;
+  }
   function initMermaid() {
     if (__mermaidReady || typeof mermaid === 'undefined') return;
     try { mermaid.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'strict' }); __mermaidReady = true; } catch {}
@@ -485,7 +499,9 @@
       pre.appendChild(btn);
     });
     const blocks = container.querySelectorAll('code.language-mermaid');
-    if (blocks.length && typeof mermaid !== 'undefined') {
+    if (blocks.length) {
+      await ensureMermaid();
+      if (typeof mermaid === 'undefined') return;
       initMermaid();
       for (const code of blocks) {
         const pre = code.parentElement;

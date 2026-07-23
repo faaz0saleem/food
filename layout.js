@@ -26,10 +26,8 @@ if ('serviceWorker' in navigator) {
     const path = (location.pathname || '').toLowerCase();
     // Never gate or black-out the admin panel or the settings endpoint itself.
     if (path.indexOf('/admin') === 0 || location.hostname.indexOf('admin.') === 0) return;
-    fetch(apiPath('/api/settings.php'), { cache: 'no-store' })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        const s = d && d.settings; if (!s) return;
+    function applySettings(s) {
+        if (!s) return;
 
         // 1) Maintenance mode — full-page takeover for visitors.
         if (s.maintenance_mode) {
@@ -64,6 +62,23 @@ if ('serviceWorker' in navigator) {
           let token = null; try { token = JSON.parse(localStorage.getItem('mm_auth_token') || 'null'); } catch (e) {}
           if (!token) location.replace('/signin');
         }
+    }
+
+    // Cache settings for 5 min in sessionStorage so navigating between pages
+    // doesn't refetch on every load — a real speed win across the site.
+    const CACHE_KEY = 'hg_settings_v1';
+    let cached = null;
+    try { cached = JSON.parse(sessionStorage.getItem(CACHE_KEY) || 'null'); } catch (e) {}
+    if (cached && cached.t && (Date.now() - cached.t) < 300000 && cached.s) {
+      applySettings(cached.s);
+      return;
+    }
+    fetch(apiPath('/api/settings.php'))
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        const s = d && d.settings; if (!s) return;
+        try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ t: Date.now(), s: s })); } catch (e) {}
+        applySettings(s);
       })
       .catch(() => {});
   })();

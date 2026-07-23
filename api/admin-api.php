@@ -692,7 +692,18 @@ if ($method === 'POST' && $action === 'book_delete') {
     exit;
 }
 
-// Default: overview
+// Default: overview — cached ~45s so refreshes and tab-switches are instant
+// instead of re-running several DB aggregate queries every time.
+$ovCache = sys_get_temp_dir() . '/hungter_admin_overview.json';
+if ($method !== 'POST') {
+    $c = @file_get_contents($ovCache);
+    if (is_string($c)) {
+        $cached = json_decode($c, true);
+        if (is_array($cached) && ($cached['_t'] ?? 0) > time() - 45 && isset($cached['payload'])) {
+            mm_json_response(200, $cached['payload']); exit;
+        }
+    }
+}
 $summary = mm_get_admin_summary();
 $revenue = ['mrr' => 0.0, 'payingUsers' => 0, 'totalUsers' => 0, 'bookRevenue' => 0.0];
 if ($db !== null) {
@@ -708,11 +719,14 @@ $series = [
     'signups' => cx_series($db, "SELECT DATE(created_at) d, COUNT(*) c FROM users WHERE created_at >= (UTC_DATE() - INTERVAL 13 DAY) GROUP BY DATE(created_at)"),
     'active' => cx_series($db, "SELECT DATE(last_seen) d, COUNT(*) c FROM visitor_sessions WHERE last_seen >= (UTC_DATE() - INTERVAL 13 DAY) GROUP BY DATE(last_seen)"),
 ];
-mm_json_response(200, [
+$overviewPayload = [
     'status' => 'ok',
     'dbConnected' => $db !== null,
     'dbDriver' => mm_db_driver(),
     'dbHost' => mm_db_driver() === 'mysql' ? mm_env_value('MYSQL_HOST', mm_env_value('DB_HOST', '')) : '',
     'dbError' => $db === null ? mm_db_last_error() : '',
     'totals' => $summary, 'revenue' => $revenue, 'series' => $series,
-]);
+];
+// Only cache real data (don't cache a DB-offline blip so it self-heals fast).
+if ($db !== null) { @file_put_contents($ovCache, json_encode(['_t' => time(), 'payload' => $overviewPayload])); }
+mm_json_response(200, $overviewPayload);
