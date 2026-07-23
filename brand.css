@@ -511,6 +511,38 @@ textarea:focus {
   line-height: 1.7;
 }
 
+.footer-share {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+.footer-share span {
+  color: var(--ink-faint);
+  font-size: 0.8rem;
+}
+.footer-share a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-decoration: none;
+  transition: border-color 0.16s ease, color 0.16s ease, transform 0.16s ease;
+}
+.footer-share a:hover {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  transform: translateY(-2px);
+}
+
 .footer-col h4 {
   font-family: var(--font-display);
   font-size: 0.92rem;

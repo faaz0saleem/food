@@ -1,5 +1,8 @@
 RewriteEngine On
 
+# Send charset in the HTTP Content-Type header for text responses (SEO + correctness).
+AddDefaultCharset utf-8
+
 # Force HTTPS on production hosting.
 RewriteCond %{HTTPS} !=on
 RewriteCond %{HTTP_HOST} !^localhost(:[0-9]+)?$ [NC]

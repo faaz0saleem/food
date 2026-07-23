@@ -384,6 +384,13 @@ if ('serviceWorker' in navigator) {
           <div>
             <div class="footer-brand">🧠 Hungter</div>
             <p class="footer-copy">Four AI engines. One tutor that adapts to how you learn. Built for students, families, and schools.</p>
+            <div class="footer-share" aria-label="Share Hungter">
+              <span>Share:</span>
+              <a href="https://x.com/intent/tweet?text=Hungter%20%E2%80%94%20a%20free%20AI%20tutor%20that%20gets%20you&url=https%3A%2F%2Fhungter.com" target="_blank" rel="noopener nofollow" title="Share on X">𝕏</a>
+              <a href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fhungter.com" target="_blank" rel="noopener nofollow" title="Share on Facebook">f</a>
+              <a href="https://api.whatsapp.com/send?text=Hungter%20%E2%80%94%20a%20free%20AI%20tutor%3A%20https%3A%2F%2Fhungter.com" target="_blank" rel="noopener nofollow" title="Share on WhatsApp">✆</a>
+              <a href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fhungter.com" target="_blank" rel="noopener nofollow" title="Share on LinkedIn">in</a>
+            </div>
           </div>
           <div class="footer-col">
             <h4>Features</h4>
@@ -401,7 +408,7 @@ if ('serviceWorker' in navigator) {
             <a href="/books">Book Store</a>
             <a href="/about">About</a>
             <a href="/signup">Get started</a>
-            <a href="/checkout?plan=student">Upgrade</a>
+            <a href="/pricing">Upgrade</a>
           </div>
           <div class="footer-col">
             <h4>Legal</h4>
