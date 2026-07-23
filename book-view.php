@@ -62,13 +62,16 @@ $bookJson = json_encode(['id' => $book['id'], 'title' => $title, 'subject' => $b
 <meta name="google-adsense-account" content="ca-pub-7768612748508302">
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-FHMTQDLHV2"></script>
-<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag("js",new Date());gtag("config","G-FHMTQDLHV2");</script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag("consent","default",{ad_storage:"denied",analytics_storage:"denied",ad_user_data:"denied",ad_personalization:"denied"});gtag("js",new Date());gtag("config","G-FHMTQDLHV2");</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
 <title><?php echo bv_e($title); ?> — Buy PDF or Physical Book | Hungter</title>
 <meta name="description" content="<?php echo bv_e($metaDesc); ?>">
 <link rel="canonical" href="https://hungter.com/books/<?php echo bv_e($book['id']); ?>">
+<link rel="alternate" type="text/plain" href="/llms.txt" title="llms.txt">
 <meta property="og:type" content="product">
+<meta property="og:locale" content="en_US">
 <meta property="og:title" content="<?php echo bv_e($title); ?>">
 <meta property="og:description" content="<?php echo bv_e($metaDesc); ?>">
 <meta property="og:url" content="https://hungter.com/books/<?php echo bv_e($book['id']); ?>">

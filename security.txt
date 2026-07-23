@@ -1,0 +1,6 @@
+Contact: mailto:security@hungter.com
+Contact: https://hungter.com/contact
+Expires: 2027-07-01T00:00:00.000Z
+Canonical: https://hungter.com/.well-known/security.txt
+Preferred-Languages: en
+Policy: https://hungter.com/terms

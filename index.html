@@ -7,6 +7,7 @@
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
+  gtag("consent", "default", {ad_storage:"denied",analytics_storage:"denied",ad_user_data:"denied",ad_personalization:"denied"});
   gtag("js", new Date());
 
   gtag("config", "G-FHMTQDLHV2");
@@ -18,12 +19,19 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Fredoka:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap">
   <title>Free AI Tutor for GCSE, A-Level, IGCSE &amp; SAT — Hungter</title>
-  <meta name="description" content="Hungter is a free AI tutor blending Groq, Gemini, ChatGPT &amp; Claude into one adaptive tutor — AI homework help, quizzes, flashcards &amp; practice papers for exam students.">
+  <meta name="description" content="A free AI tutor that blends Groq, Gemini, ChatGPT &amp; Claude into one adaptive tutor — homework help, quizzes, flashcards &amp; practice papers.">
   <meta name="keywords" content="AI tutor, free AI tutor, AI homework help, online tutor, ChatGPT for students, AI study assistant, O-Level tutor, A-Level tutor, IGCSE tutor, GCSE revision, SAT prep, PSAT prep, AI quizzes, AI flashcards, practice papers, exam preparation, AI learning app">
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
   <link rel="canonical" href="https://hungter.com/">
+  <link rel="alternate" hreflang="en" href="https://hungter.com/">
+  <link rel="alternate" hreflang="x-default" href="https://hungter.com/">
+  <link rel="alternate" type="text/plain" href="/llms.txt" title="llms.txt">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Hungter — The AI tutor that gets you">
-  <meta property="og:description" content="Multiple AI tutoring modes. One tutor built for how you learn.">
+  <meta property="og:site_name" content="Hungter">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:url" content="https://hungter.com/">
+  <meta property="og:title" content="Free AI Tutor for GCSE, A-Level, IGCSE &amp; SAT — Hungter">
+  <meta property="og:description" content="A free AI tutor that blends Groq, Gemini, ChatGPT &amp; Claude into one adaptive tutor.">
   <meta property="og:image" content="https://hungter.com/og-image.svg">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -54,14 +62,43 @@
   {
     "@context": "https://schema.org",
     "@type": "WebSite",
+    "@id": "https://hungter.com/#website",
     "name": "Hungter",
     "url": "https://hungter.com/",
+    "inLanguage": "en",
     "description": "Free AI tutor that combines four AI engines into one adaptive tutor for exam-prep students.",
+    "publisher": {"@id": "https://hungter.com/#organization"},
     "potentialAction": {
       "@type": "SearchAction",
       "target": "https://hungter.com/books?q={search_term_string}",
       "query-input": "required name=search_term_string"
     }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "@id": "https://hungter.com/#organization",
+    "name": "Hungter",
+    "url": "https://hungter.com/",
+    "logo": "https://hungter.com/favicon.svg",
+    "description": "Hungter is a free AI tutor that combines four AI engines — Groq, Google Gemini, OpenAI ChatGPT and Anthropic Claude — into one adaptive tutor for exam-prep students.",
+    "email": "hello@hungter.com",
+    "inLanguage": "en",
+    "address": {"@type": "PostalAddress", "addressCountry": "GB"},
+    "knowsAbout": ["AI tutoring", "exam preparation", "O-Level", "A-Level", "IGCSE", "GCSE", "SAT", "PSAT", "mathematics", "physics", "chemistry", "biology", "study skills"],
+    "sameAs": [
+      "https://x.com/hungterapp",
+      "https://www.facebook.com/hungterapp",
+      "https://www.instagram.com/hungterapp",
+      "https://www.linkedin.com/company/hungter"
+    ],
+    "makesOffer": [
+      {"@type": "Offer", "name": "Free", "price": "0", "priceCurrency": "USD"},
+      {"@type": "Offer", "name": "Student", "price": "5", "priceCurrency": "USD"},
+      {"@type": "Offer", "name": "Pro", "price": "12", "priceCurrency": "USD"}
+    ]
   }
   </script>
   <script type="application/ld+json">
@@ -99,7 +136,7 @@
           <span class="lp-line"><span>Every brain learns differently.</span></span>
           <span class="lp-line"><span><em class="lp-grad" style="font-style:normal;">Your tutor finally does too.</em></span></span>
         </h1>
-        <p class="lp-lead">Every student learns differently, so your AI tutor should too. Hungter routes each question to one of four AI engines — <strong>Groq</strong>, <strong>Gemini</strong>, <strong>ChatGPT</strong>, or <strong>Claude</strong> — so every explanation lands the way your brain actually works.</p>
+        <p class="lp-lead">Ask a physics problem and Gemini works the maths; ask for a history essay and Claude drafts it. Hungter sends each question to whichever of <strong>Groq</strong>, <strong>Gemini</strong>, <strong>ChatGPT</strong> or <strong>Claude</strong> handles it best, so you stop guessing which chatbot to open. Every student's brain learns a little differently — now your tutor does too.</p>
         <div class="lp-hero-ctas">
           <a href="/signup" class="lp-btn-hero">Start learning free <span class="arr">→</span></a>
           <a href="#console" class="lp-btn-ghost">Watch it think ↓</a>
@@ -172,7 +209,7 @@
       <div class="lp-solution">
         <span class="lp-index">THE FIX</span>
         <h3>So we built four tutors into one.</h3>
-        <p>Tell Hungter how your brain works — visual, step-by-step, example-led, or story-driven — and it routes every question to the engine that teaches that way. Deep reasoning, worked math, real-world examples, or an analogy you'll never forget.</p>
+        <p>Say whether a diagram, numbered steps, a worked example or a quick story helps your brain most, and Hungter leans on the model that's strongest at it. A tricky proof might come back from Gemini; a messy essay prompt from Claude; a "just explain it simply" from Groq.</p>
       </div>
     </div>
   </section>
@@ -532,7 +569,7 @@
   </script>
 
   <!-- Sticky mobile CTA — the next step is always one thumb away -->
-  <div class="lp-sticky-cta" id="stickyCta" aria-hidden="true">
+  <div class="lp-sticky-cta" id="stickyCta">
     <span class="lp-sticky-txt"><span class="hg-live-dot"></span> Free during launch</span>
     <a href="/signin" class="lp-btn-hero lp-sticky-btn">Start free →</a>
   </div>
