@@ -52,7 +52,7 @@
         <div>
           <div class="chat-eyebrow"><span class="hg-live-dot"></span> Ask anything</div>
           <h1>What shall we <span class="hg-gradient-text">explore today?</span></h1>
-          <p>Four engines, four teaching styles. Pick one below the composer — or hit <strong>⚡ All 4</strong> and compare every answer.</p>
+          <p>Ask anything — math, code, essays, explanations, everyday questions. Answers come from the engine best suited to your question, or hit <strong>⚡ All 4</strong> to compare every AI at once.</p>
         </div>
         <div class="quick-prompt-grid">
           <button type="button" class="quick-prompt-card" data-prompt="Explain the physics of light.">
@@ -91,13 +91,6 @@
           <button type="button" class="engine-btn" data-engine="explorer" title="Real-world examples and research">🔵 ChatGPT</button>
           <button type="button" class="engine-btn" data-engine="storyteller" title="Stories, analogies, creative">🟣 Claude</button>
           <button type="button" class="engine-btn" data-engine="all" title="All 4 engines answer">⚡ All 4</button>
-        </div>
-        <div class="study-row" role="radiogroup" aria-label="How should the tutor explain?">
-          <span class="engine-row-label">Style</span>
-          <button type="button" class="study-btn active" data-mode="normal" title="Balanced explanations">✨ Normal</button>
-          <button type="button" class="study-btn" data-mode="eli5" title="Explain like I'm 5">🧸 ELI5</button>
-          <button type="button" class="study-btn" data-mode="exam" title="Exam-focused, concise, mark-scheme style">🎯 Exam</button>
-          <button type="button" class="study-btn" data-mode="socratic" title="Teach by asking guiding questions">🤔 Socratic</button>
         </div>
         <div class="composer-row">
           <button id="attachButton" class="attach-btn" type="button" aria-label="Attach file or image" title="Attach file or image">+</button>
@@ -143,18 +136,10 @@
   const stopButton = document.getElementById('stopButton');
   let typingIndicator = null;
   let selectedEngine = 'auto';
-  let studyMode = lsGet('mm_study_mode', 'normal');
   let currentAbort = null;   // AbortController for the in-flight request
   let streamCancelled = false;
   const fallbackModel = 'llama-3.3-70b-versatile';
 
-  // Persona directives prepended (invisibly) to the outgoing prompt.
-  const STUDY_DIRECTIVES = {
-    normal: '',
-    eli5: 'Explain this as if I am a young child — very simple words, a friendly tone, and a everyday analogy. ',
-    exam: 'Answer in an exam-focused way: concise, structured, with the key marking points and a worked model answer. ',
-    socratic: 'Teach me using the Socratic method — instead of giving the full answer at once, ask me one guiding question at a time and build toward the answer. ',
-  };
   let pendingQuestion = null;
   const MAX_ATTACHMENTS = 5;
   const MAX_ATTACHMENT_BYTES = 3 * 1024 * 1024;
@@ -625,22 +610,29 @@
     messages.appendChild(row);
     const feed = document.getElementById('chatFeed');
 
-    // Reveal characters in chunks for a streaming feel
-    const CHUNK = 5;
-    const TICK = 14;
-    let i = 0;
-    while (i < fullText.length) {
-      if (streamCancelled) { i = fullText.length; break; }
-      i = Math.min(i + CHUNK, fullText.length);
-      const partial = fullText.slice(0, i);
-      if (sender === 'ai') {
-        textEl.innerHTML = renderMarkdownMath(partial) + (i < fullText.length ? '<span class="stream-cursor">▋</span>' : '');
-      } else {
-        textEl.textContent = partial;
+    // Reveal as cheap plain text (no per-tick markdown re-parsing, so it stays
+    // smooth on long answers); the rich markdown/math render happens once at the
+    // end. Chunk size scales with length so big answers don't crawl.
+    if (sender === 'ai') {
+      const total = fullText.length;
+      const CHUNK = Math.max(4, Math.ceil(total / 140)); // ~140 ticks max
+      const TICK = 12;
+      const cursor = document.createElement('span');
+      cursor.className = 'stream-cursor';
+      cursor.textContent = '▋';
+      const textNode = document.createTextNode('');
+      textEl.appendChild(textNode);
+      textEl.appendChild(cursor);
+      let i = 0;
+      while (i < total) {
+        if (streamCancelled) { i = total; break; }
+        i = Math.min(i + CHUNK, total);
+        textNode.nodeValue = fullText.slice(0, i);
+        messages.scrollTop = messages.scrollHeight;
+        if (feed) feed.scrollTop = feed.scrollHeight;
+        await new Promise((r) => setTimeout(r, TICK));
       }
-      messages.scrollTop = messages.scrollHeight;
-      if (feed) feed.scrollTop = feed.scrollHeight;
-      await new Promise((r) => setTimeout(r, TICK));
+      cursor.remove();
     }
 
     // Final clean render
@@ -773,10 +765,7 @@
     streamCancelled = false;
     const controller = new AbortController();
     currentAbort = controller;
-    // Persona/study-mode directive is prepended to what the AI sees, but the
-    // saved thread + on-screen bubble keep the student's clean text.
-    const directive = STUDY_DIRECTIVES[studyMode] || '';
-    const { reply, engine, ownerHint, credits, payg } = await fetchAIResponse(directive + text, subject, { ...options, attachments, signal: controller.signal });
+    const { reply, engine, ownerHint, credits, payg } = await fetchAIResponse(text, subject, { ...options, attachments, signal: controller.signal });
     if (credits && modelBadge) {
       const scope = credits.kind === 'lifetime' ? 'free credits left' : (credits.kind === 'monthly' ? 'credits left this month' : 'credits left today');
       modelBadge.textContent = payg
@@ -855,16 +844,6 @@
   attachButton?.addEventListener('click', () => fileInput?.click());
   fileInput?.addEventListener('change', async (event) => {
     await addFiles(Array.from(event.target.files || []));
-  });
-
-  // Study-mode (persona) selector.
-  document.querySelectorAll('.study-btn').forEach((btn) => {
-    if (btn.dataset.mode === studyMode) btn.classList.add('active'); else btn.classList.remove('active');
-    btn.addEventListener('click', () => {
-      studyMode = btn.dataset.mode;
-      lsSet('mm_study_mode', studyMode);
-      document.querySelectorAll('.study-btn').forEach((b) => b.classList.toggle('active', b === btn));
-    });
   });
 
   // Stop generating.
