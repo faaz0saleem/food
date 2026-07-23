@@ -59,6 +59,7 @@ $bookJson = json_encode(['id' => $book['id'], 'title' => $title, 'subject' => $b
 ?><!DOCTYPE html>
 <html lang="en">
 <head>
+<meta name="google-adsense-account" content="ca-pub-7768612748508302">
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-FHMTQDLHV2"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag("js",new Date());gtag("config","G-FHMTQDLHV2");</script>
