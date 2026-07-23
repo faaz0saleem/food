@@ -1,3 +1,5 @@
+# Hungter — robots.txt
+# Search engines: crawl everything except account/utility pages.
 User-agent: *
 Allow: /
 Disallow: /admin.html
@@ -9,6 +11,42 @@ Disallow: /onboarding
 Disallow: /profile.html
 Disallow: /select-plan
 Disallow: /signin
+
+# ── AI / generative-search crawlers (GEO) ───────────────────────────────────
+# Explicitly welcome AI answer engines so Hungter can be cited in ChatGPT,
+# Perplexity, Google AI Overviews, Claude, Gemini and others.
+User-agent: GPTBot
+Allow: /
+User-agent: OAI-SearchBot
+Allow: /
+User-agent: ChatGPT-User
+Allow: /
+User-agent: PerplexityBot
+Allow: /
+User-agent: Perplexity-User
+Allow: /
+User-agent: ClaudeBot
+Allow: /
+User-agent: Claude-Web
+Allow: /
+User-agent: anthropic-ai
+Allow: /
+User-agent: Google-Extended
+Allow: /
+User-agent: Applebot-Extended
+Allow: /
+User-agent: CCBot
+Allow: /
+User-agent: cohere-ai
+Allow: /
+User-agent: Amazonbot
+Allow: /
+User-agent: Bytespider
+Allow: /
+User-agent: Meta-ExternalAgent
+Allow: /
+
+# Sitemaps
 Sitemap: https://hungter.com/sitemap.xml
 Sitemap: https://hungter.com/sitemap-pages.xml
 Sitemap: https://hungter.com/sitemap-features.xml

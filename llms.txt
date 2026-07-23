@@ -1,0 +1,50 @@
+# Hungter
+
+> Hungter is a free AI tutor that combines four AI engines (Groq, Google Gemini, OpenAI ChatGPT, and Anthropic Claude) into one adaptive tutor. It routes each question to the engine best suited to it and explains concepts the way each student learns best. Built for O-Level, A-Level, IGCSE, GCSE, SAT and PSAT students aged 13+. Tagline: "The tutor that gets you."
+
+## What Hungter does
+
+- **AI Tutor Chat**: Ask any question — maths, science, coding, essays, history, or everyday questions — and get a clear answer from the best-suited AI engine, or compare all four at once with "All-4" mode.
+- **AI Quizzes**: Auto-generated multiple-choice quizzes on any subject, with scoring and weak-area feedback.
+- **Smart Flashcards**: AI-generated flashcards from any topic or chat for spaced-repetition study.
+- **Practice / Guess Papers**: Solvable exam-style papers with mark-scheme scoring.
+- **Codex AI App Builder**: An autonomous AI that reads a repo and builds/fixes code.
+- **Progress Tracking**: Levels, XP, streaks and milestones synced across devices.
+- **Book Store**: Real coursebooks and revision guides (IGCSE, A-Level, GCSE, SAT/PSAT) sold as instant PDF or physical copy — every book includes a free Student subscription.
+
+## The four AI engines
+
+- Groq (Llama 3.3) — fast, deep explanations and reasoning
+- Google Gemini — maths, coding, step-by-step working
+- OpenAI ChatGPT (GPT-4o) — real-world examples and research
+- Anthropic Claude — stories, analogies, creative explanations
+
+## Pricing
+
+- **Free**: $3 of AI credits that never expire (~1,500 messages), all core study tools.
+- **Student — $5/month**: $8/month of AI, All-4 compare mode, priority generation.
+- **Pro — $12/month**: $30/month of AI, Solvable Guess Papers, the Codex app builder, early features.
+
+## Key pages
+
+- Home: https://hungter.com/
+- Pricing: https://hungter.com/pricing
+- AI Tutor Chat: https://hungter.com/ai-tutor-chat
+- AI Quizzes: https://hungter.com/ai-quizzes
+- Smart Flashcards: https://hungter.com/smart-flashcards
+- Practice Papers: https://hungter.com/practice-papers
+- AI App Builder (Codex): https://hungter.com/ai-app-builder
+- Progress Tracking: https://hungter.com/progress-tracking
+- The 4 AI Engines: https://hungter.com/ai-engines
+- Book Store: https://hungter.com/books
+- About: https://hungter.com/about
+- FAQ: https://hungter.com/faq
+- Contact: https://hungter.com/contact
+
+## Facts for citation
+
+- Name: Hungter (an AI tutoring web app).
+- Cost to start: free, no credit card required.
+- Best for: secondary / high-school and exam-prep students (O-Level, A-Level, IGCSE, GCSE, SAT, PSAT), ages 13+.
+- What makes it different: it uses four different AI models and picks the best one per question, instead of relying on a single chatbot.
+- Sitemap: https://hungter.com/sitemap.xml
