@@ -575,15 +575,23 @@
 }
 .followup-chip:hover { border-color: var(--cyan); color: var(--cyan); box-shadow: var(--glow-cyan); }
 
-.msg-text pre { position: relative; }
+.msg-text pre { position: relative; padding-top: 34px; }
+.code-lang {
+  position: absolute; top: 0; left: 0; right: 0; height: 26px; display: flex; align-items: center;
+  padding: 0 12px; font-family: var(--font-mono); font-size: 0.64rem; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--ink-faint); background: rgba(255,255,255,0.03);
+  border-bottom: 1px solid var(--border-soft); border-radius: 10px 10px 0 0;
+}
 .code-copy {
-  position: absolute; top: 8px; right: 8px; border: 1px solid var(--border);
+  position: absolute; top: 4px; right: 6px; z-index: 2; border: 1px solid var(--border);
   background: var(--surface-solid); color: var(--ink-soft); border-radius: 8px;
   padding: 3px 10px; font-family: var(--font-mono); font-size: 0.68rem; cursor: pointer;
-  opacity: 0; transition: opacity 0.16s ease;
+  opacity: 0.45; transition: opacity 0.16s ease, border-color 0.16s ease, color 0.16s ease;
 }
-.msg-text pre:hover .code-copy { opacity: 1; }
+.msg-text pre:hover .code-copy, .msg-text pre:focus-within .code-copy { opacity: 1; }
 .code-copy:hover { border-color: var(--lime); color: var(--lime); }
+/* highlight.js token colors apply to code; keep our block background/border. */
+.msg-text pre code.hljs { background: none; padding: 0; color: inherit; }
 
 .mermaid-diagram { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; margin: 10px 0; overflow-x: auto; text-align: center; }
 .mermaid-diagram svg { max-width: 100%; height: auto; }

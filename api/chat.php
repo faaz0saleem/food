@@ -114,9 +114,9 @@ if ($engineMode === 'all') {
             }
         }
     }
-    $result = mm_call_engine($engineKey, $subject, $userLevel, $userText, $history, $images, 1600, 0.7);
+    $result = mm_call_engine($engineKey, $subject, $userLevel, $userText, $history, $images, 2048, 0.7);
     if (!$result['ok'] && $engineKey !== 'reasoner') {
-        $result = mm_call_engine('reasoner', $subject, $userLevel, $userText, $history, $images, 1600, 0.7);
+        $result = mm_call_engine('reasoner', $subject, $userLevel, $userText, $history, $images, 2048, 0.7);
     }
     if ($result['ok']) {
         $reply = (string) $result['reply'];

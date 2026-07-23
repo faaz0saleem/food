@@ -35,12 +35,14 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="stylesheet" href="/brand.css?v=20260713">
 <link rel="stylesheet" href="/nav.css?v=20260713">
-<link rel="stylesheet" href="/chat.css?v=20260723">
+<link rel="stylesheet" href="/chat.css?v=20260724">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/marked@4/marked.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11.9.0/styles/github-dark.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11.9.0/highlight.min.js"></script>
 </head>
 <body data-page="chat" style="display:flex;flex-direction:column;min-height:100vh;">
 <div class="top-bar"><div class="top-bar-fill" id="topBar" style="width:0%"></div></div>
@@ -459,6 +461,20 @@
       const pre = code.parentElement;
       if (pre.dataset.copyReady || /language-mermaid/.test(code.className)) return;
       pre.dataset.copyReady = '1';
+      // Syntax highlighting (highlight.js) — makes code answers read like ChatGPT.
+      let lang = '';
+      const m = /language-([a-z0-9+#-]+)/i.exec(code.className || '');
+      if (m) lang = m[1];
+      if (window.hljs) {
+        try { window.hljs.highlightElement(code); if (!lang && code.result && code.result.language) lang = code.result.language; } catch {}
+      }
+      // Language label on the block.
+      if (lang) {
+        const tag = document.createElement('span');
+        tag.className = 'code-lang';
+        tag.textContent = lang;
+        pre.appendChild(tag);
+      }
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'code-copy';
