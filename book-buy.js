@@ -85,7 +85,8 @@
       if (!rel.length || !$('relatedWrap')) return;
       $('relatedWrap').style.display = 'block';
       $('relGrid').innerHTML = rel.map(function (b) {
-        return '<a class="rel-card" href="/books/' + encodeURIComponent(b.id) + '"><div class="rc-cov" style="' + coverStyle(b) + '">' + esc(b.title) + '</div><div class="rc-t">' + esc(b.title) + '</div><div class="rc-p">' + money(b.price) + '</div></a>';
+        var img = b.isbn ? '<img class="rc-img" src="https://covers.openlibrary.org/b/isbn/' + encodeURIComponent(b.isbn) + '-L.jpg" alt="' + esc(b.title) + ' cover" loading="lazy" onerror="this.remove()" onload="if(this.naturalWidth<10)this.remove()">' : '';
+        return '<a class="rel-card" href="/books/' + encodeURIComponent(b.id) + '"><div class="rc-cov" style="' + coverStyle(b) + '">' + img + esc(b.title) + '</div><div class="rc-t">' + esc(b.title) + '</div><div class="rc-p">' + money(b.price) + '</div></a>';
       }).join('');
     }).catch(function () {});
   }

@@ -10,4 +10,6 @@ Disallow: /profile.html
 Disallow: /select-plan
 Disallow: /signin
 Sitemap: https://hungter.com/sitemap.xml
+Sitemap: https://hungter.com/sitemap-pages.xml
+Sitemap: https://hungter.com/sitemap-features.xml
 Sitemap: https://hungter.com/sitemap-books.xml

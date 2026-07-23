@@ -89,7 +89,9 @@ $bookJson = json_encode(['id' => $book['id'], 'title' => $title, 'subject' => $b
       <?php if ($cover !== '') { ?>
         <img class="cover" src="<?php echo bv_e($cover); ?>" alt="<?php echo bv_e($title); ?> cover" style="object-fit:cover;">
       <?php } else { ?>
-        <div class="cover" style="<?php echo $coverStyle; ?>"><div class="c-sub"><?php echo bv_e($book['subject'] ?? ''); ?></div><div class="c-title"><?php echo bv_e($title); ?></div><div class="c-auth"><?php echo bv_e($author0); ?></div></div>
+        <div class="cover" style="<?php echo $coverStyle; ?>">
+          <?php if (!empty($book['isbn'])) { ?><img class="cover-img" src="https://covers.openlibrary.org/b/isbn/<?php echo bv_e($book['isbn']); ?>-L.jpg" alt="<?php echo bv_e($title); ?> cover" loading="lazy" onerror="this.remove()" onload="if(this.naturalWidth&lt;10)this.remove()"><?php } ?>
+          <div class="c-sub"><?php echo bv_e($book['subject'] ?? ''); ?></div><div class="c-title"><?php echo bv_e($title); ?></div><div class="c-auth"><?php echo bv_e($author0); ?></div></div>
       <?php } ?>
       </div>
       <div class="info">

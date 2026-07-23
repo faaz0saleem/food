@@ -5,7 +5,9 @@ body { margin:0; font-family:var(--font-body); color:var(--ink); background:var(
 .crumbs a { color:var(--ink-soft); text-decoration:none; } .crumbs a:hover { color:var(--cyan); }
 .prod { display:grid; grid-template-columns:260px 1fr 300px; gap:26px; align-items:start; }
 @media (max-width:900px){ .prod { grid-template-columns:1fr; } }
-.cover { width:100%; max-width:240px; aspect-ratio:3/4; border-radius:10px; box-shadow:0 16px 40px rgba(0,0,0,0.55); display:flex; flex-direction:column; justify-content:space-between; padding:20px; box-sizing:border-box; color:#fff; }
+.cover { position:relative; overflow:hidden; width:100%; max-width:240px; aspect-ratio:3/4; border-radius:10px; box-shadow:0 16px 40px rgba(0,0,0,0.55); display:flex; flex-direction:column; justify-content:space-between; padding:20px; box-sizing:border-box; color:#fff; }
+/* Real cover art (loaded by ISBN) layers over the gradient; if it 404s the JS removes it and the gradient + text show through. */
+.cover .cover-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; border-radius:inherit; z-index:2; }
 .cover .c-sub { font-family:var(--font-mono); font-size:0.66rem; letter-spacing:0.14em; text-transform:uppercase; opacity:0.85; }
 .cover .c-title { font-family:var(--font-display); font-weight:700; font-size:1.15rem; line-height:1.2; }
 .cover .c-auth { font-size:0.76rem; opacity:0.85; }
@@ -49,6 +51,7 @@ textarea.buy-inp { resize:vertical; min-height:60px; }
 .related h2 { font-family:var(--font-display); font-size:1.3rem; margin:0 0 18px; }
 .rel-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:14px; }
 .rel-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px; text-decoration:none; color:var(--ink); display:block; }
-.rel-card .rc-cov { aspect-ratio:3/4; border-radius:6px; margin-bottom:8px; display:flex; align-items:center; justify-content:center; text-align:center; padding:8px; box-sizing:border-box; font-family:var(--font-display); font-size:0.72rem; color:#fff; }
+.rel-card .rc-cov { position:relative; overflow:hidden; aspect-ratio:3/4; border-radius:6px; margin-bottom:8px; display:flex; align-items:center; justify-content:center; text-align:center; padding:8px; box-sizing:border-box; font-family:var(--font-display); font-size:0.72rem; color:#fff; }
+.rel-card .rc-cov .rc-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; border-radius:inherit; z-index:2; }
 .rel-card .rc-t { font-size:0.8rem; line-height:1.3; }
 .rel-card .rc-p { color:var(--lime); font-family:var(--font-mono); font-size:0.82rem; margin-top:4px; }
