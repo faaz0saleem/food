@@ -842,7 +842,13 @@
   });
 
   $('startBtn').addEventListener('click', () => {
-    window.location.href = '/dashboard';
+    // Continue to wherever the user was headed before onboarding (set by /select-plan → /signin).
+    let dest = '/dashboard';
+    try {
+      const n = localStorage.getItem('mm_next');
+      if (n) { const v = JSON.parse(n); if (typeof v === 'string' && /^\/[a-z0-9\-\/]*$/i.test(v)) dest = v; localStorage.removeItem('mm_next'); }
+    } catch (e) {}
+    window.location.href = dest;
   });
 
   // ── FINISH ──────────────────────────────

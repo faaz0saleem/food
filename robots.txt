@@ -1,7 +1,13 @@
 User-agent: *
 Allow: /
 Disallow: /admin.html
+Disallow: /admin
 Disallow: /checkout.html
+Disallow: /checkout
 Disallow: /onboarding.html
+Disallow: /onboarding
 Disallow: /profile.html
+Disallow: /select-plan
+Disallow: /signin
 Sitemap: https://hungter.com/sitemap.xml
+Sitemap: https://hungter.com/sitemap-books.xml

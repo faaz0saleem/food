@@ -39,15 +39,31 @@
   .faq p { margin:0; color:var(--ink-soft); line-height:1.6; font-size:0.94rem; }
   .fp-final { text-align:center; margin-top:64px; padding:44px 20px; background:var(--surface); border:1px solid var(--border-glow); border-radius:var(--radius); box-shadow:var(--shadow); }
   .fp-final h2 { font-family:var(--font-display); font-size:clamp(1.5rem,3vw,2.1rem); margin:0 0 18px; }
+
+  .fp-top { max-width:1000px; margin:0 auto; padding:18px 20px 0; display:flex; align-items:center; justify-content:space-between; }
+  .fp-logo { font-family:var(--font-display); font-weight:700; font-size:1.12rem; color:var(--ink); text-decoration:none; }
+  .fp-logo span { background:var(--gradient-brand); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .fp-top-link { color:var(--ink-soft); text-decoration:none; font-size:0.9rem; font-weight:600; }
+  .fp-top-link:hover { color:var(--cyan); }
+
+  .fp-more { max-width:1000px; margin:64px auto 0; padding:0 20px; }
+  .fp-more h2 { font-family:var(--font-display); font-size:1.2rem; text-align:center; margin:0 0 18px; }
+  .fp-more-row { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; }
+  .fp-more-chip { display:inline-flex; align-items:center; gap:7px; background:var(--surface); border:1px solid var(--border);
+    border-radius:999px; padding:9px 16px; color:var(--ink); text-decoration:none; font-size:0.9rem; font-weight:600; transition:border-color .16s, color .16s, transform .16s; }
+  .fp-more-chip:hover { border-color:var(--border-glow); color:var(--cyan); transform:translateY(-2px); }
 </style>
 </head>
 <body>
-<nav class="site-nav" id="siteNav"></nav>
+<header class="fp-top">
+  <a class="fp-logo" href="/">⚡ <span>Hungter</span></a>
+  <a class="fp-top-link" href="/signin">Sign in</a>
+</header>
 <div class="fp">
   <span class="lp-index">PRACTICE PAPERS</span>
   <h1>Solvable AI practice papers</h1>
   <p class="sub">Full exam-style papers you can actually sit and get marked on — generated fresh every time, so they're original, not scraped from anywhere.</p>
-  <a href="/guess-papers" class="fp-cta-btn">Try a paper <span>&rarr;</span></a>
+  <a href="/select-plan?feature=practice-papers&next=%2Fguess-papers" class="fp-cta-btn">Try a paper <span>&rarr;</span></a>
   <div class="fp-grid">
     <div class="fp-card"><div class="ic">📝</div><h3>Sit & submit</h3><p>Answer a full paper in one flow, then get it marked automatically.</p></div><div class="fp-card"><div class="ic">🧮</div><h3>Real scoring</h3><p>See your score, correct answers and where you lost marks.</p></div><div class="fp-card"><div class="ic">🆕</div><h3>Always original</h3><p>Every paper is AI-generated fresh — never copied from real past papers.</p></div><div class="fp-card"><div class="ic">📈</div><h3>Weak areas</h3><p>Spot the topics costing you marks before exam day.</p></div>
   </div>
@@ -57,9 +73,22 @@
   </div>
   <div class="fp-final">
     <h2>Practice like it's the real thing.</h2>
-    <a href="/guess-papers" class="fp-cta-btn">Try a paper <span>&rarr;</span></a>
+    <a href="/select-plan?feature=practice-papers&next=%2Fguess-papers" class="fp-cta-btn">Try a paper <span>&rarr;</span></a>
   </div>
 </div>
+<section class="fp-more">
+  <h2>Explore more of Hungter</h2>
+  <div class="fp-more-row">
+    <a class="fp-more-chip" href="/ai-tutor-chat">💬 AI Tutor Chat</a>
+    <a class="fp-more-chip" href="/ai-quizzes">🎯 AI Quizzes</a>
+    <a class="fp-more-chip" href="/smart-flashcards">🃏 Smart Flashcards</a>
+    <a class="fp-more-chip" href="/ai-app-builder">⚡ AI App Builder</a>
+    <a class="fp-more-chip" href="/progress-tracking">📈 Progress Tracking</a>
+    <a class="fp-more-chip" href="/ai-engines">🧠 4 AI Engines</a>
+    <a class="fp-more-chip" href="/pricing">💳 Pricing</a>
+    <a class="fp-more-chip" href="/books">📚 Book Store</a>
+  </div>
+</section>
 <footer class="site-footer"></footer>
 <script src="/api-config.js"></script>
 <script src="/layout.js" defer></script>

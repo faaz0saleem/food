@@ -552,8 +552,10 @@ function sendFile(res, filePath) {
       });
       return;
     }
-    const ext = path.extname(filePath);
-    const contentType = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'application/javascript; charset=utf-8' }[ext] || 'application/octet-stream';
+    const ext = path.extname(filePath).toLowerCase();
+    const contentType = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'application/javascript; charset=utf-8',
+      '.xml': 'application/xml; charset=utf-8', '.txt': 'text/plain; charset=utf-8', '.json': 'application/json; charset=utf-8',
+      '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.gif': 'image/gif', '.ico': 'image/x-icon', '.webmanifest': 'application/manifest+json' }[ext] || 'application/octet-stream';
     res.writeHead(200, { 'Content-Type': contentType }); res.end(data);
   });
 }
@@ -759,7 +761,7 @@ const server = http.createServer(async (req, res) => {
     const requestedPath = cleanedPath.slice(1);
     const filePath = path.join(rootDir, requestedPath);
     const ext = path.extname(filePath).toLowerCase();
-    if (requestedPath && ['.css', '.js', '.png', '.svg', '.ico', '.json'].includes(ext)) return sendFile(res, filePath);
+    if (requestedPath && ['.css', '.js', '.png', '.svg', '.ico', '.json', '.xml', '.txt', '.webmanifest', '.jpg', '.jpeg', '.webp', '.gif'].includes(ext)) return sendFile(res, filePath);
     if (pathname.endsWith('.html')) return sendFile(res, filePath);
     // Clean URLs: /chat serves chat.html, /books serves books/index.html
     // (mirrors the production .htaccess + DirectoryIndex).
