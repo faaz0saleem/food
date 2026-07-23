@@ -596,3 +596,107 @@
 }
 .composer-row textarea:focus { outline: none; }
 .composer-row textarea::placeholder { color: var(--ink-faint); }
+
+/* ── Chat history drawer ─────────────────────────────────────────────────────
+   The Convo.mountDrawer() markup styled for the chat page. (chat.html doesn't
+   load styles.css, so these live here.) */
+.convo-fab {
+  position: fixed; top: 84px; left: 18px; z-index: 60;
+  display: inline-flex; align-items: center; gap: 7px;
+  background: rgba(13,20,40,0.72); border: 1px solid var(--border);
+  color: var(--ink-soft); border-radius: 999px; padding: 9px 16px;
+  font-family: var(--font-display); font-weight: 600; font-size: 0.82rem;
+  cursor: pointer; backdrop-filter: blur(12px); box-shadow: var(--shadow-sm);
+  transition: border-color .18s ease, color .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+.convo-fab:hover { border-color: var(--cyan); color: var(--cyan); box-shadow: var(--glow-cyan); transform: translateY(-1px); }
+.convo-fab span { font-size: 1rem; }
+
+.convo-overlay {
+  position: fixed; inset: 0; background: rgba(4,6,15,0.6);
+  backdrop-filter: blur(3px); opacity: 0; pointer-events: none;
+  transition: opacity .24s ease; z-index: 70;
+}
+.convo-overlay.open { opacity: 1; pointer-events: auto; }
+
+.convo-panel {
+  position: fixed; top: 0; left: 0; bottom: 0; width: 340px; max-width: 88vw;
+  background: var(--surface-solid); background-image: var(--gradient-aurora);
+  border-right: 1px solid var(--border-glow); box-shadow: 0 0 60px rgba(0,0,0,0.6);
+  z-index: 80; padding: 20px 16px 16px; display: flex; flex-direction: column; gap: 14px;
+  transform: translateX(-104%); transition: transform .28s cubic-bezier(0.22,1,0.36,1);
+}
+.convo-panel.open { transform: translateX(0); }
+
+.convo-head { display: flex; align-items: center; justify-content: space-between; padding-bottom: 4px; border-bottom: 1px solid var(--border-soft); }
+.convo-head strong { font-family: var(--font-display); font-size: 1.1rem; letter-spacing: -0.01em; }
+.convo-x { background: transparent; border: none; color: var(--ink-faint); font-size: 1.15rem; cursor: pointer; line-height: 1; padding: 4px; border-radius: 8px; transition: color .16s ease, background .16s ease; }
+.convo-x:hover { color: var(--ink); background: var(--surface-2); }
+
+.convo-new {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  border: none; background: var(--gradient-brand); color: var(--bg-deep);
+  border-radius: 12px; padding: 12px; font-family: var(--font-display);
+  font-weight: 700; font-size: 0.9rem; cursor: pointer; box-shadow: var(--glow-lime);
+  transition: transform .16s ease, box-shadow .16s ease;
+}
+.convo-new:hover { transform: translateY(-1px); box-shadow: 0 0 26px rgba(200,255,77,0.5); }
+.convo-new:active { transform: translateY(0); }
+
+.convo-search {
+  width: 100%; box-sizing: border-box; border: 1px solid var(--border);
+  background: var(--surface-2); color: var(--ink); border-radius: 10px;
+  padding: 10px 13px; font-family: var(--font-body); font-size: 0.86rem;
+  transition: border-color .16s ease;
+}
+.convo-search::placeholder { color: var(--ink-faint); }
+.convo-search:focus { outline: none; border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(77,240,255,0.12); }
+
+.convo-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 7px; margin: 0 -4px; padding: 2px 4px; }
+.convo-list::-webkit-scrollbar { width: 8px; }
+.convo-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 8px; }
+.convo-list::-webkit-scrollbar-thumb:hover { background: var(--border-glow); }
+
+.convo-item {
+  position: relative; display: flex; align-items: center; gap: 6px;
+  background: var(--surface); border: 1px solid var(--border-soft);
+  border-radius: 12px; padding: 11px 10px 11px 14px; cursor: pointer;
+  transition: border-color .16s ease, background .16s ease, transform .16s ease;
+}
+/* accent bar on the left, revealed on hover / active */
+.convo-item::before {
+  content: ''; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px;
+  border-radius: 0 3px 3px 0; background: var(--gradient-brand);
+  opacity: 0; transition: opacity .16s ease;
+}
+.convo-item:hover { border-color: var(--border); background: var(--surface-2); transform: translateX(2px); }
+.convo-item:hover::before { opacity: 0.7; }
+.convo-item.active { border-color: var(--border-glow); background: var(--surface-2); }
+.convo-item.active::before { opacity: 1; }
+.convo-item.pinned { border-color: rgba(200,255,77,0.28); }
+
+.convo-item-main { flex: 1; min-width: 0; }
+.convo-item-title { font-size: 0.9rem; color: var(--ink); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.convo-item-sub { font-family: var(--font-mono); font-size: 0.68rem; color: var(--ink-faint); margin-top: 4px; letter-spacing: 0.02em; }
+
+/* action buttons: quiet by default, clear on hover of the row */
+.convo-act, .convo-del {
+  background: transparent; border: none; cursor: pointer; font-size: 0.85rem;
+  opacity: 0; padding: 4px; border-radius: 7px; line-height: 1;
+  transition: opacity .16s ease, background .16s ease, transform .16s ease;
+}
+.convo-item:hover .convo-act, .convo-item:hover .convo-del,
+.convo-item.pinned .convo-act { opacity: 0.65; }
+.convo-act:hover, .convo-del:hover { opacity: 1; background: var(--surface-2); transform: scale(1.08); }
+.convo-del:hover { background: rgba(255,107,74,0.16); }
+
+.convo-empty {
+  color: var(--ink-faint); font-size: 0.86rem; text-align: center;
+  margin: 40px auto 0; max-width: 220px; line-height: 1.6;
+}
+
+@media (max-width: 720px) {
+  .convo-fab { top: 74px; left: 12px; padding: 8px 13px; font-size: 0.76rem; }
+  /* On touch, actions are always visible since there's no hover. */
+  .convo-act, .convo-del { opacity: 0.55; }
+}

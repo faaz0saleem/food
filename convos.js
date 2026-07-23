@@ -80,9 +80,10 @@
           listEl.innerHTML = '<p class="convo-empty">' + (query ? 'No matches.' : 'No saved conversations yet.') + '</p>';
           return;
         }
+        const current = (typeof opts.currentId === 'function') ? opts.currentId() : null;
         listEl.innerHTML = items.map((t) => {
           const lab = opts.itemLabel ? opts.itemLabel(t) : { title: t.title || 'Untitled', sub: window.Convo.ago(t.updatedAt) };
-          return '<div class="convo-item' + (t.pinned ? ' pinned' : '') + '" data-id="' + esc(t.id) + '">' +
+          return '<div class="convo-item' + (t.pinned ? ' pinned' : '') + (t.id === current ? ' active' : '') + '" data-id="' + esc(t.id) + '">' +
             '<div class="convo-item-main"><div class="convo-item-title">' + (t.pinned ? '📌 ' : '') + esc(lab.title || 'Untitled') + '</div>' +
             '<div class="convo-item-sub">' + esc(lab.sub || '') + '</div></div>' +
             '<button class="convo-act" data-pin="' + esc(t.id) + '" title="Pin" aria-label="Pin">' + (t.pinned ? '📌' : '📍') + '</button>' +

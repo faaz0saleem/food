@@ -34,7 +34,7 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="stylesheet" href="/brand.css?v=20260713">
 <link rel="stylesheet" href="/nav.css?v=20260713">
-<link rel="stylesheet" href="/chat.css?v=20260713">
+<link rel="stylesheet" href="/chat.css?v=20260723">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous">
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/marked@4/marked.min.js"></script>
@@ -117,7 +117,7 @@
 
 <script src="/api-config.js?v=20260713"></script>
 <script src="/script.js?v=20260713"></script>
-<script src="/convos.js?v=20260716"></script>
+<script src="/convos.js?v=20260723"></script>
 <script src="/layout.js?v=20260713" defer></script>
 <script>
 (function () {
@@ -900,6 +900,7 @@
     newLabel: '＋ New chat',
     onNew: startNewChat,
     onSelect: openThread,
+    currentId: () => currentChatId,
     itemLabel: (t) => ({ title: t.title || 'Untitled chat', sub: (t.subject ? t.subject + ' · ' : '') + Convo.ago(t.updatedAt) }),
   });
   if (!pendingQuestion) openThread(currentChatId);
