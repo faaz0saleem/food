@@ -13,11 +13,60 @@ if ('serviceWorker' in navigator) {
     return `${API_BASE}${clean}`;
   }
 
-  // ── Auth gate DISABLED ──────────────────────────────────────────────────────
-  // Forced sign-in was removed: it was bouncing signed-in users back to /signin
-  // repeatedly (a redirect loop whenever the stored token wasn't seen). Pages are
-  // now open; signing in stays optional via the nav / CTA buttons. Do NOT
-  // re-enable a location.replace('/signin') here without fixing that loop first.
+  // ── Auth gate DISABLED by default ───────────────────────────────────────────
+  // Forced sign-in was removed because it looped users back to /signin. It can be
+  // turned back on from Admin → Settings → "Force sign-in" (force_login), handled
+  // in the site-settings consumer below. Do NOT hard-code a redirect here.
+
+  // ── Site settings consumer (admin-controlled) ───────────────────────────────
+  // Reads the public settings and applies owner toggles: maintenance mode, the
+  // announcement banner, and the optional force-login gate. Fails silently so a
+  // missing/broken settings file never takes the site down.
+  (function siteSettings() {
+    const path = (location.pathname || '').toLowerCase();
+    // Never gate or black-out the admin panel or the settings endpoint itself.
+    if (path.indexOf('/admin') === 0 || location.hostname.indexOf('admin.') === 0) return;
+    fetch(apiPath('/api/settings.php'), { cache: 'no-store' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        const s = d && d.settings; if (!s) return;
+
+        // 1) Maintenance mode — full-page takeover for visitors.
+        if (s.maintenance_mode) {
+          document.documentElement.innerHTML =
+            '<body style="margin:0;min-height:100vh;display:grid;place-items:center;background:#04060F;color:#F2F5FF;font-family:Manrope,sans-serif;text-align:center;padding:24px;">' +
+            '<div><div style="font-size:2.4rem;margin-bottom:10px;">🛠️</div>' +
+            '<h1 style="font-family:Space Grotesk,sans-serif;">' + (s.site_name || 'Hungter') + '</h1>' +
+            '<p style="color:#A9B2D6;max-width:420px;line-height:1.6;">' + (s.maintenance_message || 'Down for maintenance — back shortly.') + '</p></div></body>';
+          return;
+        }
+
+        // 2) Announcement banner.
+        if (s.announcement_enabled && s.announcement_text) {
+          const bar = document.createElement('div');
+          bar.id = 'hg-announce';
+          bar.style.cssText = 'position:relative;z-index:50;text-align:center;padding:9px 40px;font-family:Manrope,sans-serif;font-size:0.86rem;font-weight:600;color:#04060F;background:linear-gradient(120deg,#C8FF4D,#4DF0FF);';
+          const inner = s.announcement_link
+            ? '<a href="' + s.announcement_link + '" style="color:#04060F;text-decoration:underline;">' + s.announcement_text + '</a>'
+            : s.announcement_text;
+          bar.innerHTML = inner + '<button aria-label="Dismiss" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:#04060F;cursor:pointer;font-size:1rem;">✕</button>';
+          bar.querySelector('button').addEventListener('click', () => bar.remove());
+          if (document.body) document.body.insertBefore(bar, document.body.firstChild);
+        }
+
+        // 3) Optional force-login gate (off by default).
+        if (s.force_login) {
+          const PUBLIC = ['', 'index', 'pricing', 'books', 'book', 'signin', 'signup', 'privacy', 'terms', 'faq', 'contact', 'about', 'complaints', '404', 'verify-email', 'reset-password', 'select-plan',
+            'ai-tutor-chat', 'ai-quizzes', 'smart-flashcards', 'practice-papers', 'ai-app-builder', 'progress-tracking', 'ai-engines'];
+          if (path === '/books' || path.indexOf('/books/') === 0) return;
+          const file = (location.pathname.split('/').pop() || '').replace(/\.html$/, '').toLowerCase();
+          if (PUBLIC.indexOf(file) >= 0) return;
+          let token = null; try { token = JSON.parse(localStorage.getItem('mm_auth_token') || 'null'); } catch (e) {}
+          if (!token) location.replace('/signin');
+        }
+      })
+      .catch(() => {});
+  })();
 
   // ── Plan gate — paid-only features blur behind an upgrade wall for Free ──────
   // Rank: free < student < pro. Pages list the minimum plan they need.

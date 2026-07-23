@@ -294,6 +294,109 @@ if (!admin_authed($body)) {
     exit;
 }
 
+$method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+
+// ── Site settings (persisted to a JSON file so it works even if the DB is down) ─
+function admin_settings_path(): string {
+    $dir = __DIR__ . '/../data';
+    if (!is_dir($dir)) { @mkdir($dir, 0775, true); }
+    return $dir . '/site-settings.json';
+}
+function admin_settings_defaults(): array {
+    return [
+        // General
+        'site_name' => 'Hungter', 'tagline' => 'The tutor that gets you.',
+        'maintenance_mode' => false, 'maintenance_message' => 'Hungter is down for quick maintenance — back shortly.',
+        'announcement_enabled' => false, 'announcement_text' => '', 'announcement_link' => '',
+        'support_email' => 'support@hungter.com', 'contact_phone' => '', 'default_theme' => 'dark',
+        'footer_copyright' => '© Hungter', 'social_twitter' => '', 'social_instagram' => '', 'social_tiktok' => '',
+        // Features
+        'feature_chat' => true, 'feature_quiz' => true, 'feature_flashcards' => true, 'feature_guess_papers' => true,
+        'feature_codex' => true, 'feature_progress' => true, 'feature_books' => true, 'feature_all4' => true,
+        'feature_voice_input' => true, 'feature_read_aloud' => true,
+        // AI & credits
+        'free_credit_usd' => 3, 'student_credit_usd' => 8, 'pro_credit_usd' => 30,
+        'default_engine' => 'auto', 'max_tokens' => 1600, 'temperature' => 0.7,
+        'allow_guest_chat' => true, 'daily_message_cap_free' => 0, 'model_groq' => 'llama-3.3-70b-versatile',
+        // Store
+        'store_enabled' => true, 'pdf_delivery_hours' => 5, 'free_student_with_book' => true,
+        'shipping_note' => 'Ships in 3–5 business days.', 'currency' => 'USD', 'low_stock_badge' => false,
+        // Pricing
+        'price_student' => 5, 'price_pro' => 12, 'price_family' => 12, 'price_school' => 200,
+        'billing_enabled' => false, 'show_pricing_page' => true,
+        // SEO / analytics
+        'ga_measurement_id' => 'G-FHMTQDLHV2', 'meta_description' => '', 'og_image_url' => '',
+        'robots_index' => true, 'sitemap_enabled' => true,
+        // Security / access
+        'signups_enabled' => true, 'manual_login_enabled' => true, 'force_login' => false,
+        'rate_limit_per_min' => 30, 'blocked_emails' => '',
+    ];
+}
+function admin_settings_load(): array {
+    $raw = @file_get_contents(admin_settings_path());
+    $saved = is_string($raw) ? json_decode($raw, true) : null;
+    return array_merge(admin_settings_defaults(), is_array($saved) ? $saved : []);
+}
+function admin_settings_save(array $incoming): array {
+    $defaults = admin_settings_defaults();
+    $current = admin_settings_load();
+    foreach ($incoming as $k => $v) {
+        if (!array_key_exists($k, $defaults)) continue;       // ignore unknown keys
+        if (is_bool($defaults[$k])) { $current[$k] = (bool) $v; }
+        elseif (is_int($defaults[$k])) { $current[$k] = (int) $v; }
+        elseif (is_float($defaults[$k])) { $current[$k] = (float) $v; }
+        else { $current[$k] = is_string($v) ? substr($v, 0, 2000) : $current[$k]; }
+    }
+    @file_put_contents(admin_settings_path(), json_encode($current, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), LOCK_EX);
+    return $current;
+}
+
+if ($action === 'settings_get') {
+    mm_json_response(200, ['status' => 'ok', 'settings' => admin_settings_load(), 'defaults' => admin_settings_defaults()]);
+    exit;
+}
+if ($method === 'POST' && $action === 'settings_save') {
+    $incoming = is_array($body['settings'] ?? null) ? $body['settings'] : [];
+    $saved = admin_settings_save($incoming);
+    mm_json_response(200, ['status' => 'ok', 'message' => 'Settings saved.', 'settings' => $saved]);
+    exit;
+}
+if ($method === 'POST' && $action === 'settings_reset') {
+    @file_put_contents(admin_settings_path(), json_encode(admin_settings_defaults(), JSON_PRETTY_PRINT), LOCK_EX);
+    mm_json_response(200, ['status' => 'ok', 'message' => 'Settings reset to defaults.', 'settings' => admin_settings_defaults()]);
+    exit;
+}
+
+// ── Tools ────────────────────────────────────────────────────────────────────
+if ($method === 'POST' && $action === 'tool_clear_cache') {
+    $done = [];
+    if (function_exists('opcache_reset')) { @opcache_reset(); $done[] = 'OPcache cleared'; }
+    // Drop cached GA + analytics temp files.
+    foreach (glob(sys_get_temp_dir() . '/hungter_*') ?: [] as $f) { @unlink($f); }
+    $done[] = 'Temp caches cleared';
+    mm_json_response(200, ['status' => 'ok', 'message' => implode(' · ', $done)]);
+    exit;
+}
+if ($action === 'tool_db_ping') {
+    $ok = false; $err = '';
+    $probe = mm_db();
+    if ($probe !== null) { try { $probe->query('SELECT 1'); $ok = true; } catch (Throwable $e) { $err = $e->getMessage(); } }
+    else { $err = mm_db_last_error(); }
+    mm_json_response(200, ['status' => 'ok', 'connected' => $ok, 'driver' => mm_db_driver(), 'error' => $err]);
+    exit;
+}
+if ($action === 'tool_export_users') {
+    $probe = mm_db();
+    if ($probe === null) { mm_json_response(503, ['error' => 'Database offline.']); exit; }
+    $rows = [];
+    try {
+        $q = $probe->query('SELECT id, name, email, plan_name, plan_status, created_at FROM users ORDER BY id DESC LIMIT 5000');
+        $rows = $q->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    } catch (Throwable $e) { mm_json_response(500, ['error' => $e->getMessage()]); exit; }
+    mm_json_response(200, ['status' => 'ok', 'count' => count($rows), 'rows' => $rows]);
+    exit;
+}
+
 // Now (authenticated) connect to the DB for data actions. If it's down, $db is
 // null and each action degrades to a clear "database offline" message.
 $db = mm_db();

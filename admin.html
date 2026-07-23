@@ -54,6 +54,20 @@
   .bar-lbl { overflow: hidden; text-overflow: ellipsis; color: var(--ink-soft); }
   .bar-val { font-family: var(--font-mono); font-size: 0.78rem; color: var(--ink-soft); text-align: right; }
   .muted { color: var(--ink-faint); font-size: 0.84rem; }
+  /* Settings controls */
+  .set-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 20px; }
+  @media (max-width: 720px) { .set-grid { grid-template-columns: 1fr; } }
+  .set-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--border-soft); }
+  .set-row label { color: var(--ink-soft); font-size: 0.85rem; flex: 1; min-width: 0; }
+  .set-row input[type=text], .set-row input[type=number], .set-row select { border: 1px solid var(--border); background: var(--surface-2); color: var(--ink); border-radius: 8px; padding: 8px 10px; font-family: var(--font-body); font-size: 0.84rem; width: 190px; max-width: 52%; }
+  .set-row input:focus, .set-row select:focus { outline: none; border-color: var(--cyan); }
+  /* toggle switch */
+  .sw { position: relative; display: inline-block; width: 42px; height: 24px; flex: none; }
+  .sw input { opacity: 0; width: 0; height: 0; }
+  .sw span { position: absolute; inset: 0; background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; cursor: pointer; transition: background .18s ease, border-color .18s ease; }
+  .sw span::before { content: ''; position: absolute; height: 16px; width: 16px; left: 3px; top: 3px; background: var(--ink-soft); border-radius: 50%; transition: transform .18s ease, background .18s ease; }
+  .sw input:checked + span { background: var(--gradient-brand); border-color: transparent; }
+  .sw input:checked + span::before { transform: translateX(18px); background: var(--bg-deep); }
   .hide { display: none; }
   .umodal { position: fixed; inset: 0; background: rgba(4,6,15,0.72); backdrop-filter: blur(6px); display: flex; align-items: flex-start; justify-content: center; padding: 40px 16px; z-index: 50; overflow-y: auto; }
   .umodal.hide { display: none; }
@@ -92,6 +106,8 @@
           <button class="tab" data-t="books">Books</button>
           <button class="tab" data-t="access">Access &amp; Admins</button>
           <button class="tab" data-t="geo">Geography</button>
+          <button class="tab" data-t="settings">⚙️ Settings</button>
+          <button class="tab" data-t="tools">🛠 Tools</button>
         </div>
         <button class="btn ghost sm" id="refresh">↻</button>
         <button class="btn ghost sm" id="logout">Log out</button>
@@ -191,6 +207,38 @@
 
     <section id="v-geo" class="hide">
       <div class="card"><h2>🌍 Where users come from</h2><div id="geoBody"></div></div>
+    </section>
+
+    <section id="v-settings" class="hide">
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+          <h2 style="margin:0;">⚙️ Site settings</h2>
+          <div style="display:flex;gap:8px;">
+            <button class="btn ghost sm" id="setReset">Reset to defaults</button>
+            <button class="btn sm" id="setSave">💾 Save all</button>
+          </div>
+        </div>
+        <p class="muted" id="setMsg" style="margin:8px 0 0;">Loading…</p>
+      </div>
+      <div id="setGroups"></div>
+      <div class="card" style="display:flex;justify-content:flex-end;gap:8px;">
+        <button class="btn ghost sm" id="setReset2">Reset to defaults</button>
+        <button class="btn sm" id="setSave2">💾 Save all</button>
+      </div>
+    </section>
+
+    <section id="v-tools" class="hide">
+      <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr));">
+        <div class="card"><h2>🧹 Clear caches</h2><p class="muted">Reset PHP OPcache + temp caches after a deploy.</p><button class="btn sm" id="tlClear">Clear now</button><p class="muted" id="tlClearMsg" style="margin-top:8px;"></p></div>
+        <div class="card"><h2>🩺 Database</h2><p class="muted">Check the live DB connection.</p><button class="btn sm" id="tlPing">Ping database</button><p class="muted" id="tlPingMsg" style="margin-top:8px;"></p></div>
+        <div class="card"><h2>⬇️ Export users</h2><p class="muted">Download all users as a CSV file.</p><button class="btn sm" id="tlExport">Export CSV</button><p class="muted" id="tlExportMsg" style="margin-top:8px;"></p></div>
+        <div class="card"><h2>🔗 Quick links</h2><div style="display:flex;flex-direction:column;gap:6px;margin-top:6px;">
+          <a class="btn ghost sm" href="/api/clear-cache.php" target="_blank">Run clear-cache.php</a>
+          <a class="btn ghost sm" href="/sitemap.xml" target="_blank">View sitemap.xml</a>
+          <a class="btn ghost sm" href="/api/settings.php" target="_blank">View public settings</a>
+          <a class="btn ghost sm" href="/api/status" target="_blank">API status</a>
+        </div></div>
+      </div>
     </section>
 
     <div id="userModal" class="umodal hide">
@@ -410,20 +458,156 @@
   function show(view) {
     try { localStorage.setItem('mm_admin_tab', view); } catch (e) {}
     document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('on', t.dataset.t === view));
-    ['overview', 'website', 'users', 'books', 'access', 'geo'].forEach((v) => $('v-' + v).classList.toggle('hide', v !== view));
+    ['overview', 'website', 'users', 'books', 'access', 'geo', 'settings', 'tools'].forEach((v) => $('v-' + v).classList.toggle('hide', v !== view));
     if (view === 'overview') loadOverview();
     if (view === 'website') loadWebsite();
     if (view === 'users') loadUsers();
     if (view === 'books') loadBooks();
     if (view === 'access') loadAdmins();
     if (view === 'geo') loadGeo();
+    if (view === 'settings') loadSettings();
+    if (view === 'tools') { /* static */ }
   }
   function enterPanel() {
     $('login').classList.add('hide'); $('panel').classList.remove('hide');
-    const valid = ['overview', 'website', 'users', 'access', 'geo'];
+    const valid = ['overview', 'website', 'users', 'books', 'access', 'geo', 'settings', 'tools'];
     let last = 'overview';
     try { const t = localStorage.getItem('mm_admin_tab'); if (valid.indexOf(t) >= 0) last = t; } catch (e) {}
     show(last);
+  }
+
+  // ── Settings ────────────────────────────────────────────────────────────────
+  const SETTINGS_SCHEMA = [
+    ['General', [
+      ['site_name', 'Site name', 'text'], ['tagline', 'Tagline', 'text'],
+      ['maintenance_mode', 'Maintenance mode (shows a maintenance page to visitors)', 'toggle'],
+      ['maintenance_message', 'Maintenance message', 'text'],
+      ['announcement_enabled', 'Show announcement banner sitewide', 'toggle'],
+      ['announcement_text', 'Announcement text', 'text'],
+      ['announcement_link', 'Announcement link (optional URL)', 'text'],
+      ['support_email', 'Support email', 'text'], ['contact_phone', 'Contact phone', 'text'],
+      ['default_theme', 'Default theme', 'select', ['dark', 'light']],
+      ['footer_copyright', 'Footer copyright', 'text'],
+      ['social_twitter', 'Twitter/X URL', 'text'], ['social_instagram', 'Instagram URL', 'text'], ['social_tiktok', 'TikTok URL', 'text'],
+    ]],
+    ['Features (show / hide)', [
+      ['feature_chat', 'AI Chat', 'toggle'], ['feature_quiz', 'Quizzes', 'toggle'],
+      ['feature_flashcards', 'Flashcards', 'toggle'], ['feature_guess_papers', 'Guess Papers', 'toggle'],
+      ['feature_codex', 'Codex app builder', 'toggle'], ['feature_progress', 'Progress tracking', 'toggle'],
+      ['feature_books', 'Book store', 'toggle'], ['feature_all4', 'All-4 compare mode', 'toggle'],
+      ['feature_voice_input', 'Voice input (mic)', 'toggle'], ['feature_read_aloud', 'Read aloud (TTS)', 'toggle'],
+    ]],
+    ['AI & credits', [
+      ['free_credit_usd', 'Free plan AI credit ($, lifetime)', 'number'],
+      ['student_credit_usd', 'Student AI credit ($/mo)', 'number'],
+      ['pro_credit_usd', 'Pro AI credit ($/mo)', 'number'],
+      ['default_engine', 'Default engine', 'select', ['auto', 'reasoner', 'solver', 'explorer', 'storyteller']],
+      ['max_tokens', 'Max tokens per reply', 'number'], ['temperature', 'Temperature (0–1)', 'number'],
+      ['allow_guest_chat', 'Allow chat without signing in', 'toggle'],
+      ['daily_message_cap_free', 'Daily message cap for Free (0 = off)', 'number'],
+      ['model_groq', 'Groq model id', 'text'],
+    ]],
+    ['Store & books', [
+      ['store_enabled', 'Store enabled', 'toggle'], ['pdf_delivery_hours', 'PDF delivery window (hours)', 'number'],
+      ['free_student_with_book', 'Bundle free Student sub with every book', 'toggle'],
+      ['shipping_note', 'Shipping note', 'text'], ['currency', 'Currency', 'select', ['USD', 'GBP', 'EUR', 'PKR']],
+      ['low_stock_badge', 'Show "low stock" badge', 'toggle'],
+    ]],
+    ['Pricing', [
+      ['price_student', 'Student price ($/mo)', 'number'], ['price_pro', 'Pro price ($/mo)', 'number'],
+      ['price_family', 'Family price ($/mo)', 'number'], ['price_school', 'School price ($/mo)', 'number'],
+      ['billing_enabled', 'Billing enabled (turn on when a gateway is live)', 'toggle'],
+      ['show_pricing_page', 'Show pricing page', 'toggle'],
+    ]],
+    ['SEO & analytics', [
+      ['ga_measurement_id', 'GA4 measurement id', 'text'], ['meta_description', 'Default meta description', 'text'],
+      ['og_image_url', 'Social share image URL', 'text'], ['robots_index', 'Allow search engines to index', 'toggle'],
+      ['sitemap_enabled', 'Sitemap enabled', 'toggle'],
+    ]],
+    ['Security & access', [
+      ['signups_enabled', 'Allow new sign-ups', 'toggle'], ['manual_login_enabled', 'Allow email/password login', 'toggle'],
+      ['force_login', 'Force sign-in before using the app', 'toggle'],
+      ['rate_limit_per_min', 'Rate limit (requests/min)', 'number'], ['blocked_emails', 'Blocked emails (comma-separated)', 'text'],
+    ]],
+  ];
+  let settingsCache = {};
+
+  async function loadSettings() {
+    setMsg('Loading…');
+    const { data } = await api('settings_get');
+    if (!data || !data.settings) { setMsg('Could not load settings.', true); return; }
+    settingsCache = data.settings;
+    renderSettings(settingsCache);
+    setMsg('Loaded. Edit anything and press Save.');
+  }
+  function setMsg(t, err) {
+    ['setMsg'].forEach((id) => { const e = $(id); if (e) { e.textContent = t; e.style.color = err ? 'var(--coral)' : 'var(--ink-faint)'; } });
+  }
+  function renderSettings(s) {
+    const esc = (x) => String(x == null ? '' : x).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    $('setGroups').innerHTML = SETTINGS_SCHEMA.map((grp) => {
+      const [title, fields] = grp;
+      const rows = fields.map((f) => {
+        const [key, label, type, opts] = f;
+        const v = s[key];
+        let control;
+        if (type === 'toggle') {
+          control = '<label class="sw"><input type="checkbox" data-k="' + key + '" ' + (v ? 'checked' : '') + '><span></span></label>';
+        } else if (type === 'select') {
+          control = '<select data-k="' + key + '">' + (opts || []).map((o) => '<option value="' + esc(o) + '"' + (String(v) === String(o) ? ' selected' : '') + '>' + esc(o) + '</option>').join('') + '</select>';
+        } else if (type === 'number') {
+          control = '<input type="number" step="any" data-k="' + key + '" value="' + esc(v) + '">';
+        } else {
+          control = '<input type="text" data-k="' + key + '" value="' + esc(v) + '">';
+        }
+        return '<div class="set-row"><label>' + esc(label) + '</label>' + control + '</div>';
+      }).join('');
+      return '<div class="card"><h2>' + esc(title) + '</h2><div class="set-grid">' + rows + '</div></div>';
+    }).join('');
+  }
+  function collectSettings() {
+    const out = Object.assign({}, settingsCache);
+    document.querySelectorAll('#setGroups [data-k]').forEach((el) => {
+      const k = el.getAttribute('data-k');
+      if (el.type === 'checkbox') out[k] = el.checked;
+      else if (el.type === 'number') out[k] = el.value === '' ? 0 : Number(el.value);
+      else out[k] = el.value;
+    });
+    return out;
+  }
+  async function saveSettings() {
+    setMsg('Saving…');
+    const payload = collectSettings();
+    const { data } = await api('settings_save', { method: 'POST', body: { settings: payload } });
+    if (data && data.settings) { settingsCache = data.settings; setMsg('✓ Saved ' + Object.keys(payload).length + ' settings.'); }
+    else { setMsg((data && data.error) || 'Save failed.', true); }
+  }
+  async function resetSettings() {
+    if (!confirm('Reset ALL settings to defaults?')) return;
+    const { data } = await api('settings_reset', { method: 'POST', body: {} });
+    if (data && data.settings) { settingsCache = data.settings; renderSettings(settingsCache); setMsg('Reset to defaults.'); }
+  }
+
+  // ── Tools ───────────────────────────────────────────────────────────────────
+  async function toolClearCache() {
+    $('tlClearMsg').textContent = 'Working…';
+    const { data } = await api('tool_clear_cache', { method: 'POST', body: {} });
+    $('tlClearMsg').textContent = (data && (data.message || data.error)) || 'Done.';
+  }
+  async function toolPing() {
+    $('tlPingMsg').textContent = 'Pinging…';
+    const { data } = await api('tool_db_ping');
+    if (data) $('tlPingMsg').textContent = data.connected ? ('✓ Connected (' + data.driver + ')') : ('✗ ' + (data.error || 'offline'));
+  }
+  async function toolExport() {
+    $('tlExportMsg').textContent = 'Exporting…';
+    const { data } = await api('tool_export_users');
+    if (!data || !data.rows) { $('tlExportMsg').textContent = (data && data.error) || 'Failed.'; return; }
+    const cols = ['id', 'name', 'email', 'plan_name', 'plan_status', 'created_at'];
+    const csv = [cols.join(',')].concat(data.rows.map((r) => cols.map((c) => '"' + String(r[c] == null ? '' : r[c]).replace(/"/g, '""') + '"').join(','))).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'hungter-users.csv'; a.click();
+    $('tlExportMsg').textContent = '✓ Exported ' + data.count + ' users.';
   }
 
   async function login() {
@@ -439,6 +623,13 @@
   $('logout').addEventListener('click', () => { sessionStorage.removeItem('mm_admin_tok'); location.reload(); });
   $('refresh').addEventListener('click', () => show(document.querySelector('.tab.on').dataset.t));
   document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => show(t.dataset.t)));
+
+  // Settings + Tools wiring
+  ['setSave', 'setSave2'].forEach((id) => $(id) && $(id).addEventListener('click', saveSettings));
+  ['setReset', 'setReset2'].forEach((id) => $(id) && $(id).addEventListener('click', resetSettings));
+  $('tlClear') && $('tlClear').addEventListener('click', toolClearCache);
+  $('tlPing') && $('tlPing').addEventListener('click', toolPing);
+  $('tlExport') && $('tlExport').addEventListener('click', toolExport);
 
   $('userRows').addEventListener('click', async (e) => {
     const del = e.target.closest('[data-del]');
